@@ -17,27 +17,94 @@
 
 #define NR_WP 32
 
-typedef struct watchpoint {
-  int NO;
-  struct watchpoint *next;
+// typedef struct watchpoint {
+//   int NO;
+//   struct watchpoint *next;
 
-  /* TODO: Add more members if necessary */
+//   /* TODO: Add more members if necessary */
 
-} WP;
+// } WP;
 
 static WP wp_pool[NR_WP] = {};
-static WP *head = NULL, *free_ = NULL;
+static WP dummy_head = {}, dummy_free = {};
+static WP *head = &dummy_head, *free_ = &dummy_free;
+//static WP *head = NULL, *free_ = NULL;
 
 void init_wp_pool() {
   int i;
   for (i = 0; i < NR_WP; i ++) {
     wp_pool[i].NO = i;
     wp_pool[i].next = (i == NR_WP - 1 ? NULL : &wp_pool[i + 1]);
+    wp_pool[i].expr_value = 0;
+    wp_pool[i].triggered_time = 0;
   }
 
-  head = NULL;
-  free_ = wp_pool;
+  // head = NULL;
+  // free_ = wp_pool;
+  head->NO = -1;
+  head->next = NULL;
+  free_->NO = -1;
+  free_->next = wp_pool;
 }
 
 /* TODO: Implement the functionality of watchpoint */
+// fetch head of free WP list, insert it to head of occupied WP list
+WP* new_wp() {
+  WP *new_node;
+  if (free_->next == NULL) {
+    printf("no more watchpoints!\n");
+    return NULL;
+  }
+  else {
+    new_node = free_->next;
+    free_->next = free_->next->next;
+    new_node->next = head->next;
+    head->next = new_node;
+  }
+  //new_node = free_;
+  //free_ = free_->next;
+  //new_node->next = NULL;
+  //wp_num ++;
+  return new_node;
+}
+
+// add new free WP to head of free WP list
+void free_wp(int n) {
+  if (head->next == NULL){printf("no used watchpoint!\n");return;}
+  for (WP *wp_pt = head;wp_pt->next != NULL;wp_pt = wp_pt->next) {
+    if (wp_pt->next->NO == n) {
+      WP *wp = wp_pt->next;
+      wp_pt->next = wp_pt->next->next;
+      wp->next = free_->next;
+      free_->next = wp;
+      return;
+    }
+  }
+  printf("NO.%d WP not found!\n", n);
+  return;
+}
+//return if triggered
+bool check_wp() {
+  bool is_changed = false;
+  for(WP *wp_pt = head->next;wp_pt != NULL;wp_pt=wp_pt->next) {
+    bool success = true;
+    unsigned long new_result = expr(wp_pt->expr_str, &success);
+    if(success) {
+      if (new_result != wp_pt->expr_value) {
+        printf("value of %s changed, old: %lx, new: %lx\n", wp_pt->expr_str, wp_pt->expr_value, new_result);
+        wp_pt->expr_value = new_result;
+        (wp_pt->triggered_time)++;
+        is_changed = true;
+      }
+    }
+  }
+  return is_changed;
+}
+
+void print_wp_info() {
+  if (head->next == NULL){printf("No activated watchpoint!\n");return;}
+  for (WP *wp_pt = head->next;wp_pt != NULL;wp_pt=wp_pt->next) {
+    printf("NO: %d, name: %s, breakpoint hit: %d\n", wp_pt->NO, wp_pt->expr_str, wp_pt->triggered_time);
+  }
+}
 

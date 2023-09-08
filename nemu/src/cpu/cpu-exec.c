@@ -24,6 +24,7 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
+bool check_wp();
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
@@ -37,6 +38,11 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
+  #ifdef CONFIG_WATCHPOINT
+  //bool break_triggered = false;
+  bool changed = check_wp();
+  if(changed){printf("data changed\n");nemu_state.state = NEMU_STOP;isa_reg_display();}
+  #endif
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 }
 
