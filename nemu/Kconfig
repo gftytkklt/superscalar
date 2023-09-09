@@ -126,7 +126,6 @@ endmenu
 
 menu "Testing and Debugging"
 
-
 config TRACE
   bool "Enable tracer"
   default y
@@ -155,6 +154,13 @@ config WATCHPOINT
   bool "Enable watchpoint"
   default n
 
+config FTRACE
+  bool "Enable function trace"
+  default n
+  
+config MTRACE
+  bool "Enable memory trace"
+  default n
 
 config DIFFTEST
   depends on TARGET_NATIVE_ELF

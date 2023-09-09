@@ -25,7 +25,13 @@
  */
 #define MAX_INST_TO_PRINT 10
 bool check_wp();
-
+#ifdef CONFIG_ITRACE
+void inst_hist_display();
+void write_ringbuf(char *str);
+#endif
+#ifdef CONFIG_FTRACE
+void print_ftrace(unsigned long pc, unsigned long dnpc, unsigned inst);
+#endif
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
@@ -43,6 +49,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   bool changed = check_wp();
   if(changed){printf("data changed\n");nemu_state.state = NEMU_STOP;isa_reg_display();}
   #endif
+  IFDEF(CONFIG_FTRACE, print_ftrace(_this->pc, dnpc, _this->isa.inst.val));
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 }
 
@@ -71,6 +78,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
+  write_ringbuf(s->logbuf);
 #else
   p[0] = '\0'; // the upstream llvm does not support loongarch32r
 #endif
@@ -98,6 +106,7 @@ static void statistic() {
 }
 
 void assert_fail_msg() {
+  IFDEF(CONFIG_ITRACE, inst_hist_display());
   isa_reg_display();
   statistic();
 }

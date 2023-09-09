@@ -32,5 +32,15 @@ void init_wp_pool();
 void print_wp_info();
 WP* new_wp();
 void free_wp(int n);
+//ringbuf
+
+#define RINGBUF_LEN 64
+typedef struct ringbuf{
+  char instlog[128];
+  struct ringbuf* next;
+} ringbuf;
+void init_ringbuf();
+void write_ringbuf(char* str);
+void inst_hist_display();
 
 #endif
