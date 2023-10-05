@@ -103,7 +103,31 @@ static void num2str(char* dst, long val, bool issigned, bool isupper, bool ispoi
 }
 
 int printf(const char *fmt, ...) {
-  panic("Not implemented");
+  // panic("Not implemented");
+  va_list ap;
+  va_start(ap, fmt);
+  // int ret = 0;
+  char buf[1024] = {0};
+  int ret = vsnprintf(buf, 1024, fmt, ap);
+  assert(ret <= 1024);
+  char *p = buf;
+  while(*p){
+    putch(*p++);
+  }
+  // if(outsize > sizeof(buf))
+  // while (*fmt){
+  //   int outsize = vsnprintf(buf, 1024, fmt, ap);
+  //   fmt += outsize;
+  //   ret += outsize;
+  //   char *p = buf;
+  //   while(*p){
+  //     putch(*p++);
+  //   }
+  //   // break;
+  // }
+  va_end(ap);
+  return ret;
+  
 }
 // UB behav: invalid/unimpl fmt like %a is ignored and will output nothing
 int vsprintf(char *out, const char *fmt, va_list ap) {
