@@ -39,8 +39,9 @@ void *malloc(size_t size) {
   
   size_t remainder = size % 8;
   size_t incr = (remainder == 0) ? size : (size + 8 - remainder);
-  void *addr = heap.start + incr;
-  if (addr >= heap.end){addr = NULL;}
+  void *addr = heap.start;
+  if (addr + incr >= heap.end){addr = NULL;}
+  heap.start += incr;
   return addr;
   // return addr;
   
