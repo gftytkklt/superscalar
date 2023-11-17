@@ -23,10 +23,17 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
+const char *csrs[] = {
+  "mepc", "mstatus", "mcause", "mtvec", "satp", "mscratch"
+};
+
 void isa_reg_display() {
   for(int i=0;i<32;i++){
     printf("%s: %lx ", regs[i], cpu.gpr[i]);
     if((i % 8) == 7){printf("\n");}
+  }
+  for (int i=0;i<(sizeof(csrs)/sizeof(char*));i++){
+    printf("%s: %lx\n", csrs[i], cpu.csr[i]);
   }
 }
 
