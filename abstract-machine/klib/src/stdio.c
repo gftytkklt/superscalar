@@ -107,9 +107,9 @@ int printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   // int ret = 0;
-  char buf[1024] = {0};
-  int ret = vsnprintf(buf, 1024, fmt, ap);
-  assert(ret <= 1024);
+  char buf[2048] = {0};
+  int ret = vsnprintf(buf, 2048, fmt, ap);
+  assert(ret <= 2048);
   char *p = buf;
   while(*p){
     putch(*p++);
