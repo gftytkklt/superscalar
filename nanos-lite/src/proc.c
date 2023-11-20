@@ -25,9 +25,11 @@ void init_proc() {
   Log("Initializing processes...");
 
   // load program here
-  #ifdef TEST_DUMMY
   void naive_uload(PCB *pcb, const char *filename);
+  #ifdef TEST_DUMMY
   naive_uload(NULL, NULL);
+  #elif defined(TEST_FILE)
+  naive_uload(NULL, "/bin/file-test");
   #endif
 
 }
