@@ -144,14 +144,15 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
     fmt += decode_fmt(fmt, &info);
     // fill str into out at pos of buf
     switch(info.argtype){
-      case CHAR:
+      case CHAR:{
         char val_char = va_arg(ap, int);
         for (int i=1;i<info.width;i++){
           *buf++ = ' ';
         }
         *buf++ = val_char;
         break;
-      case STR:
+      }
+      case STR:{
         char* str = va_arg(ap, char*);
         for(int i=strlen(str);i<info.width;i++){
           *buf++ = ' ';
@@ -160,7 +161,8 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           *buf++ = *str++;
         }
         break;
-      case NUMBER:
+      }
+      case NUMBER:{
         long val_num = info.islong ? va_arg(ap, long) : (long) va_arg(ap, int);
         char numstr[21] = {0};
         char padding = info.zeropad ? '0' : ' ';
@@ -173,6 +175,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           *buf++ = *p++;
         }
         break;
+      }
       default: // INVALID type, should not reach here
         break;
     }
@@ -225,7 +228,7 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
     fmt += decode_fmt(fmt, &info);
     // fill str into out at pos of buf
     switch(info.argtype){
-      case CHAR:
+      case CHAR:{
         char val_char = va_arg(ap, int);
         for (int i=1;i<info.width;i++){
           if(buf < end) {*buf++ = ' ';}
@@ -234,7 +237,8 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
         if(buf < end) {*buf++ = val_char;}
         ret++;
         break;
-      case STR:
+      }
+      case STR:{
         char* str = va_arg(ap, char*);
         for(int i=strlen(str);i<info.width;i++){
           if(buf < end) {*buf++ = ' ';}
@@ -246,7 +250,8 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
           str++;
         }
         break;
-      case NUMBER:
+      }
+      case NUMBER:{
         long val_num = info.islong ? va_arg(ap, long) : (long) va_arg(ap, int);
         char numstr[21] = {0};
         char padding = info.zeropad ? '0' : ' ';
@@ -262,6 +267,7 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
           p++;
         }
         break;
+      }
       default: // INVALID type, should not reach here
         break;
     }

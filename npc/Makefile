@@ -1,3 +1,9 @@
+#for run npc
+
+-include $(NEMU_HOME)/../Makefile
+
+VSRC = $(shell find $(abspath ./vsrc) -name "*.v")
+
 BUILD_DIR = ./build
 
 export PATH := $(PATH):$(abspath ./utils)
