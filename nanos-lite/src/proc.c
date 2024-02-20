@@ -29,7 +29,7 @@ void init_proc() {
   #ifdef TEST_DUMMY
   naive_uload(NULL, NULL);
   #elif defined(TEST_FILE)
-  naive_uload(NULL, "/bin/bmp-test");
+  naive_uload(NULL, "/bin/event-test");
   #endif
 
 }

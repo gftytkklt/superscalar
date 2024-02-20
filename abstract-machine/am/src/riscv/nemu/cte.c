@@ -56,8 +56,17 @@ void yield() {
 }
 
 bool ienabled() {
-  return false;
+  unsigned long mstatus;
+  asm volatile ("csrr %0, mstatus" : "=r" (mstatus));
+  return (mstatus & (1UL << 3)) != 0;
+  // return false;
 }
 
 void iset(bool enable) {
+  if(enable){
+    asm volatile ("csrrs zero, mstatus, %0" :: "rK" (1 << 3));
+  }
+  else{
+    asm volatile ("csrrc zero, mstatus, %0" :: "rK" (1 << 3));
+  }
 }

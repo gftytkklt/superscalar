@@ -28,11 +28,11 @@ static Context* ev_handler(Event e, Context *c) {
   return c;
 }
 
-void wrapper_function(void *arg) {
-  context_args_t *ctx_args = (context_args_t *)arg;
-  ctx_args->tentry(ctx_args->parameter);
-  ctx_args->texit();
-}
+// void wrapper_function(void *arg) {
+//   context_args_t *ctx_args = (context_args_t *)arg;
+//   ctx_args->tentry(ctx_args->parameter);
+//   ctx_args->texit();
+// }
 
 void __am_cte_init() {
   cte_init(ev_handler);
@@ -65,11 +65,14 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
 }
 
 rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {
-  stack_addr = (rt_uint8_t*)((uintptr_t)stack_addr & ~(sizeof(uintptr_t) - 1));
-  context_args_t *ctx_args = (context_args_t*) rt_malloc(sizeof(context_args_t));
-  ctx_args->tentry = tentry;
-  ctx_args->parameter = parameter;
-  ctx_args->texit = texit;
-  Context *cp = kcontext((Area) {stack_addr-0x8000, stack_addr}, wrapper_function, (void*) ctx_args);
+  // stack_addr = (rt_uint8_t*)((uintptr_t)stack_addr & ~(sizeof(uintptr_t) - 1));
+  // context_args_t *ctx_args = (context_args_t*) rt_malloc(sizeof(context_args_t));
+  // ctx_args->tentry = tentry;
+  // ctx_args->parameter = parameter;
+  // ctx_args->texit = texit;
+  rt_uint8_t* stk = stack_addr+sizeof(rt_ubase_t);
+  stk = (rt_uint8_t*)RT_ALIGN_DOWN((rt_ubase_t)stk, sizeof(uintptr_t));
+  Context *cp = kcontext((Area) {stk-0x8000, stk}, tentry, (void*) parameter);
+  cp->gpr[1] = (uintptr_t)texit;
   return (rt_uint8_t *) cp;
 }
