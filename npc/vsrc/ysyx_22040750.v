@@ -1625,6 +1625,7 @@ module ysyx_22040750_dcachectrl #(
     reg [255:0] cacheline_reg;
     reg [63:0] cpu_reg;
     reg [7:0] cpu_mask_reg;
+    reg [7:0] mmio_mask_reg;
     reg [3:0] cen_dcache;
     reg [3:0] wen_dcache;
     wire sram_wflag, sram_rflag;
@@ -1660,6 +1661,7 @@ module ysyx_22040750_dcachectrl #(
     reg mmio_process;
     wire [63:0] mmio_wdata, mmio_rdata;
     wire [31:0] mmio_awaddr;
+    reg [2:0] mmio_axsize;
     // fencei
     wire fencei_process;
     reg [INDEX_LEN:0] fencei_index;// index for cacheline in two groups
@@ -1714,6 +1716,13 @@ module ysyx_22040750_dcachectrl #(
             {cpu_mask_reg, cpu_reg} <= {I_cpu_wmask, I_cpu_data};
         else
             {cpu_mask_reg, cpu_reg} <= {cpu_mask_reg, cpu_reg};
+    always @(posedge I_clk)
+        if(I_rst)
+            mmio_mask_reg <= 0;
+        else if(mmio_flag)
+            mmio_mask_reg <= I_cpu_wmask >> I_cpu_addr[2:0];
+        else
+            mmio_mask_reg <= mmio_mask_reg;
     // cpu interface impl
     assign O_cpu_rvalid = (current_state == RD_HIT) || rd_allocate || ((current_state == MMIO_RD) && I_mem_rvalid);
     always @(posedge I_clk)
@@ -1741,12 +1750,20 @@ module ysyx_22040750_dcachectrl #(
             wdata_cnt <= O_mem_wlast ? 0 : wdata_cnt + 1;
         else
             wdata_cnt <= wdata_cnt;
+    always @(*)
+        case(mmio_mask_reg)
+            8'h01: mmio_axsize = 0;
+            8'h03: mmio_axsize = 1;
+            8'h0f: mmio_axsize = 2;
+            8'hff: mmio_axsize = 3;
+            default: mmio_axsize = 0;
+        endcase
     assign wdata = ((isway0_op & ~fencei_process) | (fencei_process & ~fencei_group)) ? I_way0_rdata : I_way1_rdata;
     assign O_mem_wlast = O_mem_wvalid && (wdata_cnt == O_mem_awlen[1:0]);
     assign O_mem_arvalid = mem_ar_req ? 1 : 0;
     assign O_mem_rready = 1;
     assign O_mem_arlen = mmio_process ? 0 : 3;// 32/8 - 1
-    assign O_mem_arsize = mmio_process ? 3'b010 : 3'b011;// 8B
+    assign O_mem_arsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_arburst = mmio_process ? 2'b00 : 2'b01;
     assign O_mem_araddr = mem_ar_req ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;// 32B alignment
     // cache wb: cacheline tag + index + offt'b0
@@ -1754,14 +1771,14 @@ module ysyx_22040750_dcachectrl #(
     assign mmio_awaddr = mem_addr;
     assign O_mem_awaddr = mem_aw_req ? ((cache_awaddr & {32{~mmio_process}}) | (mmio_awaddr & {32{mmio_process}})) : 0;
     assign O_mem_awlen = mmio_process ? 0 : 3;// 32/8 - 1
-    assign O_mem_awsize = mmio_process ? 3'b010 : 3'b011;// 8B
+    assign O_mem_awsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_awburst = mmio_process ? 2'b00 : 2'b01;
     assign O_mem_awvalid = mem_aw_req ? 1 : 0;
     assign O_mem_wvalid = (wb_state == WB_DATA) ? 1 : 0;
     assign mmio_wdata = cpu_reg;
     assign cache_wdata = wdata[{wdata_cnt,3'b0,3'b0} +: 64];
     assign O_mem_wdata = mmio_process ? mmio_wdata : cache_wdata;
-    assign O_mem_wstrb = mmio_process ? cpu_mask_reg : 8'hff;
+    assign O_mem_wstrb = mmio_process ? mmio_mask_reg : cpu_mask_reg;
     assign O_mem_bready = 1;
     // sram interface impl
     // sram wr_en happen at WR_HIT(cpu partial wr), XX_ALLOCATE(cacheline replacement)

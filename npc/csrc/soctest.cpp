@@ -5,16 +5,26 @@
 #include "VysyxSoCFull.h"
 #include "svdpi.h"
 // #include "VysyxSoCFull__Dpi.h"
+#define CONFIG_WAVEFORM
+
 #define ANSI_FG_RED     "\33[1;31m"
 #define ANSI_FG_GREEN   "\33[1;32m"
 #define ANSI_NONE       "\33[0m"
 #define ANSI_FMT(str, fmt) fmt str ANSI_NONE
-extern "C" void flash_read(uint32_t addr, uint32_t *data) { assert(0); }
-extern "C" void mrom_read(uint32_t addr, uint32_t *data) { *data = 0x00100073; }
+#define MROM_BASE 0x20000000
+#define MROM_SIZE 0x1000
 static TOP_NAME* soc = NULL;
 static uint64_t *cpu_gpr = NULL;
 static uint32_t *wb_pc = NULL;
 static bool finish = false;
+static uint8_t *mrom = NULL;
+static char *img_path = NULL;
+
+extern "C" void flash_read(uint32_t addr, uint32_t *data) { assert(0); }
+extern "C" void mrom_read(uint32_t addr, uint32_t *data) { 
+  *data = *((uint32_t*)&mrom[addr-MROM_BASE]);
+  printf("addr %x, mrom data = 0x%08x\n",addr, *data);
+}
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
   //cpu_context->gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
@@ -36,29 +46,64 @@ extern "C" void sim_end(){
   //Vcpu_top::check();
   finish = true;
 }
+void init_mrom(char *path){
+  mrom = (uint8_t*)malloc(MROM_SIZE);
+  if(path == NULL){
+    printf("no program provided\n");
+    return;
+  }
+  FILE *fp = fopen(path, "rb");
+  if(fp == NULL){
+    printf("cannot open %s\n", path);
+    return;
+  }
+  fseek(fp, 0, SEEK_END);
+  long size = ftell(fp);
+  if(size > MROM_SIZE){
+    printf("program is too large!\n");
+    return;
+  }
+  printf("The image is %s, size = %ld\n", path, size);
+  fseek(fp, 0, SEEK_SET);
+  //int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
+  int ret = fread(mrom, size, 1, fp);
+  assert(ret == 1);
+  fclose(fp);
+}
 int main(int argc, char** argv){
     printf("hello ysyx!\n");
+    if(argc > 1){
+      img_path = argv[1]; // hard encoding
+    }
+    init_mrom(img_path);
     Verilated::commandArgs(argc, argv);
     soc = new TOP_NAME;
     // waveform
+    #ifdef CONFIG_WAVEFORM
     Verilated::traceEverOn(true);
     VerilatedVcdC* tfp = new VerilatedVcdC;
     soc->trace(tfp,99);
     tfp->open("soc.vcd");
+    #endif
 
     uint64_t sim_time = 0;
     soc->reset = 1;
-    while(!finish && (sim_time < 1000)){
+    while(!finish){
         // printf("time: %lu\n", sim_time);
         if(sim_time > 100){soc->reset = 0;}
         if(sim_time & 1){soc->clock = 1;}
         else{soc->clock = 0;}
         soc->eval();
+        #ifdef CONFIG_WAVEFORM
         tfp->dump(sim_time);
+        #endif
         sim_time++;
+        if(sim_time > 10000){break;}
     }
     soc->final();
+    #ifdef CONFIG_WAVEFORM
     tfp->close();
+    #endif
     delete soc;
     printf("bye ysyx!\n");
     return 0;

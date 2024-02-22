@@ -2,7 +2,7 @@
 
 VSRC = $(shell find $(abspath ./vsrc) -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/perip) -type f -name "*.v")
-VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull.v")
+VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull-ChipLink.v")
 
 CSRC = $(shell find $(abspath ./csrc) -name "*.cpp")
 
@@ -41,7 +41,7 @@ $(BIN): $(VSRC) $(CSRC)
 
 
 # RUNARGS := $(BIN) $(IMG).bin $(IMG).elf
-RUNARGS := $(BIN)
+RUNARGS := $(BIN) $(IMG)
 
 #original makefile
 
