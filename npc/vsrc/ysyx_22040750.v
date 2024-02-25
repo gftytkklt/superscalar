@@ -1645,9 +1645,12 @@ module ysyx_22040750_dcachectrl #(
     // cacheline sel signal at comp stage
     wire way1_op;
     reg isway0_op;// high indicate way0 op
-    // wb fsm
+    // w fsm
     localparam WB_IDLE = 4'b0001, WB_HANDSHAKE = 4'b0010, WB_DATA = 4'b0100, WB_BVALID = 4'b1000;
     reg [3:0] wb_state, wb_next_state;
+    // aw fsm
+    localparam AW_IDLE = 3'b001, AW_HANDSHAKE = 3'b010, AW_RESP = 3'b100;
+    reg [2:0] aw_state, aw_next_state;
     // axi interface handshake && wdata cnt
     wire mem_ar_req, mem_aw_req;
     wire aw_handshake, wr_handshake;// awaddr/wdata handshake
@@ -1742,7 +1745,7 @@ module ysyx_22040750_dcachectrl #(
     assign aw_handshake = I_mem_awready && O_mem_awvalid;
     assign wr_handshake = I_mem_wready && O_mem_wvalid;
     assign mem_ar_req = (current_state == RD_MISS) || (current_state == WR_MISS) || (current_state == MMIO_AR);
-    assign mem_aw_req = (wb_state == WB_HANDSHAKE) || (current_state == MMIO_AW);
+    assign mem_aw_req = (aw_state == AW_HANDSHAKE) || (current_state == MMIO_AW);
     always @(posedge I_clk)
         if(I_rst)
             wdata_cnt <= 0;
@@ -1899,6 +1902,21 @@ module ysyx_22040750_dcachectrl #(
         end
     endgenerate
     // FSM impl
+    // aw
+    always @(posedge I_clk)
+        if(I_rst)
+            aw_state <= AW_IDLE;
+        else
+            aw_state <= aw_next_state;
+    always @(*) begin
+        aw_next_state = AW_IDLE;
+        case(aw_state)
+            AW_IDLE: aw_next_state = ((I_mem_rlast && replace_dirty && ~mmio_process) || (mmio_flag && I_cpu_wr_req) || (fencei_process && dirty_table[fencei_index])) ? AW_HANDSHAKE : aw_state;
+            AW_HANDSHAKE: aw_next_state = aw_handshake ? AW_RESP : aw_state;
+            AW_RESP: aw_next_state = I_mem_bvalid ? AW_IDLE : aw_state;
+            default: aw_next_state = aw_state;
+        endcase
+    end
     // wb
     always @(posedge I_clk)
         if(I_rst)
@@ -1910,8 +1928,8 @@ module ysyx_22040750_dcachectrl #(
         case(wb_state)
             // cache wb and mmio wr, cache wb case must consider ~mmio_process
             // three case cause wb: replace dirty, mmio wr, fence.i
-            WB_IDLE: wb_next_state = ((I_mem_rlast && replace_dirty && ~mmio_process) || (mmio_flag && I_cpu_wr_req) || (fencei_process && dirty_table[fencei_index])) ? WB_HANDSHAKE : wb_state;
-            WB_HANDSHAKE: wb_next_state = aw_handshake ? WB_DATA : wb_state;
+            WB_IDLE: wb_next_state = ((I_mem_rlast && replace_dirty && ~mmio_process) || (mmio_flag && I_cpu_wr_req) || (fencei_process && dirty_table[fencei_index])) ? WB_DATA : wb_state;
+            // WB_HANDSHAKE: wb_next_state = aw_handshake ? WB_DATA : wb_state;
             WB_DATA: wb_next_state = (wr_handshake && O_mem_wlast) ? (I_mem_bvalid ? WB_IDLE : WB_BVALID) : wb_state;
             WB_BVALID: wb_next_state = I_mem_bvalid ? WB_IDLE : wb_state;
             default: wb_next_state = wb_state;
@@ -3894,11 +3912,12 @@ module ysyx_22040750_slave_crossbar(
     output O_clint_bready
 );
     parameter CLINT_START  = 'h02000000;
-    parameter CLINT_END = 'h0200C000;
+    parameter CLINT_END = 'h02010000;
     wire clint_ar_flag, clint_aw_flag, bus_ar_flag, bus_aw_flag;
     wire clint_ar_handshake, clint_aw_handshake, bus_ar_handshake, bus_aw_handshake;
     // indicate last rd data handshake from bus
     // clint only return single data beats
+    // modify responding mode
     wire bus_rlasthandshake, clint_rlasthandshake;
     reg clint_rd_process, bus_rd_process;
     reg clint_wr_process, bus_wr_process;
@@ -3915,7 +3934,8 @@ module ysyx_22040750_slave_crossbar(
     always @(posedge I_clk)
         if(I_rst)
             clint_rd_process <= 0;
-        else if(clint_ar_handshake)
+        // else if(clint_ar_handshake)
+        else if(clint_ar_flag & I_cache_arvalid)
             clint_rd_process <= 1;
         else if(clint_rlasthandshake)// bready is always 1
             clint_rd_process <= 0;
@@ -3924,7 +3944,8 @@ module ysyx_22040750_slave_crossbar(
     always @(posedge I_clk)
         if(I_rst)
             bus_rd_process <= 0;
-        else if(bus_ar_handshake)
+        // else if(bus_ar_handshake)
+        else if(bus_ar_flag & I_cache_arvalid)
             bus_rd_process <= 1;
         else if(bus_rlasthandshake)// bready is always 1
             bus_rd_process <= 0;
@@ -3933,7 +3954,8 @@ module ysyx_22040750_slave_crossbar(
     always @(posedge I_clk)
         if(I_rst)
             clint_wr_process <= 0;
-        else if(clint_aw_handshake)
+        // else if(clint_aw_handshake)
+        else if(clint_aw_flag & I_cache_awvalid)
             clint_wr_process <= 1;
         else if(I_clint_bvalid)// bready is always 1
             clint_wr_process <= 0;
@@ -3942,7 +3964,8 @@ module ysyx_22040750_slave_crossbar(
     always @(posedge I_clk)
         if(I_rst)
             bus_wr_process <= 0;
-        else if(bus_aw_handshake)
+        // else if(bus_aw_handshake)
+        else if(bus_aw_flag & I_cache_awvalid)
             bus_wr_process <= 1;
         else if(I_bus_bvalid)// bready is always 1
             bus_wr_process <= 0;
