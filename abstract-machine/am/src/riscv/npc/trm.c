@@ -15,6 +15,7 @@ Area heap = RANGE(&_heap_start, PMEM_END);
 static const char mainargs[] = MAINARGS;
 
 void putch(char ch) {
+  *(volatile char *)(0x10000000L) = ch;
 }
 
 void halt(int code) {

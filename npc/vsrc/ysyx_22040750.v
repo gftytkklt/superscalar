@@ -317,6 +317,7 @@ module ysyx_22040750_cache(
     // cpu addr & w/r req
     input [31:0] I_cpu_addr,
     input [7:0] I_cpu_wmask,
+    input [7:0] I_cpu_rmask,
     input I_cpu_rd_req,
     input I_cpu_wr_req,
     input [63:0] I_cpu_wdata,
@@ -528,6 +529,7 @@ module ysyx_22040750_cache(
         .I_cpu_addr(I_cpu_addr),
         .I_cpu_data(I_cpu_wdata),
         .I_cpu_wmask(I_cpu_wmask),
+        .I_cpu_rmask(I_cpu_rmask),
         .I_cpu_rd_req(I_cpu_rd_req),
         .I_cpu_wr_req(I_cpu_wr_req),
         .I_cpu_fencei(I_mem_fencei),
@@ -682,6 +684,7 @@ module ysyx_22040750_cpu_core(
 	input I_mem_wr_data_valid,
     output [63:0] O_mem_wr_data,
     output [7:0] O_mem_wr_strb,
+    output [7:0] O_mem_rd_strb,
 	output O_inst_fencei,// icache fence.i
 	output O_mem_fencei
     //output O_sim_end
@@ -849,6 +852,7 @@ module ysyx_22040750_cpu_core(
     assign O_mem_rd_en = EX_MEM_mem_rd_en;// single cycle rd_en generate internally
     assign EX_MEM_shamt = EX_MEM_mem_addr[2:0];
     assign O_mem_wr_strb = EX_MEM_wstrb << EX_MEM_shamt;
+    assign O_mem_rd_strb = EX_MEM_rstrb[7:0];
     //assign mem_rmask = mem_rstrb[7:0] << mem_addr[2:0];
     assign mem_out = EX_MEM_rs2;
 	// fencei
@@ -1553,6 +1557,7 @@ module ysyx_22040750_dcachectrl #(
     input [31:0] I_cpu_addr,
     input [63:0] I_cpu_data,
     input [7:0] I_cpu_wmask,
+    input [7:0] I_cpu_rmask,
     input I_cpu_rd_req,
     input I_cpu_wr_req,
     output O_cpu_mem_ready,
@@ -1722,8 +1727,10 @@ module ysyx_22040750_dcachectrl #(
     always @(posedge I_clk)
         if(I_rst)
             mmio_mask_reg <= 0;
-        else if(mmio_flag)
+        else if(mmio_flag & I_cpu_wr_req)
             mmio_mask_reg <= I_cpu_wmask >> I_cpu_addr[2:0];
+        else if(mmio_flag & I_cpu_rd_req)
+            mmio_mask_reg <= I_cpu_rmask;
         else
             mmio_mask_reg <= mmio_mask_reg;
     // cpu interface impl
@@ -4302,7 +4309,7 @@ module ysyx_22040750(
     wire cpu_rreq, cpu_wreq;
     wire [63:0] mem_rdata, mem_wdata;
     wire mem_rvalid, mem_bvalid, cpu_mem_ready;
-    wire [7:0] cpu_wmask;
+    wire [7:0] cpu_wmask, cpu_rmask;
     // cache interface
     wire [63:0] cache_rdata;
     wire cache_rvalid;
@@ -4388,6 +4395,7 @@ module ysyx_22040750(
         .I_mem_wr_data_valid(mem_bvalid),
         .O_mem_wr_data(mem_wdata),
         .O_mem_wr_strb(cpu_wmask),
+        .O_mem_rd_strb(cpu_rmask),
         .O_inst_fencei(inst_fencei),
         .O_mem_fencei(mem_fencei)
     );
@@ -4407,6 +4415,7 @@ module ysyx_22040750(
         // cpu addr & w/r req
         .I_cpu_addr(mem_addr),
         .I_cpu_wmask(cpu_wmask),
+        .I_cpu_rmask(cpu_rmask),
         .I_cpu_rd_req(cpu_rreq),
         .I_cpu_wr_req(cpu_wreq),
         .I_cpu_wdata(mem_wdata),

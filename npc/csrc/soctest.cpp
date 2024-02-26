@@ -23,7 +23,7 @@ static char *img_path = NULL;
 extern "C" void flash_read(uint32_t addr, uint32_t *data) { assert(0); }
 extern "C" void mrom_read(uint32_t addr, uint32_t *data) { 
   *data = *((uint32_t*)&mrom[addr-MROM_BASE]);
-  // printf("addr %x, mrom data = 0x%08x\n",addr, *data);
+  printf("addr %x, mrom data = 0x%08x\n",addr, *data);
 }
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
@@ -98,7 +98,7 @@ int main(int argc, char** argv){
         tfp->dump(sim_time);
         #endif
         sim_time++;
-        if(sim_time > 1000){break;}
+        // if(sim_time > 1000){break;}
     }
     soc->final();
     #ifdef CONFIG_WAVEFORM

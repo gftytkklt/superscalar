@@ -18,7 +18,7 @@ VERILATOR_INCFLAGS := $(addprefix -I,$(VERILATOR_INCPATH))
 VERILATOR_CFLAGS += -MMD --build -cc \
 		    -O3 --x-assign fast --x-initial fast \
 		    --noassert --trace \
-			--auto-flush \
+			-autoflush \
 			$(VERILATOR_INCFLAGS)
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
