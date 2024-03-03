@@ -1728,7 +1728,8 @@ module ysyx_22040750_dcachectrl #(
         if(I_rst)
             mmio_mask_reg <= 0;
         else if(mmio_flag & I_cpu_wr_req)
-            mmio_mask_reg <= I_cpu_wmask >> I_cpu_addr[2:0];
+            // mmio_mask_reg <= I_cpu_wmask >> I_cpu_addr[2:0];
+            mmio_mask_reg <= I_cpu_wmask;
         else if(mmio_flag & I_cpu_rd_req)
             mmio_mask_reg <= I_cpu_rmask;
         else

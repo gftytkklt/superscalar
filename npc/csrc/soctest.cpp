@@ -5,7 +5,7 @@
 #include "VysyxSoCFull.h"
 #include "svdpi.h"
 // #include "VysyxSoCFull__Dpi.h"
-#define CONFIG_WAVEFORM
+// #define CONFIG_WAVEFORM
 
 #define ANSI_FG_RED     "\33[1;31m"
 #define ANSI_FG_GREEN   "\33[1;32m"
@@ -23,7 +23,7 @@ static char *img_path = NULL;
 extern "C" void flash_read(uint32_t addr, uint32_t *data) { assert(0); }
 extern "C" void mrom_read(uint32_t addr, uint32_t *data) { 
   *data = *((uint32_t*)&mrom[addr-MROM_BASE]);
-  printf("addr %x, mrom data = 0x%08x\n",addr, *data);
+  // printf("addr %x, mrom data = 0x%08x\n",addr, *data);
 }
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
@@ -60,7 +60,7 @@ void init_mrom(char *path){
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
   if(size > MROM_SIZE){
-    printf("program is too large!\n");
+    printf("size %ld of program is too large!\n", size);
     return;
   }
   printf("The image is %s, size = %ld\n", path, size);
