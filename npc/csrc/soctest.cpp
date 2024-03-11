@@ -19,10 +19,13 @@ static uint32_t *wb_pc = NULL;
 static bool finish = false;
 static uint8_t *mrom = NULL;
 static char *img_path = NULL;
+static uint64_t sim_time = 0;
 
 extern "C" void flash_read(uint32_t addr, uint32_t *data) { assert(0); }
 extern "C" void mrom_read(uint32_t addr, uint32_t *data) { 
-  *data = *((uint32_t*)&mrom[addr-MROM_BASE]);
+  uint32_t index = (addr-MROM_BASE)&0xfffffffc;
+  *data = *((uint32_t*)&mrom[index]);
+  // *data = *((uint32_t*)&mrom[addr-MROM_BASE]);
   // printf("addr %x, mrom data = 0x%08x\n",addr, *data);
 }
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
@@ -37,10 +40,10 @@ extern "C" void sim_end(){
   //set_gpr_ptr(10);
   //printf("%ld\n", cpu_gpr[10]);
   if(cpu_gpr[10]){
-    printf("%s at pc = 0x%08x, ret code=0x%lxh\n", ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED), *wb_pc, cpu_gpr[10]);
+    printf("%lu: %s at pc = 0x%08x, ret code=0x%lxh\n", sim_time, ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED), *wb_pc, cpu_gpr[10]);
   }
   else{
-    printf("%s at pc = 0x%08x\n", ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN), *wb_pc);
+    printf("%lu: %s at pc = 0x%08x\n", sim_time, ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN), *wb_pc);
   }
   //printf(" C: Im called fronm Scope :: %s \n\n ",svGetNameFromScope(svGetScope() ));
   //Vcpu_top::check();
@@ -76,6 +79,16 @@ int main(int argc, char** argv){
       img_path = argv[1]; // hard encoding
     }
     init_mrom(img_path);
+    // test data
+    // uint32_t start = 0x200000f9;
+    // uint32_t end = 0x20000219;
+    // uint32_t data;
+    // for(uint32_t i = start; i<end; i = i+4){
+    //   mrom_read(i, &data);
+    //   printf("addr %x, data %x\n", i, data);
+    // }
+    // return 0;
+    // test end
     Verilated::commandArgs(argc, argv);
     soc = new TOP_NAME;
     // waveform
@@ -86,7 +99,7 @@ int main(int argc, char** argv){
     tfp->open("soc.vcd");
     #endif
 
-    uint64_t sim_time = 0;
+    
     soc->reset = 1;
     while(!finish){
         // printf("time: %lu\n", sim_time);

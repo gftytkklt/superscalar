@@ -1,7 +1,7 @@
 #include <am.h>
 #include <klib-macros.h>
 
-extern char _heap_start;
+extern char _heap_start, _bss_start, _sidata, _sdata, _edata;
 int main(const char *args);
 
 extern char _pmem_start;
@@ -23,7 +23,21 @@ void halt(int code) {
   while (1);
 }
 
+void loader() {
+  char *src = &_sidata;
+  char *dst = &_sdata;
+  while (dst < &_edata) {
+        *dst++ = *src++;
+  }
+  char *bss_start = &_bss_start;
+  char *bss_end = &_heap_start;
+  while (bss_start < bss_end){
+    *bss_start++ = (char)0;
+  }
+}
+
 void _trm_init() {
+  loader();
   int ret = main(mainargs);
   halt(ret);
 }
