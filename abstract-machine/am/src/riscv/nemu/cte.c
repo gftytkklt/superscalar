@@ -41,7 +41,7 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   //printf("kernel entry: %lx\n",cp->mepc);
   cp->gpr[10] = (uintptr_t)arg;
   //cp->gpr[2] = (uintptr_t)cp;
-  cp->gpr[2] = (uintptr_t)kstack.end;// sp should be end or end - CONTEXT_SIZE?
+  // cp->gpr[2] = (uintptr_t)kstack.end;// sp should be end or end - CONTEXT_SIZE?
   cp->np = 0;
   cp->pdir = NULL;
   return cp;
@@ -64,9 +64,11 @@ bool ienabled() {
 
 void iset(bool enable) {
   if(enable){
+    // printf("enable intr\n");
     asm volatile ("csrrs zero, mstatus, %0" :: "rK" (1 << 3));
   }
   else{
+    // printf("disable intr\n");
     asm volatile ("csrrc zero, mstatus, %0" :: "rK" (1 << 3));
   }
 }

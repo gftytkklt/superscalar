@@ -37,13 +37,14 @@ void *malloc(size_t size) {
   // panic("Not implemented");
   // if(size == 0){return NULL;}
   
-  size_t remainder = size % 8;
-  size_t incr = (remainder == 0) ? size : (size + 8 - remainder);
+  // size_t remainder = size % 8;
+  // size_t incr = (remainder == 0) ? size : (size + 8 - remainder);
+  // void *addr = heap.start;
+  // if (addr + incr >= heap.end){addr = NULL;}
+  // heap.start += incr;
   void *addr = heap.start;
-  if (addr + incr >= heap.end){addr = NULL;}
-  heap.start += incr;
+  heap.start += size;
   return addr;
-  // return addr;
   
 #endif
   return NULL;

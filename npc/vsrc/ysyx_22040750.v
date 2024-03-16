@@ -1763,9 +1763,9 @@ module ysyx_22040750_dcachectrl #(
             wdata_cnt <= wdata_cnt;
     always @(*)
         case(mmio_mask_reg)
-            8'h01: mmio_axsize = 0;
-            8'h03: mmio_axsize = 1;
-            8'h0f: mmio_axsize = 2;
+            8'h01, 8'h02, 8'h04, 0'h08, 8'h10, 8'h20, 8'h40, 8'h80: mmio_axsize = 0;
+            8'h03, 8'h0c, 8'h30, 8'hc0: mmio_axsize = 1;
+            8'h0f, 8'hf0: mmio_axsize = 2;
             8'hff: mmio_axsize = 3;
             default: mmio_axsize = 0;
         endcase
@@ -3124,7 +3124,7 @@ module ysyx_22040750_icachectrl #(
     assign hit_rdata = (I_way0_rdata & {256{hit_flag[0]}}) | (I_way1_rdata & {256{hit_flag[1]}});
     assign mem_rdata = (current_state == RD_HIT) ? hit_rdata : cacheline_reg;
     assign cache_inst = mem_rdata[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
-    assign mmio_inst = I_mem_rdata[31:0];
+    assign mmio_inst = mem_addr[2] ? I_mem_rdata[63:32] : I_mem_rdata[31:0];
     assign O_cpu_inst = mmio_process ? mmio_inst : cache_inst;
     // assign O_cpu_inst = mem_rdata[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     //assign O_cpu_inst = cacheline_reg[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];

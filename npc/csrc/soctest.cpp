@@ -25,9 +25,17 @@ static uint8_t *flash = NULL;
 static char *img_path = NULL;
 static uint64_t sim_time = 0;
 
+// addr begin from 0
 extern "C" void flash_read(uint32_t addr, uint32_t *data) { 
-  uint32_t index = (addr-FLASH_BASE)&0xfffffffc;
-  *data = *((uint32_t*)&flash[index]); 
+  // printf("flash addr: %x\n", addr);
+  // uint32_t index = (addr-FLASH_BASE)&0xfffffffc;
+  uint32_t index = addr;
+  // printf("addr = %x, index = %x\n", addr, index);
+  // *data = *((uint32_t*)&flash[index]); 
+  *data = ((uint32_t)flash[index]) |
+          ((uint32_t)flash[index + 1] << 8) |
+          ((uint32_t)flash[index + 2] << 16) |
+          ((uint32_t)flash[index + 3] << 24);
 }
 extern "C" void mrom_read(uint32_t addr, uint32_t *data) { 
   uint32_t index = (addr-MROM_BASE)&0xfffffffc;
@@ -111,14 +119,16 @@ int main(int argc, char** argv){
     if(argc > 1){
       img_path = argv[1]; // hard encoding
     }
-    init_flash(img_path);
-    uint32_t data = 0;
-    for(uint32_t addr = FLASH_BASE; addr < FLASH_BASE + 0x100; addr += 4){
-      flash_read(addr, &data);
-      printf("addr: %x, data: 0x%08x\n", addr, data);
-    }
-    return 0;
-    // init_mrom(img_path);
+    init_flash("/home/gftyt/ysyx-workbench/npc/test_prog/build/char-test.bin");
+    // uint32_t data = 0;
+    // printf("flash ref data: \n");
+    // for(uint32_t addr = 0; addr < 0 + 0x100; addr += 4){
+    //   flash_read(addr, &data);
+    //   printf("addr: %x, data: 0x%08x\n", addr, data);
+    // }
+    // printf("flash ref data end\n");
+    // return 0;
+    init_mrom(img_path);
     // test data
     // uint32_t start = 0x200000f9;
     // uint32_t end = 0x20000219;
@@ -151,7 +161,7 @@ int main(int argc, char** argv){
         tfp->dump(sim_time);
         #endif
         sim_time++;
-        // if(sim_time > 1000){break;}
+        // if(sim_time > 10000){break;}
     }
     soc->final();
     #ifdef CONFIG_WAVEFORM
