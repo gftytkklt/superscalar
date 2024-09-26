@@ -37,7 +37,8 @@ extern "C" void flash_read(uint32_t addr, uint32_t *data) {
           ((uint32_t)flash[index + 2] << 16) |
           ((uint32_t)flash[index + 3] << 24);
 }
-extern "C" void mrom_read(uint32_t addr, uint32_t *data) { 
+extern "C" void mrom_read(uint32_t addr, uint32_t *data) {
+  // printf("mrom addr: %x\n", addr);
   uint32_t index = (addr-MROM_BASE)&0xfffffffc;
   *data = *((uint32_t*)&mrom[index]);
 }
@@ -120,6 +121,7 @@ int main(int argc, char** argv){
       img_path = argv[1]; // hard encoding
     }
     init_flash(img_path);
+    // init_mrom(img_path);
     // uint32_t data = 0;
     // printf("flash ref data: \n");
     // for(uint32_t addr = 0; addr < 0 + 0x100; addr += 4){
@@ -128,7 +130,6 @@ int main(int argc, char** argv){
     // }
     // printf("flash ref data end\n");
     // return 0;
-    // init_mrom(img_path);
     // test data
     // uint32_t start = 0x200000f9;
     // uint32_t end = 0x20000219;
