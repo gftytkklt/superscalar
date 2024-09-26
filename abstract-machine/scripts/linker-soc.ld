@@ -9,22 +9,22 @@ MEMORY {
 
 SECTIONS {
   /* _pmem_start and _entry_offset are defined in LDFLAGS */
-  . = ORIGIN(mrom);
+  . = ORIGIN(flash);
   .text : {
     *(entry)
     *(.text*)
-  } > mrom AT> mrom
+  } > flash AT> flash
   etext = .;
   _etext = .;
   .rodata : {
     *(.rodata*)
-  } > mrom
+  } > flash
   .data : {
     _sdata = .;
     *(.data*)
     *(.sdata*)
     _edata = .;
-  } > sram AT> mrom
+  } > sram AT> flash
   /* .data : AT(ADDR(.rodata) + SIZEOF(.rodata)){
     *(.data)
   } > sram */

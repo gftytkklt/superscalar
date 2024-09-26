@@ -16,14 +16,20 @@
 #include <isa.h>
 #include <memory/paddr.h>
 
+// FILE* itrace;
+// FILE* dtrace;
+
 word_t vaddr_ifetch(vaddr_t addr, int len) {
+  // fprintf(itrace, "r %08lx\n", addr);
   return paddr_read(addr, len);
 }
 
 word_t vaddr_read(vaddr_t addr, int len) {
+  // fprintf(dtrace, "r %08lx\n", addr);
   return paddr_read(addr, len);
 }
 
 void vaddr_write(vaddr_t addr, int len, word_t data) {
+  // fprintf(dtrace, "w %08lx\n", addr);
   paddr_write(addr, len, data);
 }

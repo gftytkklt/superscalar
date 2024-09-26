@@ -5,7 +5,7 @@
 #include "VysyxSoCFull.h"
 #include "svdpi.h"
 // #include "VysyxSoCFull__Dpi.h"
-// #define CONFIG_WAVEFORM
+#define CONFIG_WAVEFORM
 
 #define ANSI_FG_RED     "\33[1;31m"
 #define ANSI_FG_GREEN   "\33[1;32m"
@@ -119,7 +119,7 @@ int main(int argc, char** argv){
     if(argc > 1){
       img_path = argv[1]; // hard encoding
     }
-    init_flash("/home/gftyt/ysyx-workbench/npc/test_prog/build/char-test.bin");
+    init_flash(img_path);
     // uint32_t data = 0;
     // printf("flash ref data: \n");
     // for(uint32_t addr = 0; addr < 0 + 0x100; addr += 4){
@@ -128,7 +128,7 @@ int main(int argc, char** argv){
     // }
     // printf("flash ref data end\n");
     // return 0;
-    init_mrom(img_path);
+    // init_mrom(img_path);
     // test data
     // uint32_t start = 0x200000f9;
     // uint32_t end = 0x20000219;
