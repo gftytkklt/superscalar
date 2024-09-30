@@ -5,7 +5,7 @@
 #include "VysyxSoCFull.h"
 #include "svdpi.h"
 // #include "VysyxSoCFull__Dpi.h"
-#define CONFIG_WAVEFORM
+// #define CONFIG_WAVEFORM
 
 #define ANSI_FG_RED     "\33[1;31m"
 #define ANSI_FG_GREEN   "\33[1;32m"

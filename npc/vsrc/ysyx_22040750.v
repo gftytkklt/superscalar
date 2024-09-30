@@ -1668,6 +1668,8 @@ module ysyx_22040750_dcachectrl #(
     wire mmio_flag;
     reg mmio_process;
     wire [63:0] mmio_wdata, mmio_rdata;
+    // wire [63:0] mmio_wdata;
+    // reg [63:0] mmio_rdata;
     wire [31:0] mmio_awaddr;
     reg [2:0] mmio_axsize;
     // fencei
@@ -1746,6 +1748,15 @@ module ysyx_22040750_dcachectrl #(
     assign hit_rdata = (I_way0_rdata & {256{hit_flag[0]}}) | (I_way1_rdata & {256{hit_flag[1]}});
     assign mem_rdata = (current_state == RD_HIT) ? hit_rdata : cacheline_reg;
     assign cache_rdata = mem_rdata[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64];
+    // always @(*) begin // select useful data in raw I_mem_rdata
+    //     case(mmio_mask_reg)
+    //         8'h01: mmio_rdata = {8{I_mem_rdata[7:0]}};
+    //         8'h03: mmio_rdata = {4{I_mem_rdata[15:0]}};
+    //         8'h0f: mmio_rdata = {2{I_mem_rdata[31:0]}};
+    //         8'hff: mmio_rdata = I_mem_rdata;
+    //         default: mmio_rdata = 0;
+    //     endcase
+    // end
     assign mmio_rdata = I_mem_rdata;
     assign O_cpu_data = mmio_process ? mmio_rdata : cache_rdata;
     assign O_cpu_bvalid = (current_state == WR_HIT) || ((current_state == MMIO_WR) && I_mem_bvalid);

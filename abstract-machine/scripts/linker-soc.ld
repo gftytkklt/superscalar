@@ -13,7 +13,7 @@ SECTIONS {
   .text : {
     *(entry)
     *(.text*)
-  } > flash AT> flash
+  } > flash
   etext = .;
   _etext = .;
   .rodata : {
