@@ -9,6 +9,30 @@ config MSIZE
   hex "Memory size"
   default 0x8000000
 
+config FLASHBASE
+  hex "Flash base address"
+  default 0x30000000
+
+config FLASHSIZE
+  hex "Flash size"
+  default 0x1000000
+
+config SRAMBASE
+  hex "SRAM base address"
+  default 0x0f000000
+
+config SRAMSIZE
+  hex "SRAM size"
+  default 0x2000
+
+config MROMBASE
+  hex "MROM base address"
+  default 0x20000000
+
+config MROMSIZE
+  hex "MROM size"
+  default 0x1000
+
 config PC_RESET_OFFSET
   hex "Offset of reset vector from the base of memory"
   default 0x100000 if ISA_x86

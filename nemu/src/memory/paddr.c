@@ -22,6 +22,9 @@
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
+static uint8_t flash[CONFIG_FLASHSIZE] PG_ALIGN = {};
+static uint8_t sram[CONFIG_SRAMSIZE] PG_ALIGN = {};
+static uint8_t mrom[CONFIG_MROMSIZE] PG_ALIGN = {};
 #endif
 
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
@@ -56,6 +59,9 @@ void init_mem() {
   }
 #endif
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
+  Log("flash memory area [" FMT_PADDR ", " FMT_PADDR "]", CONFIG_FLASHBASE, CONFIG_FLASHBASE + CONFIG_FLASHSIZE - 1);
+  Log("sram memory area [" FMT_PADDR ", " FMT_PADDR "]", CONFIG_SRAMBASE, CONFIG_SRAMBASE + CONFIG_SRAMSIZE - 1);
+  Log("mrom memory area [" FMT_PADDR ", " FMT_PADDR "]", CONFIG_MROMBASE, CONFIG_MROMBASE + CONFIG_MROMSIZE - 1);
 }
 
 word_t paddr_read(paddr_t addr, int len) {
@@ -69,6 +75,15 @@ word_t paddr_read(paddr_t addr, int len) {
     IFDEF(CONFIG_MTRACE, Log("Get data 0x%lx from addr "FMT_PADDR"", result, addr));
     return result;
   }
+  else if(likely(in_flash(addr))) {
+    panic("Flash memory read is not implemented");
+  }
+  else if(likely(in_sram(addr))) {
+    panic("SRAM memory read is not implemented");
+  }
+  else if(likely(in_mrom(addr))) {
+    panic("MROM memory read is not implemented");
+  }
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   
@@ -80,6 +95,15 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   // if ((addr >= (unsigned long)0x80006400) && (addr < (unsigned long)0x80006500))
   IFDEF(CONFIG_MTRACE, Log("Write data 0x%lx to addr "FMT_PADDR"", data, addr));
   if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  else if(likely(in_flash(addr))) {
+    panic("Flash memory write is not implemented");
+  }
+  else if(likely(in_sram(addr))) {
+    panic("SRAM memory write is not implemented");
+  }
+  else if(likely(in_mrom(addr))) {
+    panic("MROM memory write is not implemented");
+  }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }

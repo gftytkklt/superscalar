@@ -16,10 +16,11 @@ SECTIONS {
   } > flash
   etext = .;
   _etext = .;
-  .rodata : {
+  .rodata : ALIGN(0x8) {
     *(.rodata*)
+    *(.srodata*)
   } > flash
-  .data : {
+  .data : ALIGN(0x8) {
     _sdata = .;
     *(.data*)
     *(.sdata*)
@@ -29,9 +30,9 @@ SECTIONS {
     *(.data)
   } > sram */
   /* _edata = .; */
-  _data = .;
+  /* _data = .; */
   .bss : {
-	_bss_start = .;
+	_bss_start = ALIGN(0x0008);
     *(.bss*)
     *(.sbss*)
     *(.scommon)
