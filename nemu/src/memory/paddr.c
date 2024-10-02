@@ -29,15 +29,22 @@ static uint8_t mrom[CONFIG_MROMSIZE] PG_ALIGN = {};
 
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
-
-static word_t pmem_read(paddr_t addr, int len) {
-  word_t ret = host_read(guest_to_host(addr), len);
-  return ret;
+uint8_t* addr_to_soc(paddr_t addr) {
+  if(in_pmem(addr)) return pmem + addr - CONFIG_MBASE;
+  if(in_flash(addr)) return flash + addr - CONFIG_FLASHBASE;
+  if(in_sram(addr)) return sram + addr - CONFIG_SRAMBASE;
+  if(in_mrom(addr)) return mrom + addr - CONFIG_MROMBASE;
+  return NULL;
 }
 
-static void pmem_write(paddr_t addr, int len, word_t data) {
-  host_write(guest_to_host(addr), len, data);
-}
+// static word_t pmem_read(paddr_t addr, int len) {
+//   word_t ret = host_read(guest_to_host(addr), len);
+//   return ret;
+// }
+
+// static void pmem_write(paddr_t addr, int len, word_t data) {
+//   host_write(guest_to_host(addr), len, data);
+// }
 
 static void out_of_bound(paddr_t addr) {
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
@@ -69,20 +76,35 @@ word_t paddr_read(paddr_t addr, int len) {
   //if (likely(in_pmem(addr))) return pmem_read(addr, len);
   //IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   // bool invaddr = true;
+  paddr_t base = 0;
+  uint8_t *mem = NULL;
   if (likely(in_pmem(addr))) {
-    word_t result = pmem_read(addr, len);
+    // word_t result = pmem_read(addr, len);
     // if ((addr >= (unsigned long)0x80006400) && (addr < (unsigned long)0x80006500))
-    IFDEF(CONFIG_MTRACE, Log("Get data 0x%lx from addr "FMT_PADDR"", result, addr));
-    return result;
+    // IFDEF(CONFIG_MTRACE, Log("Get data 0x%lx from addr "FMT_PADDR"", result, addr));
+    // return result;
+    base = CONFIG_MBASE;
+    mem = pmem;
   }
   else if(likely(in_flash(addr))) {
-    panic("Flash memory read is not implemented");
+    // panic("Flash memory read is not implemented");
+    base = CONFIG_FLASHBASE;
+    mem = flash;
   }
   else if(likely(in_sram(addr))) {
-    panic("SRAM memory read is not implemented");
+    // panic("SRAM memory read is not implemented");
+    base = CONFIG_SRAMBASE;
+    mem = sram;
   }
   else if(likely(in_mrom(addr))) {
-    panic("MROM memory read is not implemented");
+    // panic("MROM memory read is not implemented");
+    base = CONFIG_MROMBASE;
+    mem = mrom;
+  }
+  if(mem != NULL) {
+    word_t result = host_read(mem + addr - base, len);
+    IFDEF(CONFIG_MTRACE, Log("Get data 0x%lx from addr "FMT_PADDR"", result, addr));
+    return result;
   }
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
@@ -93,17 +115,38 @@ word_t paddr_read(paddr_t addr, int len) {
 
 void paddr_write(paddr_t addr, int len, word_t data) {
   // if ((addr >= (unsigned long)0x80006400) && (addr < (unsigned long)0x80006500))
-  IFDEF(CONFIG_MTRACE, Log("Write data 0x%lx to addr "FMT_PADDR"", data, addr));
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  // IFDEF(CONFIG_MTRACE, Log("Write data 0x%lx to addr "FMT_PADDR"", data, addr));
+  // if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+
+  paddr_t base = 0;
+  uint8_t *mem = NULL;
+  if (likely(in_pmem(addr))) {
+    // pmem_write(addr, len, data);
+    // IFDEF(CONFIG_MTRACE, Log("Write data 0x%lx to addr "FMT_PADDR"", data, addr));
+    base = CONFIG_MBASE;
+    mem = pmem;
+  }
   else if(likely(in_flash(addr))) {
-    panic("Flash memory write is not implemented");
+    // panic("Flash memory write is not implemented");
+    base = CONFIG_FLASHBASE;
+    mem = flash;
   }
   else if(likely(in_sram(addr))) {
-    panic("SRAM memory write is not implemented");
+    // panic("SRAM memory write is not implemented");
+    base = CONFIG_SRAMBASE;
+    mem = sram;
   }
   else if(likely(in_mrom(addr))) {
-    panic("MROM memory write is not implemented");
+    // panic("MROM memory write is not implemented");
+    base = CONFIG_MROMBASE;
+    mem = mrom;
   }
+  if(mem != NULL) {
+    host_write(mem + addr - base, len, data);
+    IFDEF(CONFIG_MTRACE, Log("Write data 0x%lx to addr "FMT_PADDR"", data, addr));
+    return;
+  }
+
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }
