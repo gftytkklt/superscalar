@@ -100,10 +100,11 @@ __EXPORT void difftest_raise_intr(word_t NO) {
 __EXPORT void difftest_ref_display() {
   isa_reg_display();
 }
-
+// I think this init function is not necessary?
 __EXPORT void difftest_init(int port) {
-  void init_mem();
-  init_mem();
-  /* Perform ISA dependent initialization. */
-  init_isa();
+  printf("init difftest at port %d\n", port);
+  // void init_mem();
+  // init_mem();
+  // /* Perform ISA dependent initialization. */
+  // init_isa();
 }

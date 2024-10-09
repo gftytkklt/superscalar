@@ -6,9 +6,22 @@ VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull.v")
 
 CSRC = $(shell find $(abspath ./csrc) -name "*.cpp")
 
+INC_PATH ?= $(NPC_HOME)/csrc/include
+INCLUDES = $(addprefix -I, $(INC_PATH))
 CFLAGS += -MMD -O3 $(INCLUDES) -I/usr/lib/llvm-12/include -std=c++14   -fno-exceptions -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -fPIE
-
+ifeq ($(DIFF), 1)
+	CFLAGS += -DCONFIG_DIFFTEST
+endif
+ifeq ($(WAVE), 1)
+	CFLAGS += -DCONFIG_WAVEFORM
+endif
 LDFLAGS += $(shell llvm-config --libs) -ldl
+BUILD_DIR = ./build
+OBJ_DIR = $(BUILD_DIR)/obj_dir
+BIN = $(BUILD_DIR)/$(TOPNAME)
+
+OBJS = $(CSRC:%.cpp=$(OBJ_DIR)/%.o)
+-include $(OBJS:.o=.d)
 
 # verilator flag
 TOPNAME = ysyxSoCFull
@@ -20,9 +33,7 @@ VERILATOR_CFLAGS += -MMD --build -cc \
 		    --noassert --trace \
 			-autoflush \
 			$(VERILATOR_INCFLAGS)
-BUILD_DIR = ./build
-OBJ_DIR = $(BUILD_DIR)/obj_dir
-BIN = $(BUILD_DIR)/$(TOPNAME)
+
 
 default: $(BIN)
 
@@ -43,6 +54,9 @@ $(BIN): $(VSRC) $(CSRC)
 
 # RUNARGS := $(BIN) $(IMG).bin $(IMG).elf
 RUNARGS := $(BIN) $(IMG)
+DIFF_NEMU = $(NEMU_HOME)/build/riscv64-nemu-interpreter-so
+
+RUNARGS += $(DIFF_NEMU)
 
 #original makefile
 
@@ -80,6 +94,7 @@ clean:
 
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	@echo "Running $(CSRC)"
 	@$(RUNARGS)
 
 -include ../Makefile

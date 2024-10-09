@@ -4,29 +4,28 @@
 // #include "Vysyx_22040750.h"
 #include "VysyxSoCFull.h"
 #include "svdpi.h"
-// #include "VysyxSoCFull__Dpi.h"
+#include <common.h>
+#include <difftest.h>
+#include "VysyxSoCFull__Dpi.h"
 // #define CONFIG_WAVEFORM
-
-#define ANSI_FG_RED     "\33[1;31m"
-#define ANSI_FG_GREEN   "\33[1;32m"
-#define ANSI_NONE       "\33[0m"
-#define ANSI_FMT(str, fmt) fmt str ANSI_NONE
-#define MROM_BASE 0x20000000
-#define MROM_SIZE 0x1000
-#define FLASH_BASE 0x30000000
-#define FLSAH_SIZE 0x1000000
+// #define CONFIG_WAVEFORM
+#define CONFIG_DIFFTEST
 
 static TOP_NAME* soc = NULL;
 static uint64_t *cpu_gpr = NULL;
 static uint32_t *wb_pc = NULL;
+static uint32_t *wb_inst = NULL;
+static bool diff_valid = false;
+static bool mmio_op = false;
 static bool finish = false;
 static uint8_t *mrom = NULL;
 static uint8_t *flash = NULL;
 static char *img_path = NULL;
+static char *ref_so_file = NULL;
 static uint64_t sim_time = 0;
 
 // addr begin from 0
-extern "C" void flash_read(uint32_t addr, uint32_t *data) { 
+void flash_read(int32_t addr, int32_t *data) { 
   // printf("flash addr: %x\n", addr);
   // uint32_t index = (addr-FLASH_BASE)&0xfffffffc;
   uint32_t index = addr;
@@ -37,7 +36,7 @@ extern "C" void flash_read(uint32_t addr, uint32_t *data) {
           ((uint32_t)flash[index + 2] << 16) |
           ((uint32_t)flash[index + 3] << 24);
 }
-extern "C" void mrom_read(uint32_t addr, uint32_t *data) {
+void mrom_read(int32_t addr, int32_t *data) {
   // printf("mrom addr: %x\n", addr);
   uint32_t index = (addr-MROM_BASE)&0xfffffffc;
   *data = *((uint32_t*)&mrom[index]);
@@ -46,9 +45,18 @@ extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
   cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
   //cpu_context->gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
+extern "C" void set_diff_ptr(const svBit value) {
+  diff_valid = static_cast<bool>(value);
+}
+extern "C" void set_mmio_ptr(const svBit value) {
+  mmio_op = static_cast<bool>(value);
+}
 extern "C" void set_wb_pc_ptr(const svOpenArrayHandle r) {
   wb_pc = (uint32_t *)(((VerilatedDpiOpenVar*)r)->datap());
   //cpu_context->pc = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
+}
+extern "C" void set_wb_inst_ptr(const svOpenArrayHandle r) {
+  wb_inst = (uint32_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
 extern "C" void sim_end(){
   //set_gpr_ptr(10);
@@ -149,24 +157,58 @@ int main(int argc, char** argv){
     soc->trace(tfp,99);
     tfp->open("soc.vcd");
     #endif
-
     
     soc->reset = 1;
     while(!finish){
+      if(sim_time == 1){
+        #ifdef CONFIG_DIFFTEST
+        printf("difftest: %s\n",ANSI_FMT("ON", ANSI_FG_GREEN));
+        ref_so_file = argv[2];
+        init_difftest(ref_so_file, FLSAH_SIZE, flash, cpu_gpr);
+        #else
+        printf("difftest: %s\n",ANSI_FMT("OFF", ANSI_FG_RED));
+        #endif
+        #ifdef CONFIG_WAVEFORM
+        printf("waveform: %s\n",ANSI_FMT("ON", ANSI_FG_GREEN));
+        #else
+        printf("waveform: %s\n",ANSI_FMT("OFF", ANSI_FG_RED));
+        #endif
+      }
+      // difftest_step(*wb_pc, cpu_gpr, sim_time);
+
         // printf("time: %lu\n", sim_time);
-        if(sim_time > 100){soc->reset = 0;}
+        if(sim_time > 20){soc->reset = 0;}
         if(sim_time & 1){soc->clock = 1;}
         else{soc->clock = 0;}
+        // printf("before eval %d\n", *diff_valid);
         soc->eval();
         #ifdef CONFIG_WAVEFORM
         tfp->dump(sim_time);
         #endif
+        #ifdef CONFIG_DIFFTEST
+        // printf("wb_pc: %x\n", *wb_pc);
+        // printf("%lu: after eval %d %x\n", sim_time, diff_valid, *wb_pc);
+        if((diff_valid == true)&&(soc->clock == 1)){
+          // printf("wb_pc: %x, inst: %08x, mmio: %d, valid: %d\n", *wb_pc, *wb_inst, mmio_op, diff_valid);
+          // printf("in valid loop\n");
+          if(mmio_op == true){
+            // printf("mmio op\n");
+            difftest_skip_ref();
+          }
+          // printf("wb_pc: %x\n", *wb_pc);
+          if(difftest_step(*wb_pc, cpu_gpr, sim_time)){
+            printf("%lu: %s at pc = 0x%08x\n", sim_time, ANSI_FMT("DIFF ABORT", ANSI_FG_RED), *wb_pc);
+            break;
+          }
+        }
+        #endif
+        // difftest_step(*wb_pc, cpu_gpr, sim_time);
         sim_time++;
-        // if(sim_time > 10000){break;}
+        // if(sim_time > 400){break;}
     }
     soc->final();
     #ifdef CONFIG_WAVEFORM
-    tfp->close();
+    tfp->close(); 
     #endif
     delete soc;
     printf("bye ysyx!\n");
