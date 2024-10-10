@@ -46,27 +46,6 @@ void load_proc(char *path, void *dest, uint64_t capacity){
 void init_mrom(char *path){
   mrom = (uint8_t*)malloc(MROM_SIZE);
   load_proc(path, mrom, MROM_SIZE);
-  // if(path == NULL){
-  //   printf("no program provided\n");
-  //   return;
-  // }
-  // FILE *fp = fopen(path, "rb");
-  // if(fp == NULL){
-  //   printf("cannot open %s\n", path);
-  //   return;
-  // }
-  // fseek(fp, 0, SEEK_END);
-  // long size = ftell(fp);
-  // if(size > MROM_SIZE){
-  //   printf("size %ld of program is too large!\n", size);
-  //   return;
-  // }
-  // printf("The image is %s, size = %ld\n", path, size);
-  // fseek(fp, 0, SEEK_SET);
-  // //int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
-  // int ret = fread(mrom, size, 1, fp);
-  // assert(ret == 1);
-  // fclose(fp);
 }
 void init_flash(char *path){
   flash = (uint8_t*)malloc(FLSAH_SIZE);
