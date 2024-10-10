@@ -1,6 +1,6 @@
 #ifndef DIFFTEST_H
 #define DIFFTEST_H
-
+#include <common.h>
 void init_difftest(char *ref_so_file, long img_size, uint8_t* mem, uint64_t *cpu_gpr);
 void difftest_skip_ref();
 /* return true if error occurs */

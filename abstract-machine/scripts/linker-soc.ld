@@ -32,19 +32,20 @@ SECTIONS {
   /* _edata = .; */
   /* _data = .; */
   .bss : {
-	_bss_start = ALIGN(0x0008);
+	  _bss_start = ALIGN(0x0008);
     *(.bss*)
     *(.sbss*)
     *(.scommon)
+    _bss_end = .;
   } > sram
   _sidata = LOADADDR(.data);
   _sidata_end = LOADADDR(.data) + SIZEOF(.data);
   /* _heap_start = _sram_start;
   _heap_end = _sram_start + 0x1000; */
-  _heap_start = ALIGN(0x0008);
-  _heap_end = _heap_start;
   _stack_pointer = _sram_start + _stack_offt;
   . = _stack_pointer;
+  _heap_start = ALIGN(0x0008);
+  _heap_end = _heap_start;
   end = .;
   _end = .;
 }

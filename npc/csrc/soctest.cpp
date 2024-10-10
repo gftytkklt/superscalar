@@ -1,28 +1,21 @@
-#include "verilated.h"
-#include "verilated_dpi.h"
-#include "verilated_vcd_c.h"
-// #include "Vysyx_22040750.h"
-#include "VysyxSoCFull.h"
-#include "svdpi.h"
-#include <common.h>
+
+// #include <common.h>
 #include <difftest.h>
-#include "VysyxSoCFull__Dpi.h"
+#include <probe.h>
+
 // #define CONFIG_WAVEFORM
 // #define CONFIG_WAVEFORM
-#define CONFIG_DIFFTEST
+// #define CONFIG_DIFFTEST
 
 static TOP_NAME* soc = NULL;
-static uint64_t *cpu_gpr = NULL;
-static uint32_t *wb_pc = NULL;
-static uint32_t *wb_inst = NULL;
-static bool diff_valid = false;
-static bool mmio_op = false;
-static bool finish = false;
+
+bool finish = false;
+uint64_t sim_time = 0;
 static uint8_t *mrom = NULL;
 static uint8_t *flash = NULL;
 static char *img_path = NULL;
 static char *ref_so_file = NULL;
-static uint64_t sim_time = 0;
+
 
 // addr begin from 0
 void flash_read(int32_t addr, int32_t *data) { 
@@ -41,36 +34,7 @@ void mrom_read(int32_t addr, int32_t *data) {
   uint32_t index = (addr-MROM_BASE)&0xfffffffc;
   *data = *((uint32_t*)&mrom[index]);
 }
-extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
-  cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
-  //cpu_context->gpr = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
-}
-extern "C" void set_diff_ptr(const svBit value) {
-  diff_valid = static_cast<bool>(value);
-}
-extern "C" void set_mmio_ptr(const svBit value) {
-  mmio_op = static_cast<bool>(value);
-}
-extern "C" void set_wb_pc_ptr(const svOpenArrayHandle r) {
-  wb_pc = (uint32_t *)(((VerilatedDpiOpenVar*)r)->datap());
-  //cpu_context->pc = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
-}
-extern "C" void set_wb_inst_ptr(const svOpenArrayHandle r) {
-  wb_inst = (uint32_t *)(((VerilatedDpiOpenVar*)r)->datap());
-}
-extern "C" void sim_end(){
-  //set_gpr_ptr(10);
-  //printf("%ld\n", cpu_gpr[10]);
-  if(cpu_gpr[10]){
-    printf("%lu: %s at pc = 0x%08x, ret code=0x%lxh\n", sim_time, ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED), *wb_pc, cpu_gpr[10]);
-  }
-  else{
-    printf("%lu: %s at pc = 0x%08x\n", sim_time, ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN), *wb_pc);
-  }
-  //printf(" C: Im called fronm Scope :: %s \n\n ",svGetNameFromScope(svGetScope() ));
-  //Vcpu_top::check();
-  finish = true;
-}
+
 void load_proc(char *path, void *dest, uint64_t capacity){
   if(path == NULL){
     printf("no program provided\n");
