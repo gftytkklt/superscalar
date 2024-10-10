@@ -64,6 +64,7 @@ void init_memory(char *path, int type){
   }
 }
 
+
 // some deprecated functions
     // init_mrom(img_path);
     // uint32_t data = 0;
