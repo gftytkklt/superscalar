@@ -2,6 +2,7 @@
 // #include <common.h>
 #include <difftest.h>
 #include <probe.h>
+#include <memory.h>
 
 // #define CONFIG_WAVEFORM
 // #define CONFIG_WAVEFORM
@@ -11,107 +12,16 @@ static TOP_NAME* soc = NULL;
 
 bool finish = false;
 uint64_t sim_time = 0;
-static uint8_t *mrom = NULL;
-static uint8_t *flash = NULL;
+
 static char *img_path = NULL;
 static char *ref_so_file = NULL;
 
-
-// addr begin from 0
-void flash_read(int32_t addr, int32_t *data) { 
-  // printf("flash addr: %x\n", addr);
-  // uint32_t index = (addr-FLASH_BASE)&0xfffffffc;
-  uint32_t index = addr;
-  // printf("addr = %x, index = %x\n", addr, index);
-  // *data = *((uint32_t*)&flash[index]); 
-  *data = ((uint32_t)flash[index]) |
-          ((uint32_t)flash[index + 1] << 8) |
-          ((uint32_t)flash[index + 2] << 16) |
-          ((uint32_t)flash[index + 3] << 24);
-}
-void mrom_read(int32_t addr, int32_t *data) {
-  // printf("mrom addr: %x\n", addr);
-  uint32_t index = (addr-MROM_BASE)&0xfffffffc;
-  *data = *((uint32_t*)&mrom[index]);
-}
-
-void load_proc(char *path, void *dest, uint64_t capacity){
-  if(path == NULL){
-    printf("no program provided\n");
-    return;
-  }
-  FILE *fp = fopen(path, "rb");
-  if(fp == NULL){
-    printf("cannot open %s\n", path);
-    return;
-  }
-  fseek(fp, 0, SEEK_END);
-  uint64_t size = ftell(fp);
-  if(size > capacity){
-    printf("size %ld of program is too large!\n", size);
-    return;
-  }
-  printf("The image is %s, size = %ld\n", path, size);
-  fseek(fp, 0, SEEK_SET);
-  //int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
-  int ret = fread(dest, size, 1, fp);
-  assert(ret == 1);
-  fclose(fp);
-}
-void init_mrom(char *path){
-  mrom = (uint8_t*)malloc(MROM_SIZE);
-  load_proc(path, mrom, MROM_SIZE);
-  // if(path == NULL){
-  //   printf("no program provided\n");
-  //   return;
-  // }
-  // FILE *fp = fopen(path, "rb");
-  // if(fp == NULL){
-  //   printf("cannot open %s\n", path);
-  //   return;
-  // }
-  // fseek(fp, 0, SEEK_END);
-  // long size = ftell(fp);
-  // if(size > MROM_SIZE){
-  //   printf("size %ld of program is too large!\n", size);
-  //   return;
-  // }
-  // printf("The image is %s, size = %ld\n", path, size);
-  // fseek(fp, 0, SEEK_SET);
-  // //int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
-  // int ret = fread(mrom, size, 1, fp);
-  // assert(ret == 1);
-  // fclose(fp);
-}
-void init_flash(char *path){
-  flash = (uint8_t*)malloc(FLSAH_SIZE);
-  load_proc(path, flash, FLSAH_SIZE);
-}
 int main(int argc, char** argv){
     printf("hello ysyx!\n");
     if(argc > 1){
       img_path = argv[1]; // hard encoding
     }
-    init_flash(img_path);
-    // init_mrom(img_path);
-    // uint32_t data = 0;
-    // printf("flash ref data: \n");
-    // for(uint32_t addr = 0; addr < 0 + 0x100; addr += 4){
-    //   flash_read(addr, &data);
-    //   printf("addr: %x, data: 0x%08x\n", addr, data);
-    // }
-    // printf("flash ref data end\n");
-    // return 0;
-    // test data
-    // uint32_t start = 0x200000f9;
-    // uint32_t end = 0x20000219;
-    // uint32_t data;
-    // for(uint32_t i = start; i<end; i = i+4){
-    //   mrom_read(i, &data);
-    //   printf("addr %x, data %x\n", i, data);
-    // }
-    // return 0;
-    // test end
+    init_memory(img_path, FLASH);
     Verilated::commandArgs(argc, argv);
     soc = new TOP_NAME;
     // waveform
@@ -121,11 +31,9 @@ int main(int argc, char** argv){
     soc->trace(tfp,99);
     tfp->open("soc.vcd");
     #endif
-    
     soc->reset = 1;
-    while(!finish){
-      if(sim_time == 1){
-        #ifdef CONFIG_DIFFTEST
+    soc->eval(); // init probe ptr
+    #ifdef CONFIG_DIFFTEST
         printf("difftest: %s\n",ANSI_FMT("ON", ANSI_FG_GREEN));
         ref_so_file = argv[2];
         init_difftest(ref_so_file, FLSAH_SIZE, flash, cpu_gpr);
@@ -137,10 +45,7 @@ int main(int argc, char** argv){
         #else
         printf("waveform: %s\n",ANSI_FMT("OFF", ANSI_FG_RED));
         #endif
-      }
-      // difftest_step(*wb_pc, cpu_gpr, sim_time);
-
-        // printf("time: %lu\n", sim_time);
+    while(!finish){
         if(sim_time > 20){soc->reset = 0;}
         if(sim_time & 1){soc->clock = 1;}
         else{soc->clock = 0;}

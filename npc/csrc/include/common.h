@@ -19,6 +19,4 @@
 extern bool finish;
 extern uint64_t sim_time;
 
-extern "C" void flash_read(int32_t addr, int32_t *data);
-extern "C" void mrom_read(int32_t addr, int32_t *data);
 #endif
