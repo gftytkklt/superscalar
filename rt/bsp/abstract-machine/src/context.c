@@ -85,6 +85,6 @@ rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_ad
   rt_uint8_t* stk = stack_addr+sizeof(rt_ubase_t);
   stk = (rt_uint8_t*)RT_ALIGN_DOWN((rt_ubase_t)stk, sizeof(uintptr_t));
   Context *cp = kcontext((Area) {stk-0x8000, stk}, wrapper_function, (void*) ctx_args);
-  printf("cp: %p, tentry: %p, texit: %p, para: %p, stack: %p\n", cp, tentry, texit, parameter, stack_addr);
+  // printf("cp: %p, tentry: %p, texit: %p, para: %p, stack: %p\n", cp, tentry, texit, parameter, stack_addr);
   return (rt_uint8_t *) cp;
 }

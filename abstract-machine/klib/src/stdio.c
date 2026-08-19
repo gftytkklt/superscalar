@@ -19,7 +19,7 @@ typedef struct {
   bool isupperdigit;
   int radix;
   // int numtype;
-} formatinfo; 
+} formatinfo;
 // decode fmt string, return string ptr increment value
 // fmt is already fmt symbol, not %!
 // all return 0 means INVALID type, ptr will point to this invalid char
@@ -49,9 +49,7 @@ static int decode_fmt(const char* fmt, formatinfo* info){
       break;
     case 'p':
       info->argtype = NUMBER;
-      // info->numtype = LOWERDIGIT;
       info->radix = 16;
-      // info->issigned = false;
       info->islong = true;
       info->ispointer = true;
       break;
@@ -83,7 +81,7 @@ static void num2str(char* dst, long val, bool issigned, bool isupper, bool ispoi
   const char* upperstr = "0123456789ABCDEF";
   const char* usestr = isupper ? upperstr : lowerstr;
   char *tmp = dst;
-  if (val == 0){*tmp++ = '0';return;}
+  if (val == 0){*tmp++ = '0';*tmp = '\0';return;}
   else if(issigned && (val < 0)){*tmp++ = '-';}
   else if(ispointer){*tmp++ = '0';*tmp++ = 'x';}
   // tmp points to lsb digit, p points to wr pos
@@ -93,6 +91,7 @@ static void num2str(char* dst, long val, bool issigned, bool isupper, bool ispoi
     *p++ = usestr[val_abs % radix];
     val_abs /= radix;
   }
+  *p = '\0';
   p--;// points to msb
   // swap str from{(-)[LSB->MSB]} to {(-)[MSB->LSB]}
   while (p > tmp){
@@ -102,43 +101,20 @@ static void num2str(char* dst, long val, bool issigned, bool isupper, bool ispoi
   }
 }
 
-int printf(const char *fmt, ...) {
-  // panic("Not implemented");
-  va_list ap;
-  va_start(ap, fmt);
-  // int ret = 0;
-  char buf[2048] = {0};
-  int ret = vsnprintf(buf, 2048, fmt, ap);
-  assert(ret <= 2048);
-  char *p = buf;
-  while(*p){
-    putch(*p++);
-  }
-  // if(outsize > sizeof(buf))
-  // while (*fmt){
-  //   int outsize = vsnprintf(buf, 1024, fmt, ap);
-  //   fmt += outsize;
-  //   ret += outsize;
-  //   char *p = buf;
-  //   while(*p){
-  //     putch(*p++);
-  //   }
-  //   // break;
-  // }
-  va_end(ap);
-  return ret;
-  
-}
-// UB behav: invalid/unimpl fmt like %a is ignored and will output nothing
-int vsprintf(char *out, const char *fmt, va_list ap) {
-  // panic("Not implemented");
-  char *buf = out;
-  // va_list ap;
-  // va_start(ap, fmt);
+// ---------------------------------------------------------------------
+// streaming output core: every produced character is fed to emit(arg, ch).
+// this is the standard libc architecture: printf/sprintf/snprintf all share
+// one formatter, differing only in where the characters go. no large buffer
+// is needed on the caller's stack.
+// ---------------------------------------------------------------------
+typedef void (*emit_f)(void *, char);
+
+static void vformat(emit_f emit, void *arg, const char *fmt, va_list ap) {
+  if (!fmt) return;
   while(*fmt){
-    if(*fmt != '%') {*buf++ = *fmt++;continue;}
+    if(*fmt != '%') {emit(arg, *fmt++);continue;}
     // before if statement below, fmt points to first %
-    if(*++fmt == '%') {*buf++ = *fmt++;continue;}// change "%%" -> "%", fill it in out
+    if(*++fmt == '%') {emit(arg, *fmt++);continue;}// change "%%" -> "%"
     // here fmt points to symbol next to %, and symbol must not be '%'
     formatinfo info={0};
     fmt += decode_fmt(fmt, &info);
@@ -147,19 +123,18 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
       case CHAR:{
         char val_char = va_arg(ap, int);
         for (int i=1;i<info.width;i++){
-          *buf++ = ' ';
+          emit(arg, ' ');
         }
-        *buf++ = val_char;
+        emit(arg, val_char);
         break;
       }
       case STR:{
         char* str = va_arg(ap, char*);
-        for(int i=strlen(str);i<info.width;i++){
-          *buf++ = ' ';
+        int len = str ? (int)strlen(str) : 0;
+        for(int i=len;i<info.width;i++){
+          emit(arg, ' ');
         }
-        while(*str){
-          *buf++ = *str++;
-        }
+        if (str) while(*str) emit(arg, *str++);
         break;
       }
       case NUMBER:{
@@ -168,11 +143,11 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         char padding = info.zeropad ? '0' : ' ';
         num2str(numstr, val_num, info.issigned, info.isupperdigit, info.ispointer, info.radix);
         for(int i=strlen(numstr);i<info.width;i++){
-          *buf++ = padding;
+          emit(arg, padding);
         }
         char *p = numstr;
         while(*p){
-          *buf++ = *p++;
+          emit(arg, *p++);
         }
         break;
       }
@@ -180,12 +155,52 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         break;
     }
   }
-  *buf = '\0';
-  return strlen(out);
+}
+
+// ---- buffer sink used by vsprintf/vsnprintf ----
+typedef struct {
+  char *buf;
+  size_t n;
+  size_t cnt;
+} sink_t;
+
+static void sink_emit(void *arg, char c) {
+  sink_t *s = (sink_t*) arg;
+  if (s->buf && (s->cnt + 1) < s->n) {
+    s->buf[s->cnt] = c;
+  }
+  s->cnt++;
+}
+
+// ---- stream sink for printf: write each char directly to putch ----
+static int putch_counter;
+static void putch_emit(void *arg, char c) {
+  (void)arg;
+  putch(c);
+  putch_counter++;
+}
+
+int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
+  sink_t s = {out, n, 0};
+  vformat(sink_emit, &s, fmt, ap);
+  if (n > 0) out[(s.cnt < (n - 1)) ? s.cnt : (n - 1)] = '\0';
+  return s.cnt;
+}
+
+int vsprintf(char *out, const char *fmt, va_list ap) {
+  return vsnprintf(out, (size_t)-1, fmt, ap);
+}
+
+int printf(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  putch_counter = 0;
+  vformat(putch_emit, NULL, fmt, ap);
+  va_end(ap);
+  return putch_counter;
 }
 
 int sprintf(char *out, const char *fmt, ...) {
-  // panic("Not implemented");
   va_list ap;
   va_start(ap, fmt);
   int ret = vsprintf(out, fmt, ap);
@@ -194,85 +209,10 @@ int sprintf(char *out, const char *fmt, ...) {
 }
 
 int snprintf(char *out, size_t n, const char *fmt, ...) {
-  // panic("Not implemented");
   va_list ap;
   va_start(ap, fmt);
   int ret = vsnprintf(out, n, fmt, ap);
   va_end(ap);
-  return ret;
-}
-
-int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
-  // panic("Not implemented");
-  // panic("Not implemented");
-  char *buf = out;
-  // unsafe impl but don't care
-  const char *const end = out + n - 1;
-  int ret = 0;
-  // va_list ap;
-  // va_start(ap, fmt);
-  while(*fmt){
-    if(*fmt != '%') {
-      if(buf < end){*buf++ = *fmt;}
-      fmt++;ret++;
-      continue;
-    }
-    // before if statement below, fmt points to first %
-    if(*++fmt == '%') {
-      if(buf < end){*buf++ = *fmt;}
-      fmt++;ret++;
-      continue;
-    }// change "%%" -> "%", fill it in out
-    // here fmt points to symbol next to %, and symbol must not be '%'
-    formatinfo info={0};
-    fmt += decode_fmt(fmt, &info);
-    // fill str into out at pos of buf
-    switch(info.argtype){
-      case CHAR:{
-        char val_char = va_arg(ap, int);
-        for (int i=1;i<info.width;i++){
-          if(buf < end) {*buf++ = ' ';}
-          ret++;
-        }
-        if(buf < end) {*buf++ = val_char;}
-        ret++;
-        break;
-      }
-      case STR:{
-        char* str = va_arg(ap, char*);
-        for(int i=strlen(str);i<info.width;i++){
-          if(buf < end) {*buf++ = ' ';}
-          ret++;
-        }
-        ret += strlen(str);
-        while(*str){
-          if(buf < end) {*buf++ = *str;}
-          str++;
-        }
-        break;
-      }
-      case NUMBER:{
-        long val_num = info.islong ? va_arg(ap, long) : (long) va_arg(ap, int);
-        char numstr[21] = {0};
-        char padding = info.zeropad ? '0' : ' ';
-        num2str(numstr, val_num, info.issigned, info.isupperdigit, info.ispointer, info.radix);
-        for(int i=strlen(numstr);i<info.width;i++){
-          if(buf < end) {*buf++ = padding;}
-          ret++;
-        }
-        char *p = numstr;
-        ret+= strlen(numstr);
-        while(*p){
-          if(buf < end) {*buf++ = *p;}
-          p++;
-        }
-        break;
-      }
-      default: // INVALID type, should not reach here
-        break;
-    }
-  }
-  if(n>0) {*buf = '\0';}
   return ret;
 }
 

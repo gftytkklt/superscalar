@@ -190,7 +190,7 @@ static int check_parentheses(int p, int q) {
   return 1;
 }
 static word_t eval(int p, int q, bool *success) {
-  word_t value;
+  word_t value = 0;
   if (p>q) {
     printf("no minus lenth expr!\n");
     *success = false;
