@@ -85,7 +85,8 @@ int NDL_Init(uint32_t flags) {
   fbctl = open("/dev/dispinfo", 0, 0);
   char buf[64];
   read(fbctl, buf, 64);
-  sscanf(buf, "%d, %d", &screen_w, &screen_h);
+  // format: "WIDTH : <w>\nHEIGHT:<h>\n" (see navy-apps/README.md)
+  sscanf(buf, "WIDTH : %d\nHEIGHT:%d", &screen_w, &screen_h);
   close(fbctl);
   fbdev = open("/dev/fb", 0, 0);
   printf("screen_size: %d*%d\n", screen_w, screen_h);

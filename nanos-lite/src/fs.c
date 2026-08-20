@@ -50,6 +50,7 @@ int fs_open(const char *pathname, int flags, int mode) {
   for(int i=0;i<filenum;i++){
     if(!strcmp(file_table[i].name, pathname)){return i;}
   }
+  panic("fs_open: file %s not found", pathname);
   return -1;
 }
 
@@ -103,5 +104,7 @@ int fs_close(int fd) {
 void init_fs() {
   fp_offt=(long*)malloc(filenum*sizeof(long));
   for(int i=0;i<filenum;i++){fp_offt[i] = 0;}
-  // TODO: initialize the size of /dev/fb
+  // initialize the size of /dev/fb (screen_w * screen_h * 4)
+  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
+  file_table[FD_FB].size = cfg.width * cfg.height * 4;
 }

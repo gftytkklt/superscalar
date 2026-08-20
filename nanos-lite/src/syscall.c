@@ -59,6 +59,37 @@ int sys_gettimeofday(struct timeval *tv, struct timezone *tz){
   return 0;
 }
 
+#ifdef STRACE
+// 系统调用号 -> 名字的映射（供 strace 使用）
+static const char *syscall_names[] = {
+  [SYS_exit]         = "exit",
+  [SYS_yield]        = "yield",
+  [SYS_open]         = "open",
+  [SYS_read]         = "read",
+  [SYS_write]        = "write",
+  [SYS_kill]         = "kill",
+  [SYS_getpid]       = "getpid",
+  [SYS_close]        = "close",
+  [SYS_lseek]        = "lseek",
+  [SYS_brk]          = "brk",
+  [SYS_fstat]        = "fstat",
+  [SYS_time]         = "time",
+  [SYS_signal]       = "signal",
+  [SYS_execve]       = "execve",
+  [SYS_fork]         = "fork",
+  [SYS_link]         = "link",
+  [SYS_unlink]       = "unlink",
+  [SYS_wait]         = "wait",
+  [SYS_times]        = "times",
+  [SYS_gettimeofday] = "gettimeofday",
+};
+
+static const char *syscall_name(int id) {
+  if (id >= 0 && id < (int)LENGTH(syscall_names)) return syscall_names[id];
+  return "???";
+}
+#endif
+
 void do_syscall(Context *c) {
   uintptr_t a[4];
   a[0] = c->GPR1;
@@ -66,16 +97,26 @@ void do_syscall(Context *c) {
   a[2] = c->GPR3;
   a[3] = c->GPR4;
 
+#ifdef STRACE
+  Log("syscall %s(%ld, %ld, %ld)", syscall_name(a[0]), a[1], a[2], a[3]);
+#endif
+
+  long ret = 0;
   switch (a[0]) {
-    case SYS_exit: sys_exit(a[1]);break;
-    case SYS_yield: c->GPRx = sys_yield();break;
-    case SYS_open: c->GPRx = sys_open((const char *)a[1], (int)a[2], (int) a[3]);break;
-    case SYS_read: c->GPRx = sys_read((int)a[1],(void*)a[2],(size_t)a[3]);break;
-    case SYS_write: c->GPRx = sys_write((int)a[1],(void*)a[2],(size_t)a[3]);break;
-    case SYS_close: c->GPRx = sys_close((int)a[1]);break;
-    case SYS_lseek: c->GPRx = sys_lseek((int)a[1],(long)a[2],(int)a[3]);break;
-    case SYS_brk: c->GPRx = sys_brk((void*)a[1]);break;
-    case SYS_gettimeofday: c->GPRx = sys_gettimeofday((struct timeval *)a[1], (struct timezone *)a[2]);break;
+    case SYS_exit: sys_exit(a[1]);break;   // noreturn，不会执行到下方的返回值设置与打印
+    case SYS_yield: ret = sys_yield();break;
+    case SYS_open: ret = sys_open((const char *)a[1], (int)a[2], (int) a[3]);break;
+    case SYS_read: ret = sys_read((int)a[1],(void*)a[2],(size_t)a[3]);break;
+    case SYS_write: ret = sys_write((int)a[1],(void*)a[2],(size_t)a[3]);break;
+    case SYS_close: ret = sys_close((int)a[1]);break;
+    case SYS_lseek: ret = sys_lseek((int)a[1],(long)a[2],(int)a[3]);break;
+    case SYS_brk: ret = sys_brk((void*)a[1]);break;
+    case SYS_gettimeofday: ret = sys_gettimeofday((struct timeval *)a[1], (struct timezone *)a[2]);break;
     default: panic("Unhandled syscall ID = %d", a[0]);
   }
+  c->GPRx = ret;
+
+#ifdef STRACE
+  Log("syscall %s -> %ld", syscall_name(a[0]), ret);
+#endif
 }

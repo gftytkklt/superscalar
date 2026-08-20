@@ -11,6 +11,9 @@
 // #define TEST_DUMMY
 #define TEST_FILE
 
+// enable system call trace (strace) in nanos-lite
+// #define STRACE
+
 #include <am.h>
 #include <klib.h>
 #include <klib-macros.h>

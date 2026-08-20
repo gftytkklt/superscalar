@@ -19,7 +19,7 @@ static AM_GPU_CONFIG_T cfg = {};
 size_t serial_write(const void *buf, size_t offset, size_t len) {
   char *tmp = (char*) buf;
   size_t write_size = 0;
-  while ((write_size < len) && (tmp[write_size] != '\0')){
+  while (write_size < len){
     putch(tmp[write_size]);
     write_size++;
   }
@@ -41,14 +41,21 @@ size_t events_read(void *buf, size_t offset, size_t len) {
   if(keydown){strcpy(tmp, down_const);}
   else{strcpy(tmp, up_const);}
   strcat(tmp, keyname[keycode]);
-  // strcat(tmp, "\n");
+  strcat(tmp, "\n");
   return strlen(tmp);
 }
 
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
   cfg = io_read(AM_GPU_CONFIG);
-  sprintf(buf, "%d, %d", cfg.width, cfg.height);
-  return strlen(buf);
+  int w = cfg.width, h = cfg.height;
+  char tmp[64];
+  int n = sprintf(tmp, "WIDTH : %d\nHEIGHT:%d\n", w, h);
+  if (len > 0) {
+    int cpy = (n < len) ? n : len;
+    strncpy((char *)buf, tmp, cpy);
+    return cpy;
+  }
+  return 0;
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
