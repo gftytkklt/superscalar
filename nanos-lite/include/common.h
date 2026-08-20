@@ -8,7 +8,7 @@
 //#define TIME_SHARING
 
 // for different stage nanos-lite
-//#define TEST_DUMMY
+// #define TEST_DUMMY
 #define TEST_FILE
 
 #include <am.h>

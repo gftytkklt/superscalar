@@ -23,6 +23,7 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   cpu.csr[0] = epc;
   cpu.csr[1] = (cpu.csr[1] & (~0x88ul)) | (mie << 7);
   cpu.csr[2] = NO;// mcause = NO
+  IFDEF(CONFIG_ETRACE, Log("etrace: ecall/epc=0x%lx NO=0x%lx vector=0x%lx", epc, NO, cpu.csr[3]));
   return cpu.csr[3];
 }
 
