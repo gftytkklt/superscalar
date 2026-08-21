@@ -48,7 +48,14 @@
 extern char end;
 void* program_break = &end;
 
+// 若链接了 libam（Navy 上的 AM），系统调用改走软件自陷；
+// 否则该弱符号为 NULL，_syscall_() 保持原有的自陷指令。
+__attribute__((weak)) intptr_t __am_cte_syscall(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2);
+
 intptr_t _syscall_(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2) {
+  if (__am_cte_syscall) {
+    return __am_cte_syscall(type, a0, a1, a2);
+  }
   register intptr_t _gpr1 asm (GPR1) = type;
   register intptr_t _gpr2 asm (GPR2) = a0;
   register intptr_t _gpr3 asm (GPR3) = a1;
