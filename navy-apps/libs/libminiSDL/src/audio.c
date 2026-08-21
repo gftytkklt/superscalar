@@ -8,10 +8,14 @@
 static SDL_AudioSpec audio_spec;
 static int audio_paused = 1;   // 打开后处于暂停状态
 static uint32_t audio_last = 0;
+static int audio_in_callback = 0;  // 重入保护标志
 
 // 定期调用应用回调，获取 PCM 数据写入流缓冲区。
 // Nanos-lite 无信号机制，只能在被频繁调用的 API 中主动查询时间。
 void CallbackHelper() {
+  // 重入保护：若回调函数内部又调用了会触发 CallbackHelper 的 SDL API
+  // （如 SDL_GetTicks/SDL_PollEvent），直接返回，避免死递归。
+  if (audio_in_callback) return;
   if (audio_paused || audio_spec.callback == NULL) return;
 
   uint32_t now = NDL_GetTicks();
@@ -27,7 +31,9 @@ void CallbackHelper() {
 
   uint8_t *stream = malloc(bytes);
   assert(stream);
+  audio_in_callback = 1;       // 进入回调，标记"正在回调中"
   audio_spec.callback(audio_spec.userdata, stream, bytes);
+  audio_in_callback = 0;       // 退出回调
   NDL_PlayAudio(stream, bytes);
   free(stream);
 }
