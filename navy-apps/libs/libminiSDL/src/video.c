@@ -7,12 +7,94 @@
 void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect) {
   assert(dst && src);
   assert(dst->format->BitsPerPixel == src->format->BitsPerPixel);
+
+  int sx, sy, sw, sh;
+  if (srcrect == NULL) { sx = 0; sy = 0; sw = src->w; sh = src->h; }
+  else { sx = srcrect->x; sy = srcrect->y; sw = srcrect->w; sh = srcrect->h; }
+
+  int dx = 0, dy = 0;
+  if (dstrect != NULL) { dx = dstrect->x; dy = dstrect->y; }
+
+  // clip against source bounds
+  if (sx < 0) { sw += sx; dx -= sx; sx = 0; }
+  if (sy < 0) { sh += sy; dy -= sy; sy = 0; }
+  if (sx >= src->w || sy >= src->h || sw <= 0 || sh <= 0) { sw = sh = 0; }
+  if (sx + sw > src->w) sw = src->w - sx;
+  if (sy + sh > src->h) sh = src->h - sy;
+
+  // clip against destination bounds
+  if (dx < 0) { sw += dx; sx -= dx; dx = 0; }
+  if (dy < 0) { sh += dy; sy -= dy; dy = 0; }
+  if (dx >= dst->w || dy >= dst->h || sw <= 0 || sh <= 0) { sw = sh = 0; }
+  if (dx + sw > dst->w) sw = dst->w - dx;
+  if (dy + sh > dst->h) sh = dst->h - dy;
+
+  if (dstrect != NULL) { dstrect->w = sw; dstrect->h = sh; }
+  if (sw <= 0 || sh <= 0) return;
+
+  int bpp = src->format->BytesPerPixel;
+  int row_bytes = sw * bpp;
+  for (int i = 0; i < sh; i ++) {
+    uint8_t *sp = src->pixels + (sy + i) * src->pitch + sx * bpp;
+    uint8_t *dp = dst->pixels + (dy + i) * dst->pitch + dx * bpp;
+    memcpy(dp, sp, row_bytes);
+  }
 }
 
 void SDL_FillRect(SDL_Surface *dst, SDL_Rect *dstrect, uint32_t color) {
+  assert(dst);
+  int dx = 0, dy = 0, dw = dst->w, dh = dst->h;
+  if (dstrect != NULL) { dx = dstrect->x; dy = dstrect->y; dw = dstrect->w; dh = dstrect->h; }
+
+  if (dx < 0) { dw += dx; dx = 0; }
+  if (dy < 0) { dh += dy; dy = 0; }
+  if (dx >= dst->w || dy >= dst->h || dw <= 0 || dh <= 0) return;
+  if (dx + dw > dst->w) dw = dst->w - dx;
+  if (dy + dh > dst->h) dh = dst->h - dy;
+
+  int bpp = dst->format->BytesPerPixel;
+  for (int i = 0; i < dh; i ++) {
+    uint8_t *p = dst->pixels + (dy + i) * dst->pitch + dx * bpp;
+    if (bpp == 4) {
+      uint32_t *p32 = (uint32_t *)p;
+      for (int j = 0; j < dw; j ++) p32[j] = color;
+    } else {
+      uint8_t c = color;
+      for (int j = 0; j < dw; j ++) p[j] = c;
+    }
+  }
 }
 
 void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
+  if (s == NULL) return;
+
+  if (x < 0) { w += x; x = 0; }
+  if (y < 0) { h += y; y = 0; }
+  if (w == 0) w = s->w - x;
+  if (h == 0) h = s->h - y;
+  if (x >= s->w || y >= s->h || w <= 0 || h <= 0) return;
+  if (x + w > s->w) w = s->w - x;
+  if (y + h > s->h) h = s->h - y;
+
+  if (s->format->BitsPerPixel == 32) {
+    uint32_t *px = (uint32_t *)s->pixels + y * (s->pitch / 4) + x;
+    NDL_DrawRect(px, x, y, w, h);
+  } else {
+    assert(s->format->BitsPerPixel == 8);
+    assert(s->format->palette != NULL);
+    SDL_Color *colors = s->format->palette->colors;
+    uint32_t *buf = malloc(w * h * sizeof(uint32_t));
+    assert(buf);
+    for (int i = 0; i < h; i ++) {
+      uint8_t *row = s->pixels + (y + i) * s->pitch + x;
+      for (int j = 0; j < w; j ++) {
+        SDL_Color c = colors[row[j]];
+        buf[i * w + j] = (c.r << 16) | (c.g << 8) | c.b;
+      }
+    }
+    NDL_DrawRect(buf, x, y, w, h);
+    free(buf);
+  }
 }
 
 // APIs below are already implemented.
@@ -101,25 +183,31 @@ void SDL_SoftStretch(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_
   assert(dst->format->BitsPerPixel == src->format->BitsPerPixel);
   assert(dst->format->BitsPerPixel == 8);
 
-  int x = (srcrect == NULL ? 0 : srcrect->x);
-  int y = (srcrect == NULL ? 0 : srcrect->y);
-  int w = (srcrect == NULL ? src->w : srcrect->w);
-  int h = (srcrect == NULL ? src->h : srcrect->h);
+  int sx = (srcrect == NULL ? 0 : srcrect->x);
+  int sy = (srcrect == NULL ? 0 : srcrect->y);
+  int sw = (srcrect == NULL ? src->w : srcrect->w);
+  int sh = (srcrect == NULL ? src->h : srcrect->h);
 
-  assert(dstrect);
-  if(w == dstrect->w && h == dstrect->h) {
-    /* The source rectangle and the destination rectangle
-     * are of the same size. If that is the case, there
-     * is no need to stretch, just copy. */
+  int dx = (dstrect == NULL ? 0 : dstrect->x);
+  int dy = (dstrect == NULL ? 0 : dstrect->y);
+  int dw = (dstrect == NULL ? dst->w : dstrect->w);
+  int dh = (dstrect == NULL ? dst->h : dstrect->h);
+
+  if (dw == sw && dh == sh) {
     SDL_Rect rect;
-    rect.x = x;
-    rect.y = y;
-    rect.w = w;
-    rect.h = h;
+    rect.x = sx; rect.y = sy; rect.w = sw; rect.h = sh;
     SDL_BlitSurface(src, &rect, dst, dstrect);
+    return;
   }
-  else {
-    assert(0);
+
+  for (int j = 0; j < dh; j ++) {
+    int sy0 = sy + (j * sh) / dh;
+    uint8_t *sp = src->pixels + sy0 * src->pitch;
+    uint8_t *dp = dst->pixels + (dy + j) * dst->pitch + dx;
+    for (int i = 0; i < dw; i ++) {
+      int sx0 = sx + (i * sw) / dw;
+      dp[i] = sp[sx0];
+    }
   }
 }
 

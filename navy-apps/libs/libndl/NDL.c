@@ -84,10 +84,21 @@ int NDL_Init(uint32_t flags) {
     evtdev = open("/dev/events", 0, 0);
   }
   fbctl = open("/dev/dispinfo", 0, 0);
-  char buf[64];
-  read(fbctl, buf, 64);
-  // format: "WIDTH : <w>\nHEIGHT:<h>\n" (see navy-apps/README.md)
-  sscanf(buf, "WIDTH : %d\nHEIGHT:%d", &screen_w, &screen_h);
+  char buf[128];
+  int nread = read(fbctl, buf, sizeof(buf) - 1);
+  buf[nread > 0 ? nread : 0] = '\0';
+  // format: "WIDTH : <w>\nHEIGHT:<h>\n", whitespace around ':' is flexible
+  // (see navy-apps/README.md)
+  const char *p = strstr(buf, "WIDTH");
+  if (p != NULL) {
+    p = strchr(p, ':');
+    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; screen_w = atoi(p); }
+  }
+  p = strstr(buf, "HEIGHT");
+  if (p != NULL) {
+    p = strchr(p, ':');
+    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; screen_h = atoi(p); }
+  }
   close(fbctl);
   fbdev = open("/dev/fb", 0, 0);
   return 0;
