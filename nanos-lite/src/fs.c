@@ -11,7 +11,7 @@ typedef struct {
   WriteFn write;
 } Finfo;
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENT, FD_DISPINFO, FD_FB, };
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENT, FD_DISPINFO, FD_FB, FD_SBCTL, FD_SB, };
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
@@ -27,6 +27,10 @@ size_t serial_write(const void *buf, size_t offset, size_t len);
 size_t events_read(void *buf, size_t offset, size_t len);
 size_t dispinfo_read(void *buf, size_t offset, size_t len);
 size_t fb_write(const void *buf, size_t offset, size_t len);
+size_t audio_init();
+size_t audio_read(void *buf, size_t offset, size_t len);
+size_t audio_ctrl_write(const void *buf, size_t offset, size_t len);
+size_t audio_play_write(const void *buf, size_t offset, size_t len);
 
 /* This is the information about all files in disk. */
 static Finfo file_table[] __attribute__((used)) = {
@@ -36,6 +40,8 @@ static Finfo file_table[] __attribute__((used)) = {
   [FD_EVENT] = {"/dev/events", 0, 0, events_read, invalid_write},
   [FD_DISPINFO] = {"/dev/dispinfo", 0, 0, dispinfo_read, invalid_write},
   [FD_FB] = {"/dev/fb", 0, 0, invalid_read, fb_write},
+  [FD_SBCTL] = {"/dev/sbctl", 0, 0, audio_read, audio_ctrl_write},
+  [FD_SB] = {"/dev/sb", 0, 0, invalid_read, audio_play_write},
 #include "files.h"
 };
 
@@ -109,4 +115,6 @@ void init_fs() {
   // initialize the size of /dev/fb (screen_w * screen_h * 4)
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
   file_table[FD_FB].size = cfg.width * cfg.height * 4;
+  // initialize the sound card
+  audio_init();
 }

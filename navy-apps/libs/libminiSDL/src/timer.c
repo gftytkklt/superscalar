@@ -11,10 +11,11 @@ int SDL_RemoveTimer(SDL_TimerID id) {
 }
 
 uint32_t SDL_GetTicks() {
+  CallbackHelper();
   return NDL_GetTicks();
 }
 
 void SDL_Delay(uint32_t ms) {
   uint32_t start = NDL_GetTicks();
-  while (NDL_GetTicks() - start < ms);
+  while (NDL_GetTicks() - start < ms) CallbackHelper();
 }

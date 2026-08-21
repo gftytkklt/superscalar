@@ -67,6 +67,7 @@ int SDL_PushEvent(SDL_Event *ev) {
 }
 
 int SDL_PollEvent(SDL_Event *ev) {
+  CallbackHelper();
   if (ev == NULL) return 0;
   if (ev_count > 0) return pop_event(ev);
   SDL_Event e;
@@ -79,6 +80,7 @@ int SDL_PollEvent(SDL_Event *ev) {
 
 int SDL_WaitEvent(SDL_Event *ev) {
   while (1) {
+    CallbackHelper();
     if (ev_count > 0) return pop_event(ev);
     SDL_Event e;
     if (fetch_ndl(&e)) {

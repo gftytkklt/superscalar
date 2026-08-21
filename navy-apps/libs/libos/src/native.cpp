@@ -165,7 +165,7 @@ FILE *fopen(const char *path, const char *mode) {
 }
 
 int open(const char *path, int flags, ...) {
-  if (strcmp(path, "/proc/dispinfo") == 0) {
+  if (strcmp(path, "/proc/dispinfo") == 0 || strcmp(path, "/dev/dispinfo") == 0) {
     return dispinfo_fd;
   } else if (strcmp(path, "/dev/events") == 0) {
     return evt_fd;
