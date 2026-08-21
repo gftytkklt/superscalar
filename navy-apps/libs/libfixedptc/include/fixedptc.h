@@ -143,7 +143,8 @@ static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
 
 /* Divides two fixedpt numbers, returns the result. */
 static inline fixedpt fixedpt_div(fixedpt A, fixedpt B) {
-	return (((fixedptd)A / (fixedptd)B) << FIXEDPT_FBITS);
+	// 先放大再除：避免 (A/B)<<FBITS 在 |A|<|B| 时整数除法截断为 0、丢失小数位
+	return (fixedpt)(((fixedptd)A << FIXEDPT_FBITS) / (fixedptd)B);
 }
 
 static inline fixedpt fixedpt_abs(fixedpt A) {
