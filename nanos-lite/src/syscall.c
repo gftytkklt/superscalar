@@ -1,11 +1,22 @@
 #include <common.h>
 #include <fs.h>
+#include <proc.h>
 #include "syscall.h"
 #include <sys/time.h>
 #include <time.h>
 
+// 展示批处理系统：程序退出后再次运行的程序
+#define BATCH_INIT_PROG "/bin/nterm"
+
+int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
+  // 目前只需关心 filename，argv/envp 暂时忽略
+  naive_uload(NULL, fname);
+  return 0;
+}
+
 void sys_exit(uintptr_t code) {
-  halt(code);
+  // 不再直接 halt 整个系统，而是重新运行批处理系统的初始程序
+  sys_execve(BATCH_INIT_PROG, NULL, NULL);
 }
 
 int sys_yield() {
@@ -97,6 +108,7 @@ void do_syscall(Context *c) {
     case SYS_lseek: ret = sys_lseek((int)a[1],(long)a[2],(int)a[3]);break;
     case SYS_brk: ret = sys_brk((void*)a[1]);break;
     case SYS_gettimeofday: ret = sys_gettimeofday((struct timeval *)a[1], (struct timezone *)a[2]);break;
+    case SYS_execve: sys_execve((const char *)a[1], (char * const *)a[2], (char *const *)a[3]);break;  // 成功时不返回
     default: panic("Unhandled syscall ID = %d", a[0]);
   }
   c->GPRx = ret;

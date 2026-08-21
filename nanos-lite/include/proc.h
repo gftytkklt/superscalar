@@ -18,4 +18,7 @@ typedef union {
 
 extern PCB *current;
 
+// 加载并运行一个用户程序（loader.c 中定义）
+void naive_uload(PCB *pcb, const char *filename);
+
 #endif

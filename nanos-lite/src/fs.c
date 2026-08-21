@@ -54,7 +54,10 @@ static long *fp_offt = NULL;
 
 int fs_open(const char *pathname, int flags, int mode) {
   for(int i=0;i<filenum;i++){
-    if(!strcmp(file_table[i].name, pathname)){return i;}
+    if(!strcmp(file_table[i].name, pathname)){
+      fp_offt[i] = 0;   // open 语义：文件偏移量从 0 开始（覆盖 execve 后残留的偏移量）
+      return i;
+    }
   }
   panic("fs_open: file %s not found", pathname);
   return -1;

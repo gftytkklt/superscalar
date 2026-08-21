@@ -15,6 +15,8 @@
 
 #include <isa.h>
 #include <cpu/cpu.h>
+#include <cpu/difftest.h>
+#include <memory/paddr.h>
 #include <memory/vaddr.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -128,6 +130,47 @@ static int cmd_d(char *args) {
   else {int num = 0; sscanf(arg, "%u", &num);free_wp(num);}
   return 0;
 }
+
+// 退出 DiffTest 模式
+static int cmd_detach(char *args) {
+  difftest_detach();
+  printf("difftest detached\n");
+  return 0;
+}
+
+// 进入 DiffTest 模式（先同步 DUT 内存与寄存器到 REF）
+static int cmd_attach(char *args) {
+  difftest_attach();
+  printf("difftest attached\n");
+  return 0;
+}
+
+// 保存 NEMU 状态（CPU 状态 + 物理内存）到文件
+static int cmd_save(char *args) {
+  char *path = strtok(NULL, " ");
+  if (path == NULL) { printf("usage: save [path]\n"); return 0; }
+  FILE *fp = fopen(path, "wb");
+  if (fp == NULL) { printf("can not open file '%s'\n", path); return 0; }
+  fwrite(&cpu, sizeof(CPU_state), 1, fp);
+  fwrite(guest_to_host(CONFIG_MBASE), CONFIG_MSIZE, 1, fp);
+  fclose(fp);
+  printf("CPU state and memory saved to '%s'\n", path);
+  return 0;
+}
+
+// 从文件恢复 NEMU 状态
+static int cmd_load(char *args) {
+  char *path = strtok(NULL, " ");
+  if (path == NULL) { printf("usage: load [path]\n"); return 0; }
+  FILE *fp = fopen(path, "rb");
+  if (fp == NULL) { printf("can not open file '%s'\n", path); return 0; }
+  size_t n1 = fread(&cpu, sizeof(CPU_state), 1, fp);
+  size_t n2 = fread(guest_to_host(CONFIG_MBASE), CONFIG_MSIZE, 1, fp);
+  fclose(fp);
+  if (n1 != 1 || n2 != 1) { printf("failed to load '%s'\n", path); return 0; }
+  printf("CPU state and memory loaded from '%s'\n", path);
+  return 0;
+}
 static int cmd_help(char *args);
 
 static struct {
@@ -144,6 +187,10 @@ static struct {
   { "p", "Expr eval", cmd_p },
   { "w", "Set watchpoints", cmd_w },
   { "d", "Delete watchpoints", cmd_d },
+  { "detach", "Exit difftest mode", cmd_detach },
+  { "attach", "Enter difftest mode (sync DUT to REF)", cmd_attach },
+  { "save", "Save NEMU state (regs + memory) to file", cmd_save },
+  { "load", "Load NEMU state from file", cmd_load },
 };
 
 #define NR_CMD ARRLEN(cmd_table)
