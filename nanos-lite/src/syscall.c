@@ -22,22 +22,7 @@ long sys_read(int fd, void *buf, size_t len){
 }
 
 long sys_write(int fd, void *buf, size_t count) {
-  #ifdef TEST_DUMMY
-    if(fd == 1 || fd == 2){
-      size_t i = 0;
-      char *tmp = (char*) buf;
-      while((i < count) && (tmp[i] != '\0')){
-        putch(tmp[i]);
-        i++;
-      }
-      return i;
-    }
-    else{
-      return -1;
-    }
-  #elif defined(TEST_FILE)
-    return fs_write(fd, buf, count);
-  #endif
+  return fs_write(fd, buf, count);
 }
 
 int sys_close(int fd){

@@ -59,13 +59,15 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
-  AM_GPU_FBDRAW_T fbdraw = {.y = (offset/4)/cfg.width,
-                            .x = (offset/4)%cfg.width,
-                            .pixels = (void*)buf,
-                            .w=(len>>2),
-                            .h=1};
-  io_write(AM_GPU_FBDRAW, fbdraw.x, fbdraw.y, fbdraw.pixels, fbdraw.w, fbdraw.h, 1);
-  return fbdraw.w*fbdraw.h*4;
+  cfg = io_read(AM_GPU_CONFIG);
+  size_t px = offset / 4, left = len / 4, done = 0;
+  while (left > 0) {
+    int y = px / cfg.width, x = px % cfg.width;
+    int w = (left < (size_t)(cfg.width - x)) ? left : (cfg.width - x);
+    io_write(AM_GPU_FBDRAW, x, y, (uint32_t *)buf + done, w, 1, 1);
+    done += w; px += w; left -= w;
+  }
+  return done * 4;
 }
 
 void init_device() {

@@ -60,7 +60,8 @@ long fs_read(int fd, void *buf, size_t len) {
   long offt_incr = 0;
   // normal file
   if (file_table[fd].read == NULL) {
-    size_t ramdisk_rd_len = (fp_offt[fd] + len) < file_table[fd].size ? len : (file_table[fd].size - fp_offt[fd]);
+    size_t remain = (fp_offt[fd] < file_table[fd].size) ? (file_table[fd].size - fp_offt[fd]) : 0;
+    size_t ramdisk_rd_len = (len < remain) ? len : remain;
     offt_incr = ramdisk_read(buf, rd_offt, ramdisk_rd_len);
   }
   // abstract file
@@ -75,7 +76,8 @@ long fs_write(int fd, const void *buf, size_t len) {
   long wr_offt = fp_offt[fd] + file_table[fd].disk_offset;
   long offt_incr = 0;
   if (file_table[fd].write == NULL) {
-    size_t ramdisk_wr_len = (fp_offt[fd] + len) < file_table[fd].size ? len : (file_table[fd].size - fp_offt[fd]);
+    size_t remain = (fp_offt[fd] < file_table[fd].size) ? (file_table[fd].size - fp_offt[fd]) : 0;
+    size_t ramdisk_wr_len = (len < remain) ? len : remain;
     offt_incr = ramdisk_write(buf, wr_offt, ramdisk_wr_len);
   }
   else {

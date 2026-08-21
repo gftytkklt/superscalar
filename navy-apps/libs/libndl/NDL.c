@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -41,9 +42,9 @@ void NDL_OpenCanvas(int *w, int *h) {
     }
     close(fbctl);
   }
-  if ((*w==0) || (*h==0)){*w = screen_w;*h = screen_h;}
-  canvas_w = *w;canvas_h = *h;
-  printf("canvas: %d*%d\n",canvas_w, canvas_h);
+  if (*w == 0 && *h == 0) {*w = screen_w; *h = screen_h;}
+  assert(*w <= screen_w && *h <= screen_h);
+  canvas_w = *w; canvas_h = *h;
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
@@ -89,8 +90,6 @@ int NDL_Init(uint32_t flags) {
   sscanf(buf, "WIDTH : %d\nHEIGHT:%d", &screen_w, &screen_h);
   close(fbctl);
   fbdev = open("/dev/fb", 0, 0);
-  printf("screen_size: %d*%d\n", screen_w, screen_h);
-  printf("boot time: %d ms\n", NDL_GetTicks());
   return 0;
 }
 
