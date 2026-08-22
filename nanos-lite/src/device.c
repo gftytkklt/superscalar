@@ -17,6 +17,7 @@ static const char *keyname[256] __attribute__((used)) = {
 static AM_GPU_CONFIG_T cfg = {};
 
 size_t serial_write(const void *buf, size_t offset, size_t len) {
+  MULTIPROGRAM_YIELD();
   char *tmp = (char*) buf;
   size_t write_size = 0;
   while (write_size < len){
@@ -27,6 +28,7 @@ size_t serial_write(const void *buf, size_t offset, size_t len) {
 }
 
 size_t events_read(void *buf, size_t offset, size_t len) {
+  MULTIPROGRAM_YIELD();
   AM_INPUT_KEYBRD_T kbd = {};
   bool keydown = 0;
   int keycode = 0;
@@ -59,6 +61,7 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t fb_write(const void *buf, size_t offset, size_t len) {
+  MULTIPROGRAM_YIELD();
   cfg = io_read(AM_GPU_CONFIG);
   size_t px = offset / 4, left = len / 4, done = 0;
   while (left > 0) {

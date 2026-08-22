@@ -33,7 +33,7 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
     phoff += phentsize;
   }
   return ehdr.e_entry;
-  #elif defined(TEST_FILE)
+  #elif defined(TEST_FILE) || defined(MULTIPROGRAM) || defined(TIME_SHARING)
   Elf_Ehdr ehdr = {};
   Elf_Phdr phdr = {};
   int fd = fs_open(filename, 0, 0);
@@ -70,5 +70,15 @@ void naive_uload(PCB *pcb, const char *filename) {
   uintptr_t entry = loader(pcb, filename);
   Log("Jump to entry = %p", entry);
   ((void(*)())entry) ();
+}
+
+void context_uload(PCB *pcb, const char *filename) {
+  Area kstack = {pcb->stack, pcb->stack + STACK_SIZE};
+  uintptr_t entry = loader(pcb, filename);
+  Log("Jump to entry = %p", entry);
+  Context *cp = ucontext(&pcb->as, kstack, (void *)entry);
+  pcb->cp = cp;
+  // user stack: top of heap, handed to the process via GPRx (Navy _start sets sp from it)
+  cp->GPRx = (uintptr_t)heap.end;
 }
 
