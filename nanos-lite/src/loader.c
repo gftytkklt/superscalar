@@ -11,10 +11,10 @@
 #endif
 
 static uintptr_t loader(PCB *pcb, const char *filename) {
+  #ifdef TEST_DUMMY
   Elf_Ehdr ehdr = {};
   Elf_Phdr phdr = {};
   // naive version: ramdisk only consists of dummy
-  #ifdef TEST_DUMMY
   size_t ramdisk_read(void *buf, size_t offset, size_t len);
   ramdisk_read(&ehdr, 0, sizeof(ehdr));
   assert(*(uint32_t*)&ehdr.e_ident == 0x464c457f);
@@ -34,6 +34,8 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
   }
   return ehdr.e_entry;
   #elif defined(TEST_FILE)
+  Elf_Ehdr ehdr = {};
+  Elf_Phdr phdr = {};
   int fd = fs_open(filename, 0, 0);
   if(fd<0){return -1;}
   fs_read(fd, &ehdr, 64);
@@ -58,6 +60,8 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
     phoff += phentsize;
   }
   return ehdr.e_entry;
+  #else
+  panic("No test macro defined for loader");
   #endif
 }
 
