@@ -9,20 +9,30 @@
 #define BATCH_INIT_PROG "/bin/nterm"
 
 int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
+#ifdef MULTIPROGRAM
   // load the new program into the current process, then abandon the current
   // execution flow: switch to the boot PCB (never scheduled) and yield, so the
   // next schedule() resumes the newly loaded program.
   context_uload(current, fname, argv, envp);
   switch_boot_pcb();
   yield();
+#else
+  // batch system: just jump to the new program
+  naive_uload(NULL, fname);
+#endif
   return 0;
 }
 
 void sys_exit(uintptr_t code) {
+#ifdef MULTIPROGRAM
   // 不再直接 halt 整个系统，而是重新运行批处理系统的初始程序
   char *const argv[] = {BATCH_INIT_PROG, NULL};
   char *const envp[] = {NULL};
   sys_execve(BATCH_INIT_PROG, argv, envp);
+#else
+  // 不再直接 halt 整个系统，而是重新运行批处理系统的初始程序
+  naive_uload(NULL, BATCH_INIT_PROG);
+#endif
 }
 
 int sys_yield() {

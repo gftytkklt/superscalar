@@ -1,9 +1,13 @@
 #include <common.h>
 void do_syscall(Context *c);
+#ifdef MULTITASK
 Context* schedule(Context *prev);
+#endif
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
+#ifdef MULTITASK
     case EVENT_YIELD: return schedule(c);
+#endif
     case EVENT_SYSCALL: do_syscall(c); break;
     case EVENT_IRQ_TIMER: return c;
     default: panic("Unhandled event ID = %d", e.event);
