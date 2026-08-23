@@ -9,7 +9,7 @@
 #define BATCH_INIT_PROG "/bin/nterm"
 
 int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
-#ifdef MULTIPROGRAM
+#if defined(MULTIPROGRAM) || defined(TEST_NTERM)
   // load the new program into the current process, then abandon the current
   // execution flow: switch to the boot PCB (never scheduled) and yield, so the
   // next schedule() resumes the newly loaded program.
@@ -24,7 +24,7 @@ int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
 }
 
 void sys_exit(uintptr_t code) {
-#ifdef MULTIPROGRAM
+#if defined(MULTIPROGRAM) || defined(TEST_NTERM)
   // 不再直接 halt 整个系统，而是重新运行批处理系统的初始程序
   char *const argv[] = {BATCH_INIT_PROG, NULL};
   char *const envp[] = {NULL};

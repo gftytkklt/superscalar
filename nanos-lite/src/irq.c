@@ -1,11 +1,11 @@
 #include <common.h>
 void do_syscall(Context *c);
-#ifdef MULTITASK
+#if defined(MULTITASK) || defined(TEST_NTERM)
 Context* schedule(Context *prev);
 #endif
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
-#ifdef MULTITASK
+#if defined(MULTITASK) || defined(TEST_NTERM)
     case EVENT_YIELD: return schedule(c);
 #endif
     case EVENT_SYSCALL: do_syscall(c); break;

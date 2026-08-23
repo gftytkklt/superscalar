@@ -24,6 +24,13 @@ void init_proc() {
   naive_uload(NULL, NULL);
   #elif defined(TEST_FILE)
   naive_uload(NULL, "/bin/nterm");
+  #elif defined(TEST_NTERM)
+  {
+    char *const argv[] = {"/bin/nterm", NULL};
+    char *const envp[] = {NULL};
+    context_uload(&pcb[0], "/bin/nterm", argv, envp);
+  }
+  switch_boot_pcb();
   #elif defined(TEST_KLOAD)
   context_kload(&pcb[0], hello_fun, (void *)0xdeadbeef);
   context_kload(&pcb[1], hello_fun, (void *)0xabcdef01);
@@ -49,5 +56,7 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 Context* schedule(Context *prev) {
   current->cp = prev;
   current = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
-  return current->cp;
+  // single-process case (e.g. TEST_NTERM): if the target PCB has no context,
+  // stay on the current one instead of switching into a dead PCB.
+  return (current->cp ? current->cp : prev);
 }
