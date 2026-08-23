@@ -9,14 +9,20 @@
 #define BATCH_INIT_PROG "/bin/nterm"
 
 int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
-  // 目前只需关心 filename，argv/envp 暂时忽略
-  naive_uload(NULL, fname);
+  // load the new program into the current process, then abandon the current
+  // execution flow: switch to the boot PCB (never scheduled) and yield, so the
+  // next schedule() resumes the newly loaded program.
+  context_uload(current, fname, argv, envp);
+  switch_boot_pcb();
+  yield();
   return 0;
 }
 
 void sys_exit(uintptr_t code) {
   // 不再直接 halt 整个系统，而是重新运行批处理系统的初始程序
-  sys_execve(BATCH_INIT_PROG, NULL, NULL);
+  char *const argv[] = {BATCH_INIT_PROG, NULL};
+  char *const envp[] = {NULL};
+  sys_execve(BATCH_INIT_PROG, argv, envp);
 }
 
 int sys_yield() {

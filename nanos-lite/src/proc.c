@@ -26,7 +26,11 @@ void init_proc() {
   #endif
   #ifdef MULTIPROGRAM
   context_kload(&pcb[0], hello_fun, (void *)0xdeadbeef);
-  context_uload(&pcb[1], "/bin/pal");
+  {
+    char *const argv[] = {"/bin/pal", "--skip", NULL};
+    char *const envp[] = {NULL};
+    context_uload(&pcb[1], "/bin/pal", argv, envp);
+  }
   #endif
   switch_boot_pcb();
 
