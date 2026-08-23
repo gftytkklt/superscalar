@@ -74,15 +74,13 @@ void naive_uload(PCB *pcb, const char *filename) {
 
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
   Area kstack = {pcb->stack, pcb->stack + STACK_SIZE};
-  uintptr_t entry = loader(pcb, filename);
-  Log("Jump to entry = %p", entry);
-  Context *cp = ucontext(&pcb->as, kstack, (void *)entry);
-  pcb->cp = cp;
 
-  // user stack: allocate a fresh 32KB region, no longer reuse heap.end
+  // user stack: allocate a fresh 32KB region FIRST. Do not read argv/envp
+  // after loader() runs: the new program may be loaded to the same address as
+  // the calling process's static strings (e.g. 0x83000000), overwriting them.
   uintptr_t ustack = (uintptr_t)new_page(8) + 8 * PGSIZE;
 
-  // count argc/envc
+  // count argc/envc (read argv/envp BEFORE loader)
   int argc = 0;
   while (argv[argc] != NULL) argc ++;
   int envc = 0;
@@ -124,6 +122,13 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   // 4. argc
   sp -= sizeof(uintptr_t);
   *(uintptr_t *)sp = (uintptr_t)argc;
+
+  // load the new program (may overwrite the calling process's static data)
+  uintptr_t entry = loader(pcb, filename);
+  Log("Jump to entry = %p", entry);
+
+  Context *cp = ucontext(&pcb->as, kstack, (void *)entry);
+  pcb->cp = cp;
 
   // GPRx points to argc; Navy _start sets sp from GPRx and passes it to call_main
   cp->GPRx = sp;

@@ -28,20 +28,27 @@ static void sh_prompt() {
 }
 
 static void sh_handle_cmd(const char *cmd) {
-  // 取命令的第一个词作为程序名（暂不支持参数传递）
-  char prog[128];
-  int n = 0;
-  while (cmd[n] != '\0' && cmd[n] != ' ' && cmd[n] != '\n' && n < (int)sizeof(prog) - 1) {
-    prog[n] = cmd[n];
-    n ++;
+  // 把命令行按空白切分成 argv[]，支持参数传递
+  char cmd_buf[128];
+  strncpy(cmd_buf, cmd, sizeof(cmd_buf) - 1);
+  cmd_buf[sizeof(cmd_buf) - 1] = '\0';
+
+  char *argv[16];
+  int argc = 0;
+  char *p = cmd_buf;
+  while (*p && argc < (int)(sizeof(argv)/sizeof(argv[0])) - 1) {
+    while (*p == ' ' || *p == '\t' || *p == '\n') p ++;   // skip whitespace
+    if (*p == '\0') break;
+    argv[argc ++] = p;
+    while (*p && *p != ' ' && *p != '\t' && *p != '\n') p ++;
+    if (*p) *p ++ = '\0';
   }
-  prog[n] = '\0';
-  if (n == 0) return;
+  argv[argc] = NULL;
+  if (argc == 0) return;
 
   // execvp 按 PATH 搜索程序；exec 成功后不返回，失败返回 -1
-  char *argv[] = {prog, NULL};
-  execvp(prog, argv);
-  sh_printf("exec %s: bad thing happen\n", prog);
+  execvp(argv[0], argv);
+  sh_printf("exec %s: bad thing happen\n", argv[0]);
 }
 
 void builtin_sh_run() {

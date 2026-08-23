@@ -10,9 +10,7 @@
 // for different stage nanos-lite
 // #define TEST_DUMMY
 // #define TEST_FILE
-// #define TEST_KLOAD
-
-// enable system call trace (strace) in nanos-lite
+#define TEST_KLOAD
 // #define STRACE
 
 #include <am.h>
