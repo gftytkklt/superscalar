@@ -4,9 +4,15 @@
 static void *pf = NULL;
 
 void* new_page(size_t nr_page) {
-  void *p = pf;
+  // share the same cursor as klib's malloc (heap.start): read the current
+  // value, page-align it (malloc() may leave it unaligned), allocate nr_page
+  // pages, and write the advanced value back to heap.start. This keeps
+  // malloc() and new_page() on ONE coordinated cursor so they never hand out
+  // overlapping memory, and guarantees every returned address is page-aligned.
+  pf = (void *)ROUNDUP(heap.start, PGSIZE);
   pf += nr_page * PGSIZE;
-  return p;
+  heap.start = pf;
+  return pf - nr_page * PGSIZE;
 }
 
 #ifdef HAS_VME
