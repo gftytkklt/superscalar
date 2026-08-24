@@ -20,6 +20,7 @@ static inline void outl(uintptr_t addr, uint32_t data) { *(volatile uint32_t *)a
 #define PTE_D 0x80
 
 enum { MODE_U, MODE_S, MODE_M = 3 };
+enum { USER_MODE, KERNEL_MODE }; // the next-privilege (c->np) value of a Context
 #define MSTATUS_MXR  (1 << 19)
 #define MSTATUS_SUM  (1 << 18)
 #define MSTATUS_MIE  (1 << 3)

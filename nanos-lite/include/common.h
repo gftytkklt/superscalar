@@ -10,10 +10,8 @@
 //#define TEST_FILE         // PA3.5: single user program, fs, naive_uload
 //#define TEST_KLOAD        // PA4.1 stage1: kernel threads, no loader
 // #define TEST_NTERM        // single process: NTerm + execvp (manual input)
-#define MULTIPROGRAM      // PA4.1 stage2-4: multiprogram + execve
-//#define TIME_SHARING      // PA4.4: time-sharing (not implemented yet)
-
-// derived macros
+//#define MULTIPROGRAM      // PA4.1 stage2-4: multiprogram + execve
+#define TIME_SHARING      // PA4.4: time-sharing (preemptive multitasking)
 #if defined(TEST_KLOAD) || defined(MULTIPROGRAM) || defined(TIME_SHARING)
 # define MULTITASK         // has process scheduling (schedule())
 #endif

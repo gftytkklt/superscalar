@@ -1,14 +1,24 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
+#define CONTEXT_SIZE 288
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
+  uintptr_t ksp = 0;
   // record the current address space into the context
   __am_get_cur_as(c);
 
   if (user_handler) {
     Event ev = {0};
+    // Determine the next privilege (np): trap.S swapped mscratch into sp, so
+    // mscratch now holds the original sp. It is non-zero for a user trap and
+    // 0 for a kernel trap (kernel threads never have mscratch armed).
+    asm volatile("csrr %0, mscratch" : "=r"(ksp));
+    c->np = (ksp == 0) ? KERNEL_MODE : USER_MODE;
+    ksp = 0;
+    asm volatile("csrw mscratch, %0" : : "r"(ksp)); // support re-entry of CTE
+
     switch (c->mcause) {
       case 0x0b: case 0x8: c->mepc += 4;ev.event = (c->gpr[17] == -1) ? EVENT_YIELD : EVENT_SYSCALL; break;
       case 0x8000000000000007: ev.event = EVENT_IRQ_TIMER; break;
@@ -21,6 +31,13 @@ Context* __am_irq_handle(Context *c) {
 
   // switch to the address space of the process to be resumed
   __am_switch(c);
+
+  // Before returning to a user context, arm mscratch with that context's kernel
+  // stack top, so the next user trap can switch to the kernel stack.
+  if (c->np == USER_MODE) {
+    ksp = (uintptr_t)c + CONTEXT_SIZE;
+    asm volatile("csrw mscratch, %0" : : "r"(ksp));
+  }
 
   return c;
 }
@@ -42,7 +59,8 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   cp->mstatus = 0xa00001880;
   cp->mepc = (uintptr_t)entry;
   cp->gpr[10] = (uintptr_t)arg;
-  cp->np = 0;
+  cp->gpr[2] = (uintptr_t)kstack.end; // kernel thread starts on the top of its kernel stack
+  cp->np = KERNEL_MODE;
   cp->pdir = NULL;
   return cp;
 }

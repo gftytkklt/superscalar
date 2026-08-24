@@ -123,7 +123,6 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
 # define USTACK_TO_PA(v) ((void *)((uintptr_t)ustack_pa + ((uintptr_t)(v) - ustack_lo)))
 #else
   uintptr_t ustack = (uintptr_t)new_page(8) + 8 * PGSIZE;
-  uintptr_t ustack_lo = ustack - 8 * PGSIZE;
 # define USTACK_TO_PA(v) ((void *)(v))
 #endif
 

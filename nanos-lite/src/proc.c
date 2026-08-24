@@ -35,12 +35,24 @@ void init_proc() {
   context_kload(&pcb[0], hello_fun, (void *)0xdeadbeef);
   context_kload(&pcb[1], hello_fun, (void *)0xabcdef01);
   switch_boot_pcb();
-  #elif defined(MULTIPROGRAM) || defined(TIME_SHARING)
+  #elif defined(MULTIPROGRAM)
   context_kload(&pcb[0], hello_fun, (void *)0xdeadbeef);
   {
     char *const argv[] = {"/bin/pal", "--skip", NULL};
     char *const envp[] = {NULL};
     context_uload(&pcb[1], "/bin/pal", argv, envp);
+  }
+  switch_boot_pcb();
+  #elif defined(TIME_SHARING)
+  {
+    char *const argv[] = {"/bin/nterm", NULL};
+    char *const envp[] = {NULL};
+    context_uload(&pcb[0], "/bin/nterm", argv, envp);
+  }
+  {
+    char *const argv[] = {"/bin/hello", NULL};
+    char *const envp[] = {NULL};
+    context_uload(&pcb[1], "/bin/hello", argv, envp);
   }
   switch_boot_pcb();
   #endif

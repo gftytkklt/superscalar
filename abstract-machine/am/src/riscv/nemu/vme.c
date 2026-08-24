@@ -101,7 +101,8 @@ Context *ucontext(AddrSpace *as, Area kstack, void *entry) {
   // MPP = U mode, plus MXR/SUM (for DiffTest with the reference design)
   cp->mstatus = 0xa0000000 | MSTATUS_MXR | MSTATUS_SUM | MSTATUS_MPIE;
   cp->mepc = (uintptr_t)entry;
-  cp->np = 0;
+  cp->gpr[2] = (uintptr_t)kstack.end; // Navy _start will set sp from a0 anyway
+  cp->np = USER_MODE;
   cp->pdir = (as ? as->ptr : NULL);
   return cp;
 }
