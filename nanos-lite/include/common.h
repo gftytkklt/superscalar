@@ -3,7 +3,7 @@
 
 /* Uncomment these macros to enable corresponding functionality. */
 #define HAS_CTE
-//#define HAS_VME
+#define HAS_VME
 
 // for different stage nanos-lite (mutually exclusive; define exactly ONE):
 //#define TEST_DUMMY        // PA3: batch system, ramdisk dummy, naive_uload

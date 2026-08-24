@@ -11,4 +11,7 @@
 
 void* new_page(size_t);
 
+/* The brk() system call handler. */
+int mm_brk(uintptr_t brk);
+
 #endif

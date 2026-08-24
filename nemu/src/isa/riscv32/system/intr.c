@@ -21,7 +21,8 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
    */
   word_t mie = BITS(cpu.csr[1],3,3);
   cpu.csr[0] = epc;
-  cpu.csr[1] = (cpu.csr[1] & (~0x88ul)) | (mie << 7);
+  // trap entry: set MPP = current privilege, MPIE = MIE, then clear MIE
+  cpu.csr[1] = (cpu.csr[1] & ~0x1888ul) | (cpu.priv << 11) | (mie << 7);
   cpu.csr[2] = NO;// mcause = NO
   IFDEF(CONFIG_ETRACE, Log("etrace: ecall/epc=0x%lx NO=0x%lx vector=0x%lx", epc, NO, cpu.csr[3]));
   return cpu.csr[3];

@@ -46,7 +46,10 @@ static Finfo file_table[] __attribute__((used)) = {
 };
 
 static int filenum = sizeof(file_table) / sizeof(Finfo);
-static long *fp_offt = NULL;
+// use a static array instead of malloc(): the klib heap (heap.start) overlaps
+// the free physical pages managed by the MM (new_page()), so malloc() would
+// corrupt the kernel page tables once virtual memory is enabled
+static long fp_offt[sizeof(file_table) / sizeof(Finfo)] = {};
 
 // const char* get_filename(int fd){
 //   return (fd < filenum) ? file_table[fd].name : "undef file!";
@@ -113,7 +116,6 @@ int fs_close(int fd) {
 }
 
 void init_fs() {
-  fp_offt=(long*)malloc(filenum*sizeof(long));
   for(int i=0;i<filenum;i++){fp_offt[i] = 0;}
   // initialize the size of /dev/fb (screen_w * screen_h * 4)
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);

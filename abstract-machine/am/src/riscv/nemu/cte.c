@@ -4,10 +4,13 @@
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
+  // record the current address space into the context
+  __am_get_cur_as(c);
+
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
-      case 0x0b: c->mepc += 4;ev.event = (c->gpr[17] == -1) ? EVENT_YIELD : EVENT_SYSCALL; break;
+      case 0x0b: case 0x8: c->mepc += 4;ev.event = (c->gpr[17] == -1) ? EVENT_YIELD : EVENT_SYSCALL; break;
       case 0x8000000000000007: ev.event = EVENT_IRQ_TIMER; break;
       default: ev.event = EVENT_ERROR; break;
     }
@@ -15,6 +18,9 @@ Context* __am_irq_handle(Context *c) {
     c = user_handler(ev, c);
     assert(c != NULL);
   }
+
+  // switch to the address space of the process to be resumed
+  __am_switch(c);
 
   return c;
 }
