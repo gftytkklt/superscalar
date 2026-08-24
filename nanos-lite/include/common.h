@@ -11,8 +11,9 @@
 //#define TEST_KLOAD        // PA4.1 stage1: kernel threads, no loader
 // #define TEST_NTERM        // single process: NTerm + execvp (manual input)
 //#define MULTIPROGRAM      // PA4.1 stage2-4: multiprogram + execve
-#define TIME_SHARING      // PA4.4: time-sharing (preemptive multitasking)
-#if defined(TEST_KLOAD) || defined(MULTIPROGRAM) || defined(TIME_SHARING)
+//#define TIME_SHARING      // PA4.4: time-sharing (preemptive multitasking)
+#define FG_PROCESS        // PA4.5: foreground-process demo (F1/F2/F3 switch pal/bird/nslider)
+#if defined(TEST_KLOAD) || defined(MULTIPROGRAM) || defined(TIME_SHARING) || defined(FG_PROCESS)
 # define MULTITASK         // has process scheduling (schedule())
 #endif
 

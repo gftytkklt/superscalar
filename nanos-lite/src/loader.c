@@ -33,7 +33,7 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
     phoff += phentsize;
   }
   return ehdr.e_entry;
-  #elif defined(TEST_FILE) || defined(TEST_NTERM) || defined(MULTIPROGRAM) || defined(TIME_SHARING)
+  #elif defined(TEST_FILE) || defined(TEST_NTERM) || defined(MULTIPROGRAM) || defined(TIME_SHARING) || defined(FG_PROCESS)
   Elf_Ehdr ehdr = {};
   Elf_Phdr phdr = {};
   int fd = fs_open(filename, 0, 0);

@@ -17,6 +17,7 @@ typedef union {
 } PCB;
 
 extern PCB *current;
+extern PCB *fg_pcb;
 
 // 加载并运行一个用户程序（loader.c 中定义）
 void naive_uload(PCB *pcb, const char *filename);
@@ -26,5 +27,8 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg);
 void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]);
 
 void switch_boot_pcb(void);
+
+/* PA4.5: set the foreground process (the one that owns the screen) */
+void set_fg_pcb(int idx);
 
 #endif

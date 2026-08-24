@@ -1,4 +1,5 @@
 #include <common.h>
+#include <proc.h>
 
 #if defined(MULTIPROGRAM) && !defined(TIME_SHARING)
 # define MULTIPROGRAM_YIELD() yield()
@@ -39,7 +40,17 @@ size_t events_read(void *buf, size_t offset, size_t len) {
   char *tmp = (char *)buf;
   char *down_const = "kd ";
   char *up_const = "ku ";
-  
+
+  #ifdef FG_PROCESS
+  // PA4.5: F1/F2/F3 switch the foreground process. The key is consumed by the
+  // OS (not forwarded to the foreground app).
+  if (keydown) {
+    if (keycode == AM_KEY_F1) { set_fg_pcb(0); return 0; }
+    if (keycode == AM_KEY_F2) { set_fg_pcb(1); return 0; }
+    if (keycode == AM_KEY_F3) { set_fg_pcb(2); return 0; }
+  }
+  #endif
+
   if(keydown){strcpy(tmp, down_const);}
   else{strcpy(tmp, up_const);}
   strcat(tmp, keyname[keycode]);
