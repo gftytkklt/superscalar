@@ -16,6 +16,7 @@ void CallbackHelper() {
   // 重入保护：若回调函数内部又调用了会触发 CallbackHelper 的 SDL API
   // （如 SDL_GetTicks/SDL_PollEvent），直接返回，避免死递归。
   if (audio_in_callback) return;
+  SDL_TimerHelper(); // fire registered SDL timers (always, independent of audio)
   if (audio_paused || audio_spec.callback == NULL) return;
 
   uint32_t now = NDL_GetTicks();
