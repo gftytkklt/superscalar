@@ -116,7 +116,7 @@ static void axi_low(Vysyx_22040750 *d) {
     logtx.push_back({sim_time, 'W', wr_addr, 0, d->io_master_awsize, 0});
     wb_dwell   = 0;
   }
-  if (wr_pending && !wr_wdata && d->io_master_wvalid) {
+  if (wr_pending && !wr_wdata && d->io_master_wvalid && d->io_master_wready) {
     write_strobed(wr_addr, d->io_master_wdata, d->io_master_wstrb);
     logtx.push_back({sim_time, 'D', wr_addr, (uint32_t)d->io_master_wdata, 0, d->io_master_wstrb});
     wr_wdata = true;
@@ -171,6 +171,7 @@ int main(int argc, char **argv) {
   dut->clock = 0;
   dut->eval();
 
+  bool failed = false;
   const uint64_t MAXT = dump ? 30000 : 400000;
   for (sim_time = 0; !finish && sim_time < MAXT; sim_time++) {
     if (sim_time > 40) dut->reset = 0;
@@ -184,6 +185,7 @@ int main(int argc, char **argv) {
     axi_high(dut);
 
     if (tfp) tfp->dump(sim_time * 2);
+    if (Verilated::gotError()) failed = true;   // 记录断言失败但不中止，收集全部
   }
   printf("sim ended at t=%llu finish=%d\n", (unsigned long long)sim_time, finish);
   if (tfp) tfp->close();
@@ -202,5 +204,6 @@ int main(int argc, char **argv) {
 
   delete dut;
   free(low); free(high);
-  return 0;
+  printf("%s\n", failed ? "RESULT: FAIL" : "RESULT: PASS");
+  return failed ? 1 : 0;
 }

@@ -1,0 +1,15 @@
+[options]
+mode bmc
+depth 100
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -formal -sv vsrc_fm.v
+read_verilog -formal -sv props_div.sv
+prep -top div_top
+
+[files]
+../build/vsrc_fm.v
+props_div.sv

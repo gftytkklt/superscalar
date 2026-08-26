@@ -1,0 +1,19 @@
+# ============================================================================
+# npc/verif 生成产物（不入库）——与"测试代码"区分开：
+#   保留的测试代码：tests/*.S、assert/*.sv、formal/{*.sby,props_*.sv,trim_rtl.py}
+#                   tb_main.cpp、Makefile
+#   生成的 trace/中间文件：Verilator build 输出、SymbiYosys 各设计输出目录与反例 trace
+# ============================================================================
+
+# Verilator 构建产物（模型、二进制、映像、日志、波形）
+build/
+
+# SymbiYosys 输出：formal/<design>/ 均为生成物（含 engine_0/trace*.vcd 反例轨迹）
+formal/*/
+
+# 常见波形/反例/日志格式
+*.fst
+*.vcd
+*.smtc
+*.yw
+*.log

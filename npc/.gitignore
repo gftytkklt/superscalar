@@ -2,10 +2,13 @@
 *
 !*/
 !Makefile
+!*.py
 !*.mk
 !*.scala
 !*.[cSh]
 !*.v
+!*.sv
+!*.sby
 !*.cpp
 !*.cc
 !.gitignore

@@ -19,9 +19,16 @@ npc/
 ├── vsrc/                    # RTL 源码
 │   └── ysyx_22040750.v      # 全部 30 个 module 的处理器核
 ├── verif/                   # 独立 RTL 微验证环境（Verilator 裸核 testbench）
-│   ├── Makefile             # make / make run T=xxx / make fst T=xxx
-│   ├── tb_main.cpp          # AXI4 内存模型 + 时钟/复位 harness
-│   └── tests/               # 汇编微测试：bug2_csr bug3_div bug4_fencei
+│   ├── Makefile             # make / make run T=xxx / make fst T=xxx / make assert / make formal
+│   ├── tb_main.cpp          # AXI4 内存模型 + 时钟/复位 harness（断言失败返回非 0）
+│   ├── tests/               # 汇编微测试：bug2_csr bug3_div bug4_fencei
+│   ├── assert/              # 阶段2：bind 注入的仿真期断言（$error 监视器）
+│   │   ├── cache_bypass_check.sv   # bug1：cacheable 访问不许进 MMIO 状态（可 CACHE_CHECK_OFF）
+│   │   ├── csr_hazard_check.sv     # bug2：CSR 写读冒险（MEPC 定向）
+│   │   └── div_zero_check.sv       # bug3：除零商必须为 -1
+│   └── formal/              # 阶段2：SymbiYosys 形式化（.sby + SVA props；装 sby/z3 后 make formal）
+│       ├── props_div.sv  div.sby       # bug3 证明 + cover
+│       └── props_dcache.sv dcache.sby  # bug1 状态可达性 cover
 ├── scripts/linker-soc.ld    # SoC 内存布局 / 链接脚本（flash 0x30000000, sram 0x0f000000）
 ├── csrc/                    # C++ 仿真侧
 │   ├── soctest.cpp          # Verilator 主循环（波形/复位/时钟/difftest）
@@ -162,12 +169,34 @@ make clean
 - 等 **3.1 cache 修复**后补充命中/未命中/替换/脏写回/fence.i 序列用例；
 - 将这些并入 `npc/verif`，形成可重复的回归套件。
 
-### 阶段 2：断言与形式化（轻量、性价比最高）
-- 在 RTL 中埋 SystemVerilog Assertions（SVA）：PC 递增/跳转不变式、流水寄存器 valid/ready
-  协议、CSR 写不可丢失、AXI 握手协议等；
-- 接入开源 formal：`SymbiYosys`/`Yosys` 对关键属性（如 stall/前递正确性、cache 状态机
-  死锁自由、地址译码互斥）做有界形式验证；
-- Verilator 侧可用 `--assert` 时序断言作轻量回归。
+### 阶段 2：断言与形式化（轻量、性价比最高）—— ✅ 已落地
+在 `npc/verif` 中实现，分两条腿：
+
+1. **仿真期断言（`npc/verif/assert/`）**
+   - 不改核 RTL，用 `bind` 注入 `$error` 监视器（Verilator `--assert` 构建），
+     `tb_main.cpp` 检测到 `Verilated::gotError()` 即返回非 0；
+   - 覆盖已证实的三类问题：`cache_bypass_check.sv`(bug1)、`csr_hazard_check.sv`(bug2)、
+     `div_zero_check.sv`(bug3)。bug1 检查用 `` `CACHE_CHECK_OFF `` 可单独关掉，
+     以便聚焦 bug2/bug3 専属断言；
+   - 运行：
+     ```bash
+     cd npc/verif
+     make assert        # 抓 bug2/bug3：当前结果 FAIL bug2_csr / FAIL bug3_div / PASS bug4_fencei
+     make assert-cache  # 连 bug1 一起：三个用例首拍即报 "ICACHE bypassed"
+     ```
+2. **形式化（`npc/verif/formal/`）** ✅ 已实跑（yosys+z3+sby）
+   - 工具链：`apt install yosys z3`；`sby` 需另装（非 PyPI 包）——从
+     `github.com/YosysHQ/sby` 拉源码后 `make install PREFIX=~/.local`，并软链
+     `/usr/bin/yosys-smtbmc -> ~/.local/bin/smtbmc`，然后 `make formal` 即可；
+   - 内容：`props_div.sv`(除零规范断言+驱动) / `props_dcache.sv`(cache 状态可达性
+     cover)；RTL 经 `formal/trim_rtl.py` 抽出 `radix2_div`/`dcachectrl` 自包含块
+     给 yosys（避开 DPI-C），并修正 RTL 的 0 位宽字面量；
+   - **当前结果（buggy RTL）**：
+     - `div.sby`（bmc depth100）：z3 在 step 67 给出**真实反例**
+       `-5/0`：quotient=+1（规范 -1）、remainder=-5（正确），与仿真断言一致；
+     - `dcache.sby`（cover depth30）：RD_HIT/RD_MISS/WR_HIT/WR_MISS 四个 cover
+       全部不可达 → 形式化证明 cache 恒旁路；
+   - 修复对应 RTL 后两条均应转 PASS，作为"证明级"回归项。
 
 ### 阶段 3：接入 UVM 等验证流程
 CPU 类同步设计的 UVM 化要点：

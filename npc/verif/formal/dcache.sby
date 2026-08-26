@@ -1,0 +1,15 @@
+[options]
+mode cover
+depth 30
+
+[engines]
+smtbmc z3
+
+[script]
+read_verilog -formal -sv vsrc_fm.v
+read_verilog -formal -sv props_dcache.sv
+prep -top dcache_cover
+
+[files]
+../build/vsrc_fm.v
+props_dcache.sv
