@@ -16,6 +16,8 @@ ifeq ($(WAVE), 1)
 	CFLAGS += -DCONFIG_WAVEFORM
 endif
 LDFLAGS += $(shell llvm-config --libs) -ldl
+# SDL2 仅 nvboard 需要；npc SoC 仿真用不到，缺库的环境下去掉（WITH_SDL=y 打开）
+LDFLAGS += $(if $(filter y,$(WITH_SDL)),-lSDL2 -lSDL2_image,)
 BUILD_DIR = ./build
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(TOPNAME)
@@ -30,7 +32,7 @@ VERILATOR_INCPATH = ./ysyxSoC/perip/uart16550/rtl ./ysyxSoC/perip/spi/rtl
 VERILATOR_INCFLAGS := $(addprefix -I,$(VERILATOR_INCPATH))
 VERILATOR_CFLAGS += -MMD --build -cc \
 		    -O3 --x-assign fast --x-initial fast \
-		    --noassert --trace \
+		    --noassert --trace -Wno-NOTREDOP \
 			-autoflush \
 			$(VERILATOR_INCFLAGS)
 
@@ -41,7 +43,7 @@ $(shell mkdir -p $(BUILD_DIR))
 
 #INCFLAGS = $(addprefix -I, $(INC_PATH))
 CFLAGS += -DTOP_NAME="\"V$(TOPNAME)\""
-LDFLAGS += -lSDL2 -lSDL2_image
+LDFLAGS += $(if $(filter y,$(WITH_SDL)),-lSDL2 -lSDL2_image,)
 #-include *.d
 $(BIN): $(VSRC) $(CSRC)
 	@rm -rf $(OBJ_DIR)

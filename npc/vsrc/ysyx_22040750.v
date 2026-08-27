@@ -1004,7 +1004,9 @@ module ysyx_22040750_cpu_core(
 
 	ysyx_22040750_csr_foward csr_foward_e(
 		.I_csr_ID(csr_rd_data),
-		.I_csr_EX(ID_EX_csr),
+		// EX forward: the CSR write-in-EX commits `alu_csr_data`(new value),
+		// NOT the stale decode-time snapshot (ID_EX_csr) -- bug2 fix
+		.I_csr_EX(alu_csr_data),
 		.I_csr_MEM(EX_MEM_csr),
 		.I_csr_WB(MEM_WB_csr),
 		.I_csr_addr_ID(csr_addr),
@@ -1421,9 +1423,11 @@ module ysyx_22040750_csr_foward(
     output reg [63:0] O_csr_foward_data
 );
     wire EX_foward,MEM_foward,WB_foward;
-    assign EX_foward = (I_csr_wen_ID & I_csr_wen_EX) & (I_csr_addr_ID == I_csr_addr_EX);
-    assign MEM_foward = (I_csr_wen_ID & I_csr_wen_MEM) & (I_csr_addr_ID == I_csr_addr_MEM);
-    assign WB_foward = (I_csr_wen_ID & I_csr_wen_WB) & (I_csr_addr_ID == I_csr_addr_WB);
+    // 门控只看"该级存在对同址 CSR 的未提交写"；读方是否本身为写指令与其无关
+    // （否则 mret/csrr 等纯读者拿不到在飞新值）
+    assign EX_foward  = I_csr_wen_EX  & (I_csr_addr_ID == I_csr_addr_EX);
+    assign MEM_foward = I_csr_wen_MEM & (I_csr_addr_ID == I_csr_addr_MEM);
+    assign WB_foward  = I_csr_wen_WB  & (I_csr_addr_ID == I_csr_addr_WB);
     always @(*)
         if(EX_foward)
             O_csr_foward_data = I_csr_EX;
@@ -2289,7 +2293,12 @@ module ysyx_22040750_decoder(
     assign O_rs2 = rs2;
     assign O_rd = rd;
     // csr data
-    assign O_csr_addr = I_timer_intr ? 12'h305 : decode_inst[31:20];
+    // addr used for csr read port & CSR-forward matching:
+    // mret consumes MEPC (not the 0x302 field in its encoding);
+    // timer-intr/exception entry consumes MTVEC
+    assign O_csr_addr = I_timer_intr ? 12'h305 :
+                        MRET         ? 12'h341 :
+                        decode_inst[31:20];
     assign O_csr_imm = decode_inst[19:15];
     //assign O_csr_op_sel = decode_inst[14:12];
     //assign O_funct3 = funct3;
@@ -3843,6 +3852,16 @@ module ysyx_22040750_radix2_div(
             Q_valid <= 0;
         else
             Q_valid <= &iter_cnt ? 1 : 0;
+    // divide-by-zero latch: DIV/DIVU /0 returns quotient all 1s (RISC-V spec),
+    // otherwise negative dividend would give +1 via sign restore
+    reg div_zero;
+    always @(posedge clk)
+        if(rst)
+            div_zero <= 0;
+        else if(div_valid)
+            div_zero <= ~|divisor;
+        else if(Q_valid)
+            div_zero <= 0;
     // dividend & divisor sign flag
     assign dividend_flag = dividend[63] & is_signed;
     assign divisor_flag = divisor[63] & is_signed;
@@ -3880,7 +3899,8 @@ module ysyx_22040750_radix2_div(
 //            abs_remainder <= dividend_flag ? {64'b0,-dividend} : {64'b0,dividend};
 //        else
 //            abs_remainder <= current_q ? current_sub_result : abs_remainder;
-    assign quotient = q_flag ? -abs_quotient : abs_quotient;
+    assign quotient = div_zero ? {64{1'b1}} :
+                      q_flag ? -abs_quotient : abs_quotient;
 //    assign remainder = rem_flag ? -abs_remainder[63:0] : abs_remainder;
     assign remainder = rem_flag ? -abs_dividend[63:0] : abs_dividend[63:0];
 endmodule

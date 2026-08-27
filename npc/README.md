@@ -141,6 +141,10 @@ make -C npc sim IMG=$(pwd)/npc/test_prog/build/char-test.bin
 在不编译 SoC、不依赖 NEMU 的前提下，用 Verilator 直接编译 CPU 核本身，配一个自写的
 AXI4 内存模型（`tb_main.cpp`）直接驱动取指/访存，适合写定向微用例。
 
+`tb_main.cpp` 的从端模型按 Verilog 分层事件队列建模：每个仿真步 = 一次 posedge eval +
+一次 settle eval；从端把组合输出与"触发器寄存器(NBA 拍延迟)"分开写，AR 请求延迟一拍给
+rvalid、wdata 接收后延迟一拍再给 bvalid，全部握手驱动、无启发式退避。
+
 ```bash
 cd npc/verif
 make                  # 编译模型并跑全部 tests/*.S

@@ -36,9 +36,9 @@ module csr_hazard_check (
   wire pending_ex  = ex_csr_wen           && (ex_csr_addr == MEPC);
 
   wire [63:0] expected =
-        pending_wb  ? wb_csr :
+        pending_ex  ? alu_csr_data :
         pending_mem ? mem_csr :
-        pending_ex  ? alu_csr_data : committed;
+        pending_wb  ? wb_csr : committed;
 
   always @(posedge clk) begin
     if (!rst && id_reads_mepc)

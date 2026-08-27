@@ -1,3 +1,25 @@
+// ============================================================================
+// Standalone CPU-core testbench (Verilator) with an AXI4-slave memory model.
+//
+// 与 Verilog 分层事件队列 (stratified event queue) 的一致性说明：
+//
+//   每个仿真步执行两次 eval：
+//     [1] posedge eval  (clock=1) -- 该时刻发生时钟沿：
+//         - DUT 触发器"采样"的是我们在上一 tick 中驱动并从端已稳定的输入值，
+//           与真实 Verilog 'flop 在 active 事件结束后取 NBA 前的值' 一致；
+//         - 从端组合输出在 eval 内随输入结算，相当于 posedge 前的组合逻辑。
+//     [2] settle eval   (clock=0) -- 无沿，状态不变，仅让组合逻辑结算；
+//         之后 DUT 主端输出即为"当前拍 [t..t+1) 主端向从端呈现的值"。
+//     [3] slave_tick() 在 settle 之后执行：
+//         (a) 先用上一 tick 已提交的"从端寄存器状态"驱动组合输出
+//             （供下一个 posedge 采样）；
+//         (b) 再用本拍采样到的主端信号判定握手（AR/AW/W/B/R），
+//             把结果"提交"进从端寄存器 -- 相当于从端触发器在该 posedge 的
+//             NBA 更新，一拍之后才对外可见（rvalid/bvalid 晚一拍给出）。
+//
+//   因此本模型是"一拍响应、握手驱动"的从端：无 dwell 超时、无启发式退避，
+//   复用与 RTL 相同的置位/保持(NBA)语义，避免同拍即回等非规范行为。
+// ============================================================================
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -24,19 +46,19 @@ extern "C" void sim_end() { finish = true; }
 static uint8_t *low;   // [0x00000000, 0x10000000) SRAM region
 static uint8_t *high;  // [0x2ff00000, 0x31000000) flash/code region
 
-static bool rd_pending = false;
-static bool rd_served  = false;
+// ---- 从端寄存器（"触发器"，一拍一拍后提交并对外可见）--------------------
+static bool  rd_serving = false;   // 当前是否正在向外回 R 数据（一拍后才给 rvalid）
 static uint32_t rd_addr = 0;
-static uint8_t rd_size = 0;
-static uint64_t rd_buf = 0;
-
-static bool wr_pending = false;
-static bool wr_wdata = false;
+static uint8_t  rd_size = 0;
+static uint64_t rd_buf  = 0;
+static bool  aw_hs = false;        // AW 已握手接受
+static bool  wd_hs = false;        // W 数据已接收
+static bool  wd_hs_d = false;      // wd_hs 的一拍延迟（NBA：接收后一拍才对外可查）
 static uint32_t wr_addr = 0;
 
 struct txn {
   uint64_t t;
-  char type;   // A=AR  W=AW  D=wdata B=Bresp R+rdata
+  char type;   // A=AR  R=R响应  W=AW  D=wdata  B=Bresp
   uint32_t addr;
   uint32_t data;
   uint8_t  size;
@@ -62,74 +84,61 @@ static void write_strobed(uint32_t a, uint64_t d, uint8_t strb) {
     if (strb & (1 << i)) byte_at(base + i) = (d >> (8 * i)) & 0xff;
 }
 
-// called during the LOW half-cycle: master outputs are stable; capture the
-// requests presented on AR/AW and drive all slave-side outputs for the posedge.
-static void axi_low(Vysyx_22040750 *d) {
-  // --- READ CHANNEL -------------------------------------------------------
-  // Retire a finished response when the core has clearly consumed it: it can
-  // only present a NEW arvalid after the previous burst was fully retired, so
-  // seeing arvalid (or a dwell timeout as safety net) means we are free again.
-  static int rv_dwell = 0;
-  if (rd_pending && rd_served && (d->io_master_arvalid || rv_dwell >= 8)) {
-    rd_pending = false;
-    rd_served  = false;
-    rv_dwell   = 0;
-  }
-  d->io_master_arready = rd_pending ? 0 : 1;
-  if (!rd_pending && d->io_master_arvalid) {
-    rd_pending = true;
-    rd_served  = false;
+// (a) 用"上一拍已提交的从端寄存器状态"驱动组合输出（下个 posedge 采样）。
+//     组合逻辑此时就绪，等价于 Verilog 中 comb 块在 active 事件内的结算。
+static void slave_comb(Vysyx_22040750 *d) {
+  d->io_master_arready = rd_serving ? 0 : 1;
+  d->io_master_rvalid  = rd_serving ? 1 : 0;
+  d->io_master_rlast   = rd_serving ? 1 : 0;
+  d->io_master_rdata   = rd_serving ? rd_buf : 0;
+  d->io_master_rid     = 0;
+  d->io_master_rresp   = 0;
+
+  d->io_master_awready = aw_hs ? 0 : 1;
+  d->io_master_wready  = (aw_hs && !wd_hs) ? 1 : 0;
+  d->io_master_bvalid  = (aw_hs && wd_hs_d) ? 1 : 0;
+  d->io_master_bid     = 0;
+  d->io_master_bresp   = 0;
+}
+
+// (b) 用本拍主端呈现的信号判定握手并"提交"从端寄存器（模拟该拍 posedge 的 NBA）：
+//     提交结果从下一个 tick 起驱动输出 —— 即一拍后才对外可见。
+static void slave_commit(Vysyx_22040750 *d) {
+  // ---- 读通道 ----
+  if (rd_serving) {
+    // R 数据在飞：本拍 posedge 若 rvalid&&rready 完成握手则退避
+    if (d->io_master_rready) {
+      logtx.push_back({sim_time, 'R', rd_addr, (uint32_t)(rd_buf & 0xffffffff), rd_size, 0});
+      rd_serving = false;
+    }
+  } else if (d->io_master_arvalid) {
+    // AR 握手（arready 本拍为 1）：提交 -> 下一拍开始回 R
+    rd_serving = true;
     rd_addr    = d->io_master_araddr;
     rd_size    = d->io_master_arsize;
     rd_buf     = read_aligned(rd_addr);
     logtx.push_back({sim_time, 'A', rd_addr, 0, rd_size, 0});
-    rv_dwell   = 0;
   }
-  if (rd_pending) {
-    d->io_master_rvalid = 1;
-    d->io_master_rlast  = 1;
-    if (!rd_served) {
-      logtx.push_back({sim_time, 'R', rd_addr, (uint32_t)(rd_buf & 0xffffffff), rd_size, 0});
-      rd_served = true;
-    }
-    rv_dwell++;
-  } else {
-    d->io_master_rvalid = 0;
-    d->io_master_rlast  = 0;
-  }
-  d->io_master_rdata = rd_buf;
-  d->io_master_rid   = 0;
-  d->io_master_rresp = 0;
-
-  // --- WRITE CHANNEL ------------------------------------------------------
-  static int wb_dwell = 0;
-  if (wr_pending && wr_wdata && (d->io_master_awvalid || wb_dwell >= 8)) {
-    wr_pending = false;
-    wr_wdata   = false;
-    wb_dwell   = 0;
-  }
-  d->io_master_awready = wr_pending ? 0 : 1;
-  if (!wr_pending && d->io_master_awvalid) {
-    wr_pending = true;
-    wr_wdata   = false;
-    wr_addr    = d->io_master_awaddr;
+  // ---- 写通道 ----
+  if (!aw_hs && d->io_master_awvalid) {
+    aw_hs = true;                 // AW 握手（awready 本拍为 1）
+    wd_hs = false;
+    wr_addr = d->io_master_awaddr;
     logtx.push_back({sim_time, 'W', wr_addr, 0, d->io_master_awsize, 0});
-    wb_dwell   = 0;
   }
-  if (wr_pending && !wr_wdata && d->io_master_wvalid && d->io_master_wready) {
+  if (aw_hs && !wd_hs && d->io_master_wvalid && d->io_master_wready) {
     write_strobed(wr_addr, d->io_master_wdata, d->io_master_wstrb);
     logtx.push_back({sim_time, 'D', wr_addr, (uint32_t)d->io_master_wdata, 0, d->io_master_wstrb});
-    wr_wdata = true;
+    wd_hs = true;
   }
-  d->io_master_wready = (wr_pending && !wr_wdata) ? 1 : 0;
-  d->io_master_bvalid = (wr_pending && wr_wdata) ? 1 : 0;
-  d->io_master_bid    = 0;
-  d->io_master_bresp  = 0;
-  if (wr_pending && wr_wdata) wb_dwell++;
-}
-
-static void axi_high(Vysyx_22040750 *d) {
-  (void)d;
+  if (aw_hs && wd_hs_d && d->io_master_bready) {
+    // bvalid 上一拍已对外置 1，本拍 posedge 完成 B 握手后退避
+    logtx.push_back({sim_time, 'B', wr_addr, 0, 0, 0});
+    aw_hs = false;
+    wd_hs = false;
+    wd_hs_d = false;
+  }
+  wd_hs_d = wd_hs;   // 一拍传递：wdata 接收后下一拍才可给 bvalid
 }
 
 int main(int argc, char **argv) {
@@ -151,7 +160,7 @@ int main(int argc, char **argv) {
   printf("img size=%ld\n", sz);
 
   // boot word at 0x2ffffffc : jal x0, 0x30000000  (offset=4)
-  const uint32_t boot = 0x0040006f; // verifed by objdump below
+  const uint32_t boot = 0x0040006f; // verified vs assembler
   uint32_t baddr = 0x2ffffffc;
   high[baddr - 0x2ff00000 + 0] = boot & 0xff;
   high[baddr - 0x2ff00000 + 1] = (boot >> 8) & 0xff;
@@ -170,19 +179,17 @@ int main(int argc, char **argv) {
   dut->io_interrupt = 0;
   dut->clock = 0;
   dut->eval();
+  slave_comb(dut);   // 让从端在首个 posedge 之前已给出初始组合输出
 
   bool failed = false;
   const uint64_t MAXT = dump ? 30000 : 400000;
   for (sim_time = 0; !finish && sim_time < MAXT; sim_time++) {
-    if (sim_time > 40) dut->reset = 0;
-    // low phase: settle, capture master requests, drive slave outputs
-    dut->clock = 0;
-    dut->eval();
-    axi_low(dut);
-    // high phase: posedge samples our outputs & core state advances
-    dut->clock = 1;
-    dut->eval();
-    axi_high(dut);
+    if (sim_time > 40) dut->reset = 0;   // 同步复位：沿前撤销，posedge 采样为 0
+
+    dut->clock = 1; dut->eval();          // posedge：DUT 采样上一 tick 驱动的从端输出
+    dut->clock = 0; dut->eval();          // settle：主端输出 = 当前拍 [t..t+1) 值
+    slave_comb(dut);                      // 用"当前从端寄存器态"驱动本拍从端输出
+    slave_commit(dut);                    // 判定本拍握手并把结果提交进从端寄存器（下一拍生效）
 
     if (tfp) tfp->dump(sim_time * 2);
     if (Verilated::gotError()) failed = true;   // 记录断言失败但不中止，收集全部

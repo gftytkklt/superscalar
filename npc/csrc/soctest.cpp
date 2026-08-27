@@ -46,20 +46,29 @@ int main(int argc, char** argv){
         printf("waveform: %s\n",ANSI_FMT("OFF", ANSI_FG_RED));
         #endif
     while(!finish){
-        if(sim_time > 20){soc->reset = 0;}
-        if(sim_time & 1){soc->clock = 1;}
-        else{soc->clock = 0;}
-        // printf("before eval %d\n", *diff_valid);
+        // 半周期驱动：每个 sim_time 一次 eval。
+        //   odd : clock=1 -> eval 内发生 posedge + 组合结算；
+        //   even: clock=0 -> eval 仅组合结算（无沿，触发器保持）。
+        // 事件队列对应关系：
+        //   - 触发器在 posedge 取"沿前已稳定"的输入（reset/从端请求），符合 NBA 语义；
+        //   - 组合信号（diff_valid/wb_pc 等，由 always@(*) 结算）在 eval 后即本拍
+        //     posedge 之后的 retire 信息，故 difftest 只在 posedge 拍采样并与参考
+        //     模型的"单指令推进"一一对应。
+        bool posedge_phase = (sim_time & 1) != 0;
+
+        // sync reset (always@(posedge) if(rst))：在 posedge 拍、clock 0->1 前撤销，
+        // 保证该拍上升沿采样到已撤销值；even 拍不写，消除相位歧义。
+        if (posedge_phase && (sim_time > 20)) { soc->reset = 0; }
+
+        soc->clock = posedge_phase;
         soc->eval();
         #ifdef CONFIG_WAVEFORM
-        tfp->dump(sim_time);
+        if (posedge_phase) tfp->dump(sim_time);   // 仅 posedge 帧（信息不丢，去半拍冗余）
         #endif
         #ifdef CONFIG_DIFFTEST
         // printf("wb_pc: %x\n", *wb_pc);
         // printf("%lu: after eval %d %x\n", sim_time, diff_valid, *wb_pc);
-        if((diff_valid == true)&&(soc->clock == 1)){
-          // printf("wb_pc: %x, inst: %08x, mmio: %d, valid: %d\n", *wb_pc, *wb_inst, mmio_op, diff_valid);
-          // printf("in valid loop\n");
+        if(diff_valid && posedge_phase){
           if(mmio_op == true){
             // printf("mmio op\n");
             difftest_skip_ref();
