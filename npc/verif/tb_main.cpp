@@ -43,17 +43,21 @@ extern "C" void set_wb_inst_ptr(const svOpenArrayHandle) {}
 extern "C" void sim_end() { finish = true; }
 
 // ---- AXI4 slave memory model --------------------------------------------
-static uint8_t *low;   // [0x00000000, 0x10000000) SRAM region
-static uint8_t *high;  // [0x2ff00000, 0x31000000) flash/code region
+static uint8_t *low;    // [0x00000000, 0x10000000) SRAM region
+static uint8_t *high;   // [0x2ff00000, 0x31000000) flash/code region
+static uint8_t *pmem;   // [0x80000000, 0x88000000) 可缓存物理内存(PA3/仙剑段)
 
 // ---- 从端寄存器（"触发器"，一拍一拍后提交并对外可见）--------------------
-static bool  rd_serving = false;   // 当前是否正在向外回 R 数据（一拍后才给 rvalid）
+static bool  rd_serving = false;   // 当前正在向外回 R 数据（一拍后才给 rvalid）
 static uint32_t rd_addr = 0;
 static uint8_t  rd_size = 0;
-static uint64_t rd_buf  = 0;
+static uint8_t  rd_beats = 1;      // 本突发总拍数 = arlen+1（1=单拍, 4=32B cacheline）
+static uint8_t  rd_beat  = 0;      // 当前已回的第几拍(0..beats-1)
 static bool  aw_hs = false;        // AW 已握手接受
-static bool  wd_hs = false;        // W 数据已接收
+static bool  wd_hs = false;        // W 全部拍已接收（最后一拍后置真）
 static bool  wd_hs_d = false;      // wd_hs 的一拍延迟（NBA：接收后一拍才对外可查）
+static uint8_t  wr_beats = 1;      // 本写突发总拍数 = awlen+1（1=单拍, 4=32B cacheline）
+static uint8_t  wr_beat  = 0;      // 当前已接收的第几拍(0..beats-1)
 static uint32_t wr_addr = 0;
 
 struct txn {
@@ -69,6 +73,7 @@ static std::vector<txn> logtx;
 static uint8_t &byte_at(uint32_t a) {
   if (a < 0x10000000) return low[a];
   if (a >= 0x2ff00000 && a < 0x31000000) return high[a - 0x2ff00000];
+  if (a >= 0x80000000 && a < 0x88000000) return pmem[a - 0x80000000];
   return low[0];
 }
 
@@ -89,8 +94,8 @@ static void write_strobed(uint32_t a, uint64_t d, uint8_t strb) {
 static void slave_comb(Vysyx_22040750 *d) {
   d->io_master_arready = rd_serving ? 0 : 1;
   d->io_master_rvalid  = rd_serving ? 1 : 0;
-  d->io_master_rlast   = rd_serving ? 1 : 0;
-  d->io_master_rdata   = rd_serving ? rd_buf : 0;
+  d->io_master_rlast   = rd_serving && (rd_beat == rd_beats - 1) ? 1 : 0;
+  d->io_master_rdata   = rd_serving ? read_aligned(rd_addr + rd_beat * 8) : 0;
   d->io_master_rid     = 0;
   d->io_master_rresp   = 0;
 
@@ -104,32 +109,45 @@ static void slave_comb(Vysyx_22040750 *d) {
 // (b) 用本拍主端呈现的信号判定握手并"提交"从端寄存器（模拟该拍 posedge 的 NBA）：
 //     提交结果从下一个 tick 起驱动输出 —— 即一拍后才对外可见。
 static void slave_commit(Vysyx_22040750 *d) {
-  // ---- 读通道 ----
+  // ---- 读通道（支持 burst：arpack burst 拍数按 arlen+1）----
   if (rd_serving) {
-    // R 数据在飞：本拍 posedge 若 rvalid&&rready 完成握手则退避
+    // R 数据在飞：本拍 posedge 若 rvalid&&rready 完成一拍
     if (d->io_master_rready) {
-      logtx.push_back({sim_time, 'R', rd_addr, (uint32_t)(rd_buf & 0xffffffff), rd_size, 0});
-      rd_serving = false;
+      logtx.push_back({sim_time, 'R',
+                       rd_addr + rd_beat * 8,
+                       (uint32_t)(read_aligned(rd_addr + rd_beat * 8) & 0xffffffff),
+                       rd_size, 0});
+      if (rd_beat == rd_beats - 1) {
+        rd_serving = false;   // 最后一拍已回，退避
+        rd_beat = 0;
+      } else {
+        rd_beat++;
+      }
     }
   } else if (d->io_master_arvalid) {
     // AR 握手（arready 本拍为 1）：提交 -> 下一拍开始回 R
     rd_serving = true;
     rd_addr    = d->io_master_araddr;
     rd_size    = d->io_master_arsize;
-    rd_buf     = read_aligned(rd_addr);
-    logtx.push_back({sim_time, 'A', rd_addr, 0, rd_size, 0});
+    rd_beats   = d->io_master_arlen + 1;   // 单拍 arlen=0 => 1 beat；cacheline arlen=3 => 4 beat
+    rd_beat    = 0;
+    logtx.push_back({sim_time, 'A', rd_addr, 0, rd_size, d->io_master_arlen});
   }
-  // ---- 写通道 ----
+  // ---- 写通道（支持 burst：wdata 按 awlen+1 拍接收，全收后才回 B）----
   if (!aw_hs && d->io_master_awvalid) {
     aw_hs = true;                 // AW 握手（awready 本拍为 1）
     wd_hs = false;
-    wr_addr = d->io_master_awaddr;
-    logtx.push_back({sim_time, 'W', wr_addr, 0, d->io_master_awsize, 0});
+    wr_addr  = d->io_master_awaddr;
+    wr_beats = d->io_master_awlen + 1;   // 单拍 awlen=0 => 1 beat；cacheline awlen=3 => 4 beat
+    wr_beat  = 0;
+    logtx.push_back({sim_time, 'W', wr_addr, 0, d->io_master_awsize, d->io_master_awlen});
   }
   if (aw_hs && !wd_hs && d->io_master_wvalid && d->io_master_wready) {
-    write_strobed(wr_addr, d->io_master_wdata, d->io_master_wstrb);
-    logtx.push_back({sim_time, 'D', wr_addr, (uint32_t)d->io_master_wdata, 0, d->io_master_wstrb});
-    wd_hs = true;
+    write_strobed(wr_addr + wr_beat * 8, d->io_master_wdata, d->io_master_wstrb);
+    logtx.push_back({sim_time, 'D', wr_addr + wr_beat * 8,
+                     (uint32_t)d->io_master_wdata, 0, d->io_master_wstrb});
+    if (wr_beat == wr_beats - 1) wd_hs = true;   // 最后一拍：全部接收，可回 B
+    else wr_beat++;
   }
   if (aw_hs && wd_hs_d && d->io_master_bready) {
     // bvalid 上一拍已对外置 1，本拍 posedge 完成 B 握手后退避
@@ -150,10 +168,17 @@ int main(int argc, char **argv) {
 
   low  = (uint8_t*)calloc(0x10000000, 1);
   high = (uint8_t*)calloc(0x00220000, 1); // cover [0x2ff00000, 0x31000000)
+  pmem = (uint8_t*)calloc(0x08000000, 1); // cover [0x80000000, 0x88000000)
   FILE *fp = fopen(argv[1], "rb");
   if (!fp) { fprintf(stderr, "cannot open %s\n", argv[1]); return 1; }
   fseek(fp, 0, SEEK_END); long sz = ftell(fp); fseek(fp, 0, SEEK_SET);
   if (sz > 0x00200000) { fprintf(stderr, "img too big %ld\n", sz); return 1; }
+#ifdef NPC_PMEM_BOOT
+  // 主存模式：映像直接装入可缓存区 0x80000000（PC 复位也到 0x80000000）
+  fread(pmem, 1, sz, fp);
+  fclose(fp);
+  printf("PMEM-boot: img size=%ld loaded @0x80000000\n", sz);
+#else
   // image loads at flash 0x30000000 -> high[0x30000000 - 0x2ff00000]
   fread(high + 0x00100000, 1, sz, fp);
   fclose(fp);
@@ -167,6 +192,7 @@ int main(int argc, char **argv) {
   high[baddr - 0x2ff00000 + 2] = (boot >> 16) & 0xff;
   high[baddr - 0x2ff00000 + 3] = (boot >> 24) & 0xff;
   printf("boot word @%08x = %08x\n", baddr, boot);
+#endif
 
   Verilated::commandArgs(argc, argv);
   Vysyx_22040750 *dut = new Vysyx_22040750;
@@ -210,7 +236,7 @@ int main(int argc, char **argv) {
            (unsigned long long)x.t, x.type, x.addr, x.size, x.strb, x.data);
 
   delete dut;
-  free(low); free(high);
+  free(low); free(high); free(pmem);
   printf("%s\n", failed ? "RESULT: FAIL" : "RESULT: PASS");
   return failed ? 1 : 0;
 }

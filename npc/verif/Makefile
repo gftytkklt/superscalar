@@ -16,6 +16,8 @@
 #   make                 build the model, then run every tests/*.S
 #   make run  T=bug2_csr run a single test
 #   make fst  T=bug2_csr run a single test and keep its waveform
+#   make ptest T=cache_data 主存模式(0x80000000 boot)：验证可缓存区 icache/dcache
+#   make pfst  T=cache_data 主存模式并保留波形
 #   make assert          阶段2断言回归（关 bug1 检查，聚焦 bug2/bug3）
 #   make assert-cache    阶段2断言回归（含 bug1：cache 旁路检查全开）
 #   make formal          阶段2形式化（yosys/sby/z3，跑全部 formal/*.sby）
@@ -26,8 +28,10 @@ BUILD    := build
 OBJ      := $(BUILD)/obj_dir
 AOBJ     := $(BUILD)/obj_dirA
 AOBJ2    := $(BUILD)/obj_dirA2
+POBJ     := $(BUILD)/obj_dirP# 主存模式(0x80000000 boot)模型目录
 IMG      := $(BUILD)/img
 MODEL    := $(OBJ)/Vnpc
+PMODEL   := $(POBJ)/VnpcP
 AMODEL   := $(AOBJ)/VnpcA     # 断言模型（含全部检查）
 CMODEL   := $(AOBJ2)/VnpcA    # 断言模型（关掉 cache 旁路检查，聚焦 CSR/除零断言）
 RTL      := ../vsrc/ysyx_22040750.v
@@ -64,7 +68,7 @@ define deps_stamp
 	@if cmp -s $(1) $(1).tmp; then rm -f $(1).tmp; else mv -f $(1).tmp $(1); fi
 endef
 
-.PHONY: all run fst assert assert-cache formal bins clean FORCE
+.PHONY: all run fst ptest pfst assert assert-cache formal bins clean FORCE
 .DEFAULT_GOAL := all
 FORCE: ;
 
@@ -76,6 +80,13 @@ run: $(MODEL) $(IMG)/$(T).bin
 
 fst: $(MODEL) $(IMG)/$(T).bin
 	./$(MODEL) $(IMG)/$(T).bin $(BUILD)/$(T).fst
+
+# ---- 主存模式（0x80000000 boot）：验证可缓存区 icache/dcache ----
+ptest: $(PMODEL) $(IMG)/$(T).bin
+	./$(PMODEL) $(IMG)/$(T).bin
+
+pfst: $(PMODEL) $(IMG)/$(T).bin
+	./$(PMODEL) $(IMG)/$(T).bin $(BUILD)/$(T).fst
 
 bins: $(BINS)
 
@@ -94,6 +105,16 @@ $(MODEL): $(DEPS_MODEL) $(STAMP_MODEL)
 
 $(STAMP_MODEL): $(DEPS_MODEL) FORCE
 	$(call deps_stamp,$(STAMP_MODEL),$(DEPS_MODEL))
+
+# ---- 主存模式模型（NPC_PMEM_BOOT：PC 复位 0x80000000，映像入 pmem）-----
+# 注意：这个 bin 是 flash 链接产物，仅用于"代码段内容"；pmem 模式把整段
+# .text 装到 0x80000000。数据/链接基址差异由测试程序自身控制在 0x80000000。
+$(PMODEL): tb_main.cpp $(RTL)
+	mkdir -p $(POBJ)
+	verilator --binary --trace-fst -O3 -j 0 -Wno-fatal -Wno-DECLFILENAME \
+		+define+NPC_PMEM_BOOT \
+		-Mdir $(POBJ) --top-module ysyx_22040750 --timescale 1ns/1ns --no-timing \
+		-o VnpcP $(RTL) tb_main.cpp -CFLAGS -DNPC_PMEM_BOOT
 
 # ---- 阶段2：仿真期断言（Verilator --assert + bind) -------------------------
 # assert:       聚焦 CSR 冒险(bug2) / 除零(bug3)；关掉 cache 旁路检查(bug1)，

@@ -1847,7 +1847,9 @@ module ysyx_22040750_dcachectrl #(
     assign mmio_wdata = cpu_reg;
     assign cache_wdata = wdata[{wdata_cnt,3'b0,3'b0} +: 64];
     assign O_mem_wdata = mmio_process ? mmio_wdata : cache_wdata;
-    assign O_mem_wstrb = mmio_process ? mmio_mask_reg : cpu_mask_reg;
+    // cacheline 写回(eviction/fence.i)是整行 32B 写，wstrb 必须全 1；
+    // 只有 MMIO 写才按 CPU 单次访存的 byte mask（cpu_mask_reg）。
+    assign O_mem_wstrb = mmio_process ? mmio_mask_reg : 8'hff;
     assign O_mem_bready = 1;
     // sram interface impl
     // sram wr_en happen at WR_HIT(cpu partial wr), XX_ALLOCATE(cacheline replacement)
@@ -1864,7 +1866,16 @@ module ysyx_22040750_dcachectrl #(
             endcase
         else
             sram_wmaskB = (rd_allocate || wr_allocate) ? 0 : {32{1'b1}};
-    assign O_sram_wdata = cacheline_reg;
+    // cpu 数据与 cacheline 的组合替换：wr_allocate(写分配) 时把 cpu 数据按
+    // mem_offset 对齐进 cacheline，sram 在此拍写入的就是 merge 后的整行。
+    wire [255:0] alloc_wdata;
+    assign alloc_wdata =
+        (mem_offset[OFFT_LEN-1:3]==2'd0) ? {cacheline_reg[255:64], cpu_reg} :
+        (mem_offset[OFFT_LEN-1:3]==2'd1) ? {cacheline_reg[255:128], cpu_reg, cacheline_reg[63:0]} :
+        (mem_offset[OFFT_LEN-1:3]==2'd2) ? {cacheline_reg[255:192], cpu_reg, cacheline_reg[127:0]} :
+                                           {cpu_reg, cacheline_reg[191:0]};
+    assign O_sram_wdata = wr_allocate ? alloc_wdata : cacheline_reg;
+    // assign O_sram_wdata = cacheline_reg; // Consecutive WR_ALLOCATE to WR_HIT gurantee correctness
     // only rd_hit case sram_op happen at IDLE
     assign O_sram_addr = fencei_process ? fencei_sram_addr : rd_hit ? index : mem_index;
     assign O_sram_cen = fencei_process ? fencei_sram_cen : cen_dcache;
@@ -2015,7 +2026,8 @@ module ysyx_22040750_dcachectrl #(
         
     // assign mmio_flag = (I_cpu_addr[31:27] != 5'b10000) && (I_cpu_rd_req || I_cpu_wr_req);
     // assign mmio_flag = !I_cpu_addr[31] && (I_cpu_rd_req || I_cpu_wr_req); // ysyx4
-    assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req);// ysyx6 SoC
+    // 可缓存区 = [0x80000000, 0x88000000) (addr[31:27]==5'b10000)，其余(含外设)走 MMIO
+    assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) && (I_cpu_addr[31:27] != 5'b10000);
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
@@ -3205,7 +3217,8 @@ module ysyx_22040750_icachectrl #(
     // RD_RELOAD: get axi rdata
     // RD_ALLOCATE: reload cacheline & send data to cpu
     // assign mmio_flag = !I_cpu_addr[31] && I_cpu_rd_req;// ysyx4
-    assign mmio_flag = I_cpu_rd_req;
+    // 可缓存区 = [0x80000000, 0x88000000) (addr[31:27]==5'b10000)，其余(含外设)走 MMIO
+    assign mmio_flag = I_cpu_rd_req && (I_cpu_addr[31:27] != 5'b10000);
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -3743,7 +3756,13 @@ module ysyx_22040750_pc(
     );
     // import "DPI-C" function void set_pc_ptr(input logic [31:0] a []);
     // initial set_pc_ptr(O_pc);
+`ifdef NPC_PMEM_BOOT
+    // PA3 主存模式：复位到可缓存区(0x80000000..0x88000000)起始
+    localparam PC_RESET = 32'h80000000;
+`else
+    // SoC/flash 模式：复位到 flash 前（snpc=pc+4 首取 0x30000000）
     localparam PC_RESET = 32'h2FFFFFFC;
+`endif
     wire IF_ready_go;
     wire IF_allow_in;
     wire IF_handshake;
@@ -4219,6 +4238,41 @@ module ysyx_22040750_timerintr(
     assign WB_intr_disable = (WB_wr_mie & ~WB_mie) | (WB_wr_mstatus & ~WB_mstatus_mie);
     assign O_timer_intr = csr_intr & ~(EX_intr_disable | MEM_intr_disable | WB_intr_disable);
 endmodule
+// 行为级 128b×64 单端口 SRAM 模型：替代真机流片时才例化的
+// S011HD1P_X32Y2D128_BW 宏单元，供仿真（verif 裸核 / SoC difftest）使用。
+// 接口与宏单元一致：
+//   CEN  低有效片选；WEN 低有效写；
+//   BWEN 每 bit 低有效写使能（0=写该 bit）；A[5:0] 地址；D 写数据；Q 读数据。
+// 时序：读为同步 1 拍延迟（posedge 采样 A，Q 下一拍有效），写为同步写；
+// 无使能时 Q 保持（单端口 SRAM 的 hold 语义）。缓存 FSM 在 IDLE(命中读)拍
+// 给出地址、在 RD_HIT/WR_HIT 拍消费 Q，与此 1 拍读延迟严格对齐。
+module ysyx_22040750_sram_behav(
+    input         I_clk,
+    input         CEN,
+    input         WEN,
+    input  [127:0] BWEN,
+    input  [5:0]  A,
+    input  [127:0] D,
+    output reg [127:0] Q
+);
+    reg [127:0] mem [0:63];
+    integer i, j;
+    initial begin
+        for (i = 0; i < 64; i = i + 1) mem[i] = 128'b0;
+        Q = 128'b0;
+    end
+    always @(posedge I_clk) begin
+        if (!CEN) begin
+            if (!WEN) begin
+                for (j = 0; j < 128; j = j + 1)
+                    if (!BWEN[j]) mem[A][j] <= D[j];
+            end
+            else begin
+                Q <= mem[A];
+            end
+        end
+    end
+endmodule
 module ysyx_22040750(
     input clock,
     input reset,
@@ -4665,78 +4719,77 @@ module ysyx_22040750(
         .O_clint_bvalid(clint_bvalid),
         .I_clint_bready(clint_bready)
     );
-    /*
-    S011HD1P_X32Y2D128_BW sram0(
-        .Q(io_sram0_rdata),
-        .CLK(clock),
+    // 8 块行为级 SRAM（仿真用；真机流片时换回 S011HD1P_X32Y2D128_BW 宏单元）
+    ysyx_22040750_sram_behav sram0(
+        .I_clk(clock),
         .CEN(io_sram0_cen),
         .WEN(io_sram0_wen),
         .BWEN(io_sram0_wmask),
         .A(io_sram0_addr),
-        .D(io_sram0_wdata)
+        .D(io_sram0_wdata),
+        .Q(io_sram0_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram1(
-        .Q(io_sram1_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram1(
+        .I_clk(clock),
         .CEN(io_sram1_cen),
         .WEN(io_sram1_wen),
         .BWEN(io_sram1_wmask),
         .A(io_sram1_addr),
-        .D(io_sram1_wdata)
+        .D(io_sram1_wdata),
+        .Q(io_sram1_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram2(
-        .Q(io_sram2_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram2(
+        .I_clk(clock),
         .CEN(io_sram2_cen),
         .WEN(io_sram2_wen),
         .BWEN(io_sram2_wmask),
         .A(io_sram2_addr),
-        .D(io_sram2_wdata)
+        .D(io_sram2_wdata),
+        .Q(io_sram2_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram3(
-        .Q(io_sram3_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram3(
+        .I_clk(clock),
         .CEN(io_sram3_cen),
         .WEN(io_sram3_wen),
         .BWEN(io_sram3_wmask),
         .A(io_sram3_addr),
-        .D(io_sram3_wdata)
+        .D(io_sram3_wdata),
+        .Q(io_sram3_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram4(
-        .Q(io_sram4_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram4(
+        .I_clk(clock),
         .CEN(io_sram4_cen),
         .WEN(io_sram4_wen),
         .BWEN(io_sram4_wmask),
         .A(io_sram4_addr),
-        .D(io_sram4_wdata)
+        .D(io_sram4_wdata),
+        .Q(io_sram4_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram5(
-        .Q(io_sram5_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram5(
+        .I_clk(clock),
         .CEN(io_sram5_cen),
         .WEN(io_sram5_wen),
         .BWEN(io_sram5_wmask),
         .A(io_sram5_addr),
-        .D(io_sram5_wdata)
+        .D(io_sram5_wdata),
+        .Q(io_sram5_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram6(
-        .Q(io_sram6_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram6(
+        .I_clk(clock),
         .CEN(io_sram6_cen),
         .WEN(io_sram6_wen),
         .BWEN(io_sram6_wmask),
         .A(io_sram6_addr),
-        .D(io_sram6_wdata)
+        .D(io_sram6_wdata),
+        .Q(io_sram6_rdata)
     );
-    S011HD1P_X32Y2D128_BW sram7(
-        .Q(io_sram7_rdata),
-        .CLK(clock),
+    ysyx_22040750_sram_behav sram7(
+        .I_clk(clock),
         .CEN(io_sram7_cen),
         .WEN(io_sram7_wen),
         .BWEN(io_sram7_wmask),
         .A(io_sram7_addr),
-        .D(io_sram7_wdata)
+        .D(io_sram7_wdata),
+        .Q(io_sram7_rdata)
     );
-    */
 endmodule
