@@ -3757,8 +3757,10 @@ module ysyx_22040750_pc(
     // import "DPI-C" function void set_pc_ptr(input logic [31:0] a []);
     // initial set_pc_ptr(O_pc);
 `ifdef NPC_PMEM_BOOT
-    // PA3 主存模式：复位到可缓存区(0x80000000..0x88000000)起始
-    localparam PC_RESET = 32'h80000000;
+    // PA3 主存模式：程序在 0x80000000，取指用 snpc=current_pc+4，
+    // 故复位 PC 必须为"起始地址-4"(0x7FFFFFFC)，首取才是 0x80000000。
+    // 若误设 0x80000000，首取会变成 0x80000004，跳过第一条指令。
+    localparam PC_RESET = 32'h7FFFFFFC;
 `else
     // SoC/flash 模式：复位到 flash 前（snpc=pc+4 首取 0x30000000）
     localparam PC_RESET = 32'h2FFFFFFC;
