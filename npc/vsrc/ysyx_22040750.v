@@ -903,7 +903,13 @@ module ysyx_22040750_cpu_core(
     localparam SRAM_BASE = 32'h0F000000;
     localparam SRAM_SIZE = 32'h00002000;
     localparam SRAM_END = SRAM_BASE + SRAM_SIZE;
-    assign EX_MEM_mmio = EX_MEM_memop && !((EX_MEM_mem_addr >= MROM_BASE && EX_MEM_mem_addr < MROM_END) || (EX_MEM_mem_addr >= FLASH_BASE && EX_MEM_mem_addr < FLASH_END) || (EX_MEM_mem_addr >= SRAM_BASE && EX_MEM_mem_addr < SRAM_END));
+    localparam PSRAM_BASE = 32'h80000000;
+    localparam PSRAM_END = 32'h88000000;
+    // mmio = 非 SoC 内存区（uart/vga/spi/gpio 等外设寄存器）访问，
+    // difftest 对 mmio 跳过 NEMU 对拍（NEMU 未建模这些设备）。
+    // 注意：PSRAM(0x80000000) 不是 mmio —— NEMU 的 pmem 覆盖 0x80000000..0x88000000，
+    // CPU 对它的 lw/sw 是真实访存指令，NEMU ref 会执行并返回数据，必须对拍不 skip。
+    assign EX_MEM_mmio = EX_MEM_memop && !((EX_MEM_mem_addr >= MROM_BASE && EX_MEM_mem_addr < MROM_END) || (EX_MEM_mem_addr >= FLASH_BASE && EX_MEM_mem_addr < FLASH_END) || (EX_MEM_mem_addr >= SRAM_BASE && EX_MEM_mem_addr < SRAM_END) || (EX_MEM_mem_addr >= PSRAM_BASE && EX_MEM_mem_addr < PSRAM_END));
     
     ysyx_22040750_npc npc_e(
 		.I_clk(I_sys_clk),
@@ -1762,15 +1768,28 @@ module ysyx_22040750_dcachectrl #(
     //         fencei_process <= fencei_process;
     //wire mmio_wvalid;
     // data reg impl
+    // lane_wmask: 访存字节掩码 cpu_mask_reg(高电平=写) 展开成 64bit lane 按字节掩码，
+    // 用于 cacheline_reg / alloc_wdata 的写合并。不这样做时, 32/16/8 位 store 的
+    // 64bit 数据总线高半(重复/垃圾)会在 WR_ALLOCATE 整行写(wmask=0)时污染 lane 相邻字节。
+    wire [63:0] lane_wmask =
+        {{8{cpu_mask_reg[7]}}, {8{cpu_mask_reg[6]}}, {8{cpu_mask_reg[5]}}, {8{cpu_mask_reg[4]}},
+         {8{cpu_mask_reg[3]}}, {8{cpu_mask_reg[2]}}, {8{cpu_mask_reg[1]}}, {8{cpu_mask_reg[0]}}};
+    // WR_HIT 与 cpu_mask_reg/cpu_reg 同沿采样: 避免用即将更新(非阻塞)的 cpu_mask_reg 造成
+    // 一拍错位, 直接用当前稳定的 I_cpu_wmask 构造掩码。
+    wire [63:0] i_wmask64 =
+        {{8{I_cpu_wmask[7]}}, {8{I_cpu_wmask[6]}}, {8{I_cpu_wmask[5]}}, {8{I_cpu_wmask[4]}},
+         {8{I_cpu_wmask[3]}}, {8{I_cpu_wmask[2]}}, {8{I_cpu_wmask[1]}}, {8{I_cpu_wmask[0]}}};
     always @(posedge I_clk)
         if(I_rst)
             cacheline_reg <= 0;
         //else if(rd_hit)
         //    cacheline_reg <= way0_hit ? I_way0_rdata : I_way1_rdata;
         else if(wr_hit)
-            cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= I_cpu_data;
+            cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <=
+                (I_cpu_data & i_wmask64) | (cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~i_wmask64);
         else if(wr_allocate)
-            cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= cpu_reg;
+            cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <=
+                (cpu_reg & lane_wmask) | (cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~lane_wmask);
         else if(rd_x_active && I_mem_rvalid && ~mmio_process)
             cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
         else
@@ -1878,11 +1897,16 @@ module ysyx_22040750_dcachectrl #(
     // cpu 数据与 cacheline 的组合替换：wr_allocate(写分配) 时把 cpu 数据按
     // mem_offset 对齐进 cacheline，sram 在此拍写入的就是 merge 后的整行。
     wire [255:0] alloc_wdata;
+    // WR_ALLOCATE 整行写 SRAM(wmask=0, 全字节写): 写入内存的 ∶=填充行+store 掩码合并,
+    // 只允许 store 的字节覆盖填充数据, 其余字节保留填充值, 符合访存指令宽度语义。
+    wire [63:0] alloc_lane =
+        (cpu_reg & lane_wmask) |
+        (cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~lane_wmask);
     assign alloc_wdata =
-        (mem_offset[OFFT_LEN-1:3]==2'd0) ? {cacheline_reg[255:64], cpu_reg} :
-        (mem_offset[OFFT_LEN-1:3]==2'd1) ? {cacheline_reg[255:128], cpu_reg, cacheline_reg[63:0]} :
-        (mem_offset[OFFT_LEN-1:3]==2'd2) ? {cacheline_reg[255:192], cpu_reg, cacheline_reg[127:0]} :
-                                           {cpu_reg, cacheline_reg[191:0]};
+        (mem_offset[OFFT_LEN-1:3]==2'd0) ? {cacheline_reg[255:64], alloc_lane} :
+        (mem_offset[OFFT_LEN-1:3]==2'd1) ? {cacheline_reg[255:128], alloc_lane, cacheline_reg[63:0]} :
+        (mem_offset[OFFT_LEN-1:3]==2'd2) ? {cacheline_reg[255:192], alloc_lane, cacheline_reg[127:0]} :
+                                           {alloc_lane, cacheline_reg[191:0]};
     assign O_sram_wdata = wr_allocate ? alloc_wdata : cacheline_reg;
     // assign O_sram_wdata = cacheline_reg; // Consecutive WR_ALLOCATE to WR_HIT gurantee correctness
     // only rd_hit case sram_op happen at IDLE
@@ -2035,10 +2059,15 @@ module ysyx_22040750_dcachectrl #(
         
     // assign mmio_flag = (I_cpu_addr[31:27] != 5'b10000) && (I_cpu_rd_req || I_cpu_wr_req);
     // assign mmio_flag = !I_cpu_addr[31] && (I_cpu_rd_req || I_cpu_wr_req); // ysyx4
-    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80040000)（唯一支持 32B burst 的介质）。
-    // 其余（含 [0x80040000, 0x88000000) 空洞、外设、SRAM/MROM/flash/SDRAM）走 MMIO 单拍。
+    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80040000) + flash [0x30000000,0x40000000)（32B burst）。
+    // 其余（含 [0x80040000, 0x88000000) 空洞、外设、SRAM/MROM/SDRAM）走 MMIO 单拍。
+    // flash 只读：程序不写 flash，故 dcache 缓存 flash 只发读 burst；若误写 flash，
+    // host 侧 AXI4ToAPB 的 len/size 断言拦截（见 ysyxSoC/soc/AXI4ToAPB.scala）。
+    // 此修改使 C 程序访问 flash 数据（如 .rodata 里的 8B 常量 `ld`）也走 32B burst，
+    // 避免 8B 单拍直连 AXI4ToAPB 触发 size>4 断言。
     assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
-                       ~((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000));
+                       ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000)) ||
+                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) );
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
@@ -3255,9 +3284,11 @@ module ysyx_22040750_icachectrl #(
     // RD_RELOAD: get axi rdata
     // RD_ALLOCATE: reload cacheline & send data to cpu
     // assign mmio_flag = !I_cpu_addr[31] && I_cpu_rd_req;// ysyx4
-    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80040000)（唯一支持 32B burst 的介质）
-    assign mmio_flag = I_cpu_rd_req &&
-                       ~((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000));
+    // 可缓存区(icache) = PSRAM [0x80000000,0x80040000) + flash [0x30000000,0x40000000)
+    // 两者均为 APB 单拍(无 AXI burst)：icache 发 32B burst，经 slave_crossbar 内
+    // axiburst2xxx 统一转 8×32bit 单拍（flash 取指加速，复用 PSRAM 转换 IP）。
+    assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000)) ||
+                                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) );
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -4086,6 +4117,8 @@ module ysyx_22040750_slave_crossbar(
     parameter CLINT_END = 'h02010000;
     parameter PSRAM_START  = 'h80000000;
     parameter PSRAM_END    = 'h80040000;
+    parameter FLASH_START  = 'h30000000;   // flash XIP (APB 单拍, 与 PSRAM 同, 复用 axiburst2xxx)
+    parameter FLASH_END    = 'h40000000;
     wire clint_ar_flag, clint_aw_flag, psram_ar_flag, psram_aw_flag, bus_ar_flag, bus_aw_flag;
     wire clint_ar_handshake, clint_aw_handshake, bus_ar_handshake, bus_aw_handshake;
     wire bus_rlasthandshake, clint_rlasthandshake, psram_rlasthandshake;
@@ -4096,7 +4129,14 @@ module ysyx_22040750_slave_crossbar(
     // psram 通路判定: 仅 PSRAM 区 (cache 对可缓存区发 32B burst)。
 // 其它区(外设/SPI/VGA/flash/SRAM/MROM) 走 bus 直连: CPU 只发与访存指令严格对应的
 // 单拍/窄通道传输(<=4B), 无需 burst 转换; 8B MMIO 不整合进 PSRAM 转换 IP。
-    assign psram_ar_flag = (I_cache_araddr >= PSRAM_START) && (I_cache_araddr < PSRAM_END);
+    // psram/flash 通路判定（读）：PSRAM 可缓存 burst + flash XIP 取指 burst。
+    // 两者均为 APB 单拍从端，复用同一 axiburst2xxx 做 burst->单拍转换。flash 只读，aw 不加入。
+    //
+    // ⚠️ 重要：flash 只有" burst 请求"(icache 取指, arlen!=0) 才需要 axiburst 转单拍；
+    //         dcache 对 flash 的"单拍 MMIO 数据读"(如 loader 搬 .data 的 lbu, arlen=0)
+    //         必须走 bus 直连(如 SRAM)，否则经 axiburst 重组会丢数据(实测读回 0)。
+    assign psram_ar_flag = ((I_cache_araddr >= PSRAM_START) && (I_cache_araddr < PSRAM_END)) ||
+                           (((I_cache_araddr >= FLASH_START) && (I_cache_araddr < FLASH_END)) && (I_cache_arlen != 8'd0));
     assign psram_aw_flag = (I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END);
     assign bus_ar_flag = ~clint_ar_flag & ~psram_ar_flag;
     assign bus_aw_flag = ~clint_aw_flag & ~psram_aw_flag;

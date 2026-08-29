@@ -116,6 +116,31 @@ $(PMODEL): tb_main.cpp $(RTL)
 		-Mdir $(POBJ) --top-module ysyx_22040750 --timescale 1ns/1ns --no-timing \
 		-o VnpcP $(RTL) tb_main.cpp -CFLAGS -DNPC_PMEM_BOOT
 
+# ---- S3: mem-test 经 bootloader 加载到 SRAM 运行(测试 PSRAM 访存) ----
+# 流程: flash 0x30000000 放 bootloader(entry), 程序 .text LMA 紧跟 flash、VMA=SRAM。
+#   CPU 复位 -> flash bootloader XIP -> 搬运程序到 SRAM -> 跳 SRAM 执行 mem-test
+#   (mem-test 访存目标为 PSRAM 0x80000000, 验证 dcache/axiburst 通路)。
+PB_BOOT := boot/boot.S
+PB_TEST := boot/psram_memtest.S
+PB_LD   := ../scripts/linker-sram.ld
+PB_OBJ  := $(BUILD)/obj_pboot
+PB_N    ?= 0x100
+pboot: $(MODEL) $(PB_OBJ)/memtest.bin
+	./$(MODEL) $(PB_OBJ)/memtest.bin
+
+$(PB_OBJ)/memtest.bin: $(PB_BOOT) $(PB_TEST) $(PB_LD) $(BUILD)/.deps_pboot
+	mkdir -p $(PB_OBJ)
+	$(XC)-gcc $(CFLAGS) -c $(PB_BOOT) -o $(PB_OBJ)/boot.o
+	$(XC)-gcc $(CFLAGS) -DN_BYTES=$(PB_N) -c $(PB_TEST) -o $(PB_OBJ)/memtest.o
+	$(XC)-ld -melf64lriscv -T $(PB_LD) $(PB_OBJ)/boot.o $(PB_OBJ)/memtest.o -o $(PB_OBJ)/memtest.elf
+	$(XC)-objcopy -O binary $(PB_OBJ)/memtest.elf $(PB_OBJ)/memtest.bin
+
+# PB_N 变化触发 pboot 重编（避免旧产物）
+$(BUILD)/.deps_pboot: FORCE
+	@mkdir -p $(BUILD)
+	@echo "PB_N=$(PB_N)" > $@.tmp
+	@cmp -s $@ $@.tmp || mv -f $@.tmp $@
+
 # ---- 阶段2：仿真期断言（Verilator --assert + bind) -------------------------
 # assert:       聚焦 CSR 冒险(bug2) / 除零(bug3)；关掉 cache 旁路检查(bug1)，
 #               避免 bug1 在任何取指时优先命中而盖住其它断言
