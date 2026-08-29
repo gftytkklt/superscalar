@@ -5,7 +5,9 @@ import re, sys
 
 def main():
     src = open(sys.argv[1]).read()
-    keep = {"ysyx_22040750_radix2_div", "ysyx_22040750_dcachectrl"}
+    # 保留供 yosys/sby 形式化用的自包含模块块（无 DPI-C）
+    keep = {"ysyx_22040750_radix2_div", "ysyx_22040750_dcachectrl",
+            "ysyx_22040750_axiburst2xxx"}
     out = []
     for m in re.finditer(r"(?ms)^module\s+(\w+).*?^endmodule", src):
         if m.group(1) in keep:

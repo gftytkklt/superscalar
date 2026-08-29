@@ -1719,6 +1719,15 @@ module ysyx_22040750_dcachectrl #(
     // reg [63:0] mmio_rdata;
     wire [31:0] mmio_awaddr;
     reg [2:0] mmio_axsize;
+    // S1.5: 读 AX/X 解耦
+    // 读 AX 机: 独立发起 AR (arvalid 保持到 arready), 发出即完成, 不等 R。
+    // 读 X  机: 独立收集 R 数据 (cacheline 填充 / MMIO 数据), rlast 结束。
+    reg  rd_ax_busy;      // AR 通道挂起(arvalid=1)
+    reg  rd_x_busy;       // R 数据在收集
+    wire rd_ax_hs   = rd_ax_busy && I_mem_arready;           // AR 握手
+    wire rd_ax_done = rd_ax_hs;                              // AR 已发出
+    wire rd_x_active = rd_ax_hs || rd_x_busy;                // 收 R 生效(含 AR 发出当拍)
+    wire rd_x_done   = rd_x_active && I_mem_rvalid && I_mem_rlast;  // R 收完
     // fencei
     wire fencei_process;
     reg [INDEX_LEN:0] fencei_index;// index for cacheline in two groups
@@ -1762,7 +1771,7 @@ module ysyx_22040750_dcachectrl #(
             cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= I_cpu_data;
         else if(wr_allocate)
             cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= cpu_reg;
-        else if((rd_reload || wr_reload) && I_mem_rvalid)
+        else if(rd_x_active && I_mem_rvalid && ~mmio_process)
             cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
         else
             cacheline_reg <= cacheline_reg;
@@ -1784,7 +1793,7 @@ module ysyx_22040750_dcachectrl #(
         else
             mmio_mask_reg <= mmio_mask_reg;
     // cpu interface impl
-    assign O_cpu_rvalid = (current_state == RD_HIT) || rd_allocate || ((current_state == MMIO_RD) && I_mem_rvalid);
+    assign O_cpu_rvalid = (current_state == RD_HIT) || rd_allocate || ((current_state == MMIO_RD) && rd_x_done);
     always @(posedge I_clk)
         if(I_rst)
             hit_flag <= 2'b00;
@@ -1829,12 +1838,12 @@ module ysyx_22040750_dcachectrl #(
         endcase
     assign wdata = ((isway0_op & ~fencei_process) | (fencei_process & ~fencei_group)) ? I_way0_rdata : I_way1_rdata;
     assign O_mem_wlast = O_mem_wvalid && (wdata_cnt == O_mem_awlen[1:0]);
-    assign O_mem_arvalid = mem_ar_req ? 1 : 0;
+    assign O_mem_arvalid = rd_ax_busy;
     assign O_mem_rready = 1;
     assign O_mem_arlen = mmio_process ? 0 : 3;// 32/8 - 1
     assign O_mem_arsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_arburst = mmio_process ? 2'b00 : 2'b01;
-    assign O_mem_araddr = mem_ar_req ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;// 32B alignment
+    assign O_mem_araddr = rd_ax_busy ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;// 32B alignment
     // cache wb: cacheline tag + index + offt'b0
     assign cache_awaddr = ({32{fencei_process}} & fencei_addr) | ({32{~fencei_process}} & {lookup_table[{mem_index, ~isway0_op}],mem_index,{OFFT_LEN{1'b0}}});
     assign mmio_awaddr = mem_addr;
@@ -2026,8 +2035,10 @@ module ysyx_22040750_dcachectrl #(
         
     // assign mmio_flag = (I_cpu_addr[31:27] != 5'b10000) && (I_cpu_rd_req || I_cpu_wr_req);
     // assign mmio_flag = !I_cpu_addr[31] && (I_cpu_rd_req || I_cpu_wr_req); // ysyx4
-    // 可缓存区 = [0x80000000, 0x88000000) (addr[31:27]==5'b10000)，其余(含外设)走 MMIO
-    assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) && (I_cpu_addr[31:27] != 5'b10000);
+    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80040000)（唯一支持 32B burst 的介质）。
+    // 其余（含 [0x80040000, 0x88000000) 空洞、外设、SRAM/MROM/flash/SDRAM）走 MMIO 单拍。
+    assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
+                       ~((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000));
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
@@ -2053,23 +2064,43 @@ module ysyx_22040750_dcachectrl #(
                 else
                     next_state = IDLE;
             end
-            RD_MISS: next_state = rd_handshake ? RD_RELOAD : current_state;
-            RD_RELOAD: next_state = I_mem_rlast ? (replace_dirty ? RD_WB : RD_ALLOCATE) : current_state;
+            RD_MISS: next_state = rd_ax_done ? RD_RELOAD : current_state;
+            RD_RELOAD: next_state = rd_x_done ? (replace_dirty ? RD_WB : RD_ALLOCATE) : current_state;
             RD_WB: next_state = I_mem_bvalid ? RD_ALLOCATE : current_state;
             RD_ALLOCATE: next_state = IDLE;
-            WR_MISS: next_state = rd_handshake ? WR_RELOAD : current_state;
-            WR_RELOAD: next_state = I_mem_rlast ? (replace_dirty ? WR_WB : WR_ALLOCATE) : current_state;
+            WR_MISS: next_state = rd_ax_done ? WR_RELOAD : current_state;
+            WR_RELOAD: next_state = rd_x_done ? (replace_dirty ? WR_WB : WR_ALLOCATE) : current_state;
             WR_WB: next_state = I_mem_bvalid ? WR_ALLOCATE : current_state;
             WR_ALLOCATE: next_state = WR_HIT;
-            MMIO_AR: next_state = rd_handshake ? MMIO_RD : current_state;
+            MMIO_AR: next_state = rd_ax_done ? MMIO_RD : current_state;
             MMIO_AW: next_state = aw_handshake ? MMIO_WR : current_state;
-            MMIO_RD: next_state = I_mem_rlast ? IDLE : current_state;
+            MMIO_RD: next_state = rd_x_done ? IDLE : current_state;
             MMIO_WR: next_state = I_mem_bvalid ? IDLE : current_state;
             FENCEI: next_state = O_dcache_clean ? IDLE : current_state;
             //MMIO_WR: next_state = (wr_handshake && O_mem_wlast) ? IDLE : current_state;
             default: next_state = current_state;
         endcase
     end
+    // S1.5: 读 AX 机 —— 独立发 AR（arvalid 保持到 arready，发出即完成）
+    always @(posedge I_clk)
+        if(I_rst)
+            rd_ax_busy <= 0;
+        else if(rd_ax_hs)
+            rd_ax_busy <= 0;
+        else if(mem_ar_req && ~rd_ax_busy)
+            rd_ax_busy <= 1;
+        else
+            rd_ax_busy <= rd_ax_busy;
+    // S1.5: 读 X 机 —— AR 发出后开始收 R，rlast 结束
+    always @(posedge I_clk)
+        if(I_rst)
+            rd_x_busy <= 0;
+        else if(rd_ax_hs)
+            rd_x_busy <= 1;
+        else if(rd_x_done)
+            rd_x_busy <= 0;
+        else
+            rd_x_busy <= rd_x_busy;
     // compare tag signal impl
     assign {tag, index, offset} = I_cpu_addr;
     assign {mem_tag, mem_index, mem_offset} = mem_addr;
@@ -3068,6 +3099,13 @@ module ysyx_22040750_icachectrl #(
     reg mmio_process;
     wire mmio_rvalid;
     wire mem_ar_req;
+    // S1.5: 读 AX/X 解耦（同 dcache：AR 独立发、R 独立收集）
+    reg  rd_ax_busy;
+    reg  rd_x_busy;
+    wire rd_ax_hs   = rd_ax_busy && I_mem_arready;
+    wire rd_ax_done = rd_ax_hs;
+    wire rd_x_active = rd_ax_hs || rd_x_busy;
+    wire rd_x_done   = rd_x_active && I_mem_rvalid && I_mem_rlast;
     // mmio & cache inst
     wire [31:0] mmio_inst, cache_inst;
     wire fencei_ready, fencei_flag;
@@ -3162,11 +3200,11 @@ module ysyx_22040750_icachectrl #(
     assign rd_miss = pc_handshake && ~rd_hit;
     // rd miss signal
     assign mem_ar_req = (current_state == RD_MISS) || (current_state == MMIO_AR);
-    assign O_mem_arvalid = mem_ar_req ? 1 : 0;
+    assign O_mem_arvalid = rd_ax_busy;
     assign rd_handshake = I_mem_arready && O_mem_arvalid;
     assign pc_handshake = I_cpu_rd_req && O_cpu_rd_ready;
     // assign O_mem_araddr = {mem_addr[31:OFFT_LEN],{OFFT_LEN{1'b0}}};
-    assign O_mem_araddr = mem_ar_req ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;
+    assign O_mem_araddr = rd_ax_busy ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;
     // latch mem addr
     always @(posedge I_clk)
         if(I_rst)
@@ -3182,13 +3220,13 @@ module ysyx_22040750_icachectrl #(
             cacheline_reg <= 0;
         //else if(rd_hit)
         //    cacheline_reg <= way0_hit ? I_way0_rdata : I_way1_rdata;
-        else if(rd_reload && I_mem_rvalid)
+        else if(rd_x_active && I_mem_rvalid && ~mmio_process)
             cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
         else
             cacheline_reg <= cacheline_reg;
     // rd allocate signal
     assign rd_allocate = (current_state == RD_ALLOCATE) ? 1 : 0;
-    assign mmio_rvalid = (current_state == MMIO_RD) && I_mem_rvalid;
+    assign mmio_rvalid = (current_state == MMIO_RD) && rd_x_done;
     assign O_cpu_rvalid = (current_state == RD_HIT) || rd_allocate || mmio_rvalid;
     always @(posedge I_clk)
         if(I_rst)
@@ -3217,8 +3255,9 @@ module ysyx_22040750_icachectrl #(
     // RD_RELOAD: get axi rdata
     // RD_ALLOCATE: reload cacheline & send data to cpu
     // assign mmio_flag = !I_cpu_addr[31] && I_cpu_rd_req;// ysyx4
-    // 可缓存区 = [0x80000000, 0x88000000) (addr[31:27]==5'b10000)，其余(含外设)走 MMIO
-    assign mmio_flag = I_cpu_rd_req && (I_cpu_addr[31:27] != 5'b10000);
+    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80040000)（唯一支持 32B burst 的介质）
+    assign mmio_flag = I_cpu_rd_req &&
+                       ~((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000));
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -3248,15 +3287,34 @@ module ysyx_22040750_icachectrl #(
                 else
                     next_state = IDLE;
             end
-            RD_MISS: next_state = rd_handshake ? RD_RELOAD : current_state;
-            RD_RELOAD: next_state = I_mem_rlast ? RD_ALLOCATE : current_state;
+            RD_MISS: next_state = rd_ax_done ? RD_RELOAD : current_state;
+            RD_RELOAD: next_state = rd_x_done ? RD_ALLOCATE : current_state;
             RD_ALLOCATE: next_state = IDLE;
-            MMIO_AR: next_state = rd_handshake ? MMIO_RD : current_state;
-            MMIO_RD: next_state = I_mem_rlast ? IDLE : current_state;
+            MMIO_AR: next_state = rd_ax_done ? MMIO_RD : current_state;
+            MMIO_RD: next_state = rd_x_done ? IDLE : current_state;
             FENCEI: next_state = I_dcache_clean ? IDLE : current_state;
             default: next_state = IDLE;
         endcase
     end
+    // S1.5: 读 AX 机（独立发 AR）+ 读 X 机（独立收 R）
+    always @(posedge I_clk)
+        if(I_rst)
+            rd_ax_busy <= 0;
+        else if(rd_ax_hs)
+            rd_ax_busy <= 0;
+        else if(mem_ar_req && ~rd_ax_busy)
+            rd_ax_busy <= 1;
+        else
+            rd_ax_busy <= rd_ax_busy;
+    always @(posedge I_clk)
+        if(I_rst)
+            rd_x_busy <= 0;
+        else if(rd_ax_hs)
+            rd_x_busy <= 1;
+        else if(rd_x_done)
+            rd_x_busy <= 0;
+        else
+            rd_x_busy <= rd_x_busy;
 endmodule
 module ysyx_22040750_ID_EX_reg(
     input I_sys_clk,
@@ -4026,120 +4084,179 @@ module ysyx_22040750_slave_crossbar(
 );
     parameter CLINT_START  = 'h02000000;
     parameter CLINT_END = 'h02010000;
-    wire clint_ar_flag, clint_aw_flag, bus_ar_flag, bus_aw_flag;
+    parameter PSRAM_START  = 'h80000000;
+    parameter PSRAM_END    = 'h80040000;
+    wire clint_ar_flag, clint_aw_flag, psram_ar_flag, psram_aw_flag, bus_ar_flag, bus_aw_flag;
     wire clint_ar_handshake, clint_aw_handshake, bus_ar_handshake, bus_aw_handshake;
-    // indicate last rd data handshake from bus
-    // clint only return single data beats
-    // modify responding mode
-    wire bus_rlasthandshake, clint_rlasthandshake;
-    reg clint_rd_process, bus_rd_process;
-    reg clint_wr_process, bus_wr_process;
+    wire bus_rlasthandshake, clint_rlasthandshake, psram_rlasthandshake;
+    reg clint_rd_process, bus_rd_process, psram_rd_process;
+    reg clint_wr_process, bus_wr_process, psram_wr_process;
     assign clint_ar_flag = (I_cache_araddr >= CLINT_START) && (I_cache_araddr < CLINT_END);
     assign clint_aw_flag = (I_cache_awaddr >= CLINT_START) && (I_cache_awaddr < CLINT_END);
-    assign bus_ar_flag = ~clint_ar_flag;
-    assign bus_aw_flag = ~clint_aw_flag;
+    // psram 通路判定: 仅 PSRAM 区 (cache 对可缓存区发 32B burst)。
+// 其它区(外设/SPI/VGA/flash/SRAM/MROM) 走 bus 直连: CPU 只发与访存指令严格对应的
+// 单拍/窄通道传输(<=4B), 无需 burst 转换; 8B MMIO 不整合进 PSRAM 转换 IP。
+    assign psram_ar_flag = (I_cache_araddr >= PSRAM_START) && (I_cache_araddr < PSRAM_END);
+    assign psram_aw_flag = (I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END);
+    assign bus_ar_flag = ~clint_ar_flag & ~psram_ar_flag;
+    assign bus_aw_flag = ~clint_aw_flag & ~psram_aw_flag;
     assign clint_ar_handshake = I_clint_arready && O_clint_arvalid;
     assign clint_aw_handshake = I_clint_awready && O_clint_awvalid;
     assign bus_ar_handshake = I_bus_arready && O_bus_arvalid;
     assign bus_aw_handshake = I_bus_awready && O_bus_awvalid;
     assign clint_rlasthandshake = I_clint_rvalid && O_clint_rready;
     assign bus_rlasthandshake = I_bus_rvalid && O_bus_rready && I_bus_rlast;
+    // psram 读完成: axiburst master 侧 R 完成 (rlast)
+    assign psram_rlasthandshake = m_rvalid && m_rready && m_rlast;
     always @(posedge I_clk)
         if(I_rst)
             clint_rd_process <= 0;
-        // else if(clint_ar_handshake)
         else if(clint_ar_flag & I_cache_arvalid)
             clint_rd_process <= 1;
-        else if(clint_rlasthandshake)// bready is always 1
+        else if(clint_rlasthandshake)
             clint_rd_process <= 0;
         else
             clint_rd_process <= clint_rd_process;
     always @(posedge I_clk)
         if(I_rst)
             bus_rd_process <= 0;
-        // else if(bus_ar_handshake)
         else if(bus_ar_flag & I_cache_arvalid)
             bus_rd_process <= 1;
-        else if(bus_rlasthandshake)// bready is always 1
+        else if(bus_rlasthandshake)
             bus_rd_process <= 0;
         else
             bus_rd_process <= bus_rd_process;
     always @(posedge I_clk)
         if(I_rst)
+            psram_rd_process <= 0;
+        else if(psram_ar_flag & I_cache_arvalid)
+            psram_rd_process <= 1;
+        else if(psram_rlasthandshake)
+            psram_rd_process <= 0;
+        else
+            psram_rd_process <= psram_rd_process;
+    always @(posedge I_clk)
+        if(I_rst)
             clint_wr_process <= 0;
-        // else if(clint_aw_handshake)
         else if(clint_aw_flag & I_cache_awvalid)
             clint_wr_process <= 1;
-        else if(I_clint_bvalid)// bready is always 1
+        else if(I_clint_bvalid)
             clint_wr_process <= 0;
         else
             clint_wr_process <= clint_wr_process;
     always @(posedge I_clk)
         if(I_rst)
             bus_wr_process <= 0;
-        // else if(bus_aw_handshake)
         else if(bus_aw_flag & I_cache_awvalid)
             bus_wr_process <= 1;
-        else if(I_bus_bvalid)// bready is always 1
+        else if(I_bus_bvalid)
             bus_wr_process <= 0;
         else
             bus_wr_process <= bus_wr_process;
-    // always @(posedge I_clk)
-    //     if(I_rst)
-    //         clint_process <= 0;
-    //     else if(clint_ar_handshake | clint_aw_handshake)
-    //         clint_process <= 1;
-    //     else if(clint_rlasthandshake | I_clint_bvalid)// bready is always 1
-    //         clint_process <= 0;
-    //     else
-    //         clint_process <= clint_process;
-    // always @(posedge I_clk)
-    //     if(I_rst)
-    //         bus_process <= 0;
-    //     else if(bus_ar_handshake | bus_aw_handshake)
-    //         bus_process <= 1;
-    //     else if(bus_rlasthandshake | I_bus_bvalid)// bready is always 1
-    //         bus_process <= 0;
-    //     else
-    //         bus_process <= bus_process;
-    // signal boardcast, clint don't have last signal
-    // ar process, notice flag here is combinational logic
-    assign O_bus_araddr = bus_ar_flag ? I_cache_araddr : 0;
-    assign O_bus_arburst = bus_ar_flag ? I_cache_arburst : 0;
-    assign O_bus_arlen = bus_ar_flag ? I_cache_arlen : 0;
-    assign O_bus_arsize = bus_ar_flag ? I_cache_arsize : 0;
-    assign O_bus_arvalid = bus_ar_flag & I_cache_arvalid;
+    always @(posedge I_clk)
+        if(I_rst)
+            psram_wr_process <= 0;
+        else if(psram_aw_flag & I_cache_awvalid)
+            psram_wr_process <= 1;
+        else if(m_bvalid)
+            psram_wr_process <= 0;
+        else
+            psram_wr_process <= psram_wr_process;
+    // ============ 内部 axiburst2xxx (PSRAM 协议转换) ============
+    // axiburst master 侧 (cache 的 psram 请求)
+    wire [31:0] m_araddr; wire m_arvalid, m_arready;
+    wire [7:0] m_arlen; wire [2:0] m_arsize; wire [1:0] m_arburst;
+    wire [63:0] m_rdata; wire m_rvalid, m_rlast, m_rready;
+    wire [31:0] m_awaddr; wire m_awvalid, m_awready;
+    wire [7:0] m_awlen; wire [2:0] m_awsize; wire [1:0] m_awburst;
+    wire [63:0] m_wdata; wire m_wvalid, m_wready, m_wlast; wire [7:0] m_wstrb;
+    wire m_bvalid, m_bready;
+    // axiburst slave 侧 (→ O_bus_*)
+    wire [31:0] s_araddr; wire s_arvalid, s_arready;
+    wire [7:0] s_arlen; wire [2:0] s_arsize; wire [1:0] s_arburst;
+    wire [63:0] s_rdata; wire s_rvalid, s_rlast, s_rready;
+    wire [31:0] s_awaddr; wire s_awvalid, s_awready;
+    wire [7:0] s_awlen; wire [2:0] s_awsize; wire [1:0] s_awburst;
+    wire [63:0] s_wdata; wire s_wvalid, s_wready, s_wlast; wire [7:0] s_wstrb;
+    wire s_bvalid, s_bready;
+    // cache → axiburst master (psram 事务)
+    assign m_arvalid = psram_ar_flag & I_cache_arvalid;
+    assign m_araddr  = psram_ar_flag ? I_cache_araddr : 32'd0;
+    assign m_arlen   = psram_ar_flag ? I_cache_arlen : 8'd0;
+    assign m_arsize  = psram_ar_flag ? I_cache_arsize : 3'd0;
+    assign m_arburst = psram_ar_flag ? I_cache_arburst : 2'd0;
+    assign m_awvalid = psram_aw_flag & I_cache_awvalid;
+    assign m_awaddr  = psram_aw_flag ? I_cache_awaddr : 32'd0;
+    assign m_awlen   = psram_aw_flag ? I_cache_awlen : 8'd0;
+    assign m_awsize  = psram_aw_flag ? I_cache_awsize : 3'd0;
+    assign m_awburst = psram_aw_flag ? I_cache_awburst : 2'd0;
+    assign m_wdata   = psram_wr_process ? I_cache_wdata : 64'd0;
+    assign m_wvalid  = psram_wr_process & I_cache_wvalid;
+    assign m_wlast   = psram_wr_process & I_cache_wlast;
+    assign m_wstrb   = psram_wr_process ? I_cache_wstrb : 8'd0;
+    assign m_rready  = psram_rd_process ? I_cache_rready : 1'b0;
+    assign m_bready  = psram_wr_process ? I_cache_bready : 1'b0;
+    // axiburst slave → O_bus_* (psram 事务期间), 否则 cache 请求直连
+    assign O_bus_arvalid = psram_rd_process ? s_arvalid : (bus_ar_flag & I_cache_arvalid);
+    assign O_bus_araddr  = psram_rd_process ? s_araddr : (bus_ar_flag ? I_cache_araddr : 32'd0);
+    assign O_bus_arlen   = psram_rd_process ? s_arlen : (bus_ar_flag ? I_cache_arlen : 8'd0);
+    assign O_bus_arsize  = psram_rd_process ? s_arsize : (bus_ar_flag ? I_cache_arsize : 3'd0);
+    assign O_bus_arburst = psram_rd_process ? s_arburst : (bus_ar_flag ? I_cache_arburst : 2'd0);
+    assign O_bus_awvalid = psram_wr_process ? s_awvalid : (bus_aw_flag & I_cache_awvalid);
+    assign O_bus_awaddr  = psram_wr_process ? s_awaddr : (bus_aw_flag ? I_cache_awaddr : 32'd0);
+    assign O_bus_awlen   = psram_wr_process ? s_awlen : (bus_aw_flag ? I_cache_awlen : 8'd0);
+    assign O_bus_awsize  = psram_wr_process ? s_awsize : (bus_aw_flag ? I_cache_awsize : 3'd0);
+    assign O_bus_awburst = psram_wr_process ? s_awburst : (bus_aw_flag ? I_cache_awburst : 2'd0);
+    assign O_bus_wdata   = psram_wr_process ? s_wdata : (bus_wr_process ? I_cache_wdata : 64'd0);
+    assign O_bus_wvalid  = psram_wr_process ? s_wvalid : (bus_wr_process & I_cache_wvalid);
+    assign O_bus_wlast   = psram_wr_process ? s_wlast : (bus_wr_process & I_cache_wlast);
+    assign O_bus_wstrb   = psram_wr_process ? s_wstrb : (bus_wr_process ? I_cache_wstrb : 8'd0);
+    assign O_bus_rready  = psram_rd_process ? s_rready : (bus_rd_process ? I_cache_rready : 1'b0);
+    assign O_bus_bready  = psram_wr_process ? s_bready : (bus_wr_process ? I_cache_bready : 1'b0);
+    // io_master 反馈 → axiburst slave (psram 事务)
+    assign s_arready = psram_rd_process ? I_bus_arready : 1'b0;
+    assign s_awready = psram_wr_process ? I_bus_awready : 1'b0;
+    assign s_wready  = psram_wr_process ? I_bus_wready  : 1'b0;
+    assign s_rdata   = psram_rd_process ? I_bus_rdata : 64'd0;
+    assign s_rvalid  = psram_rd_process ? I_bus_rvalid : 1'b0;
+    assign s_rlast   = psram_rd_process ? I_bus_rlast  : 1'b0;
+    assign s_bvalid  = psram_wr_process ? I_bus_bvalid : 1'b0;
+    // 例化内部协议转换模块
+    ysyx_22040750_axiburst2xxx psram_conv_e(
+        .I_clk(I_clk), .I_rst(I_rst),
+        .I_m_araddr(m_araddr), .I_m_arvalid(m_arvalid), .O_m_arready(m_arready),
+        .I_m_arlen(m_arlen), .I_m_arsize(m_arsize), .I_m_arburst(m_arburst),
+        .O_m_rdata(m_rdata), .O_m_rvalid(m_rvalid), .O_m_rlast(m_rlast), .I_m_rready(m_rready),
+        .I_m_awaddr(m_awaddr), .I_m_awvalid(m_awvalid), .O_m_awready(m_awready),
+        .I_m_awlen(m_awlen), .I_m_awsize(m_awsize), .I_m_awburst(m_awburst),
+        .I_m_wdata(m_wdata), .I_m_wvalid(m_wvalid), .O_m_wready(m_wready),
+        .I_m_wlast(m_wlast), .I_m_wstrb(m_wstrb), .O_m_bvalid(m_bvalid), .I_m_bready(m_bready),
+        .O_s_araddr(s_araddr), .O_s_arvalid(s_arvalid), .I_s_arready(s_arready),
+        .O_s_arlen(s_arlen), .O_s_arsize(s_arsize), .O_s_arburst(s_arburst),
+        .I_s_rdata(s_rdata), .I_s_rvalid(s_rvalid), .I_s_rlast(s_rlast), .O_s_rready(s_rready),
+        .O_s_awaddr(s_awaddr), .O_s_awvalid(s_awvalid), .I_s_awready(s_awready),
+        .O_s_awlen(s_awlen), .O_s_awsize(s_awsize), .O_s_awburst(s_awburst),
+        .O_s_wdata(s_wdata), .O_s_wvalid(s_wvalid), .I_s_wready(s_wready),
+        .O_s_wlast(s_wlast), .O_s_wstrb(s_wstrb), .I_s_bvalid(s_bvalid), .O_s_bready(s_bready)
+    );
+    // ============ clint 侧 (不变) ============
     assign O_clint_araddr = clint_ar_flag ? I_cache_araddr : 0;
     assign O_clint_arvalid = clint_ar_flag & I_cache_arvalid;
-    assign O_cache_arready = clint_ar_flag ? I_clint_arready : I_bus_arready;
-    // r process
-    assign O_bus_rready = I_cache_rready & bus_rd_process;
-    assign O_clint_rready = I_cache_rready & clint_rd_process;
-    assign O_cache_rdata = ({64{clint_rd_process}} & I_clint_rdata) | ({64{bus_rd_process}} & I_bus_rdata);
-    assign O_cache_rvalid = (clint_rd_process & I_clint_rvalid) | (bus_rd_process & I_bus_rvalid);
-    assign O_cache_rlast = (clint_rd_process & I_clint_rvalid) | (bus_rd_process & I_bus_rlast);
-    // aw process
-    assign O_bus_awaddr = bus_aw_flag ? I_cache_awaddr : 0;
-    assign O_bus_awburst = bus_aw_flag ? I_cache_awburst : 0;
-    assign O_bus_awlen = bus_aw_flag ? I_cache_awlen : 0;
-    assign O_bus_awsize = bus_aw_flag ? I_cache_awsize : 0;
-    assign O_bus_awvalid = bus_aw_flag & I_cache_awvalid;
     assign O_clint_awaddr = clint_aw_flag ? I_cache_awaddr : 0;
     assign O_clint_awvalid = clint_aw_flag & I_cache_awvalid;
-    assign O_cache_awready = clint_aw_flag ? I_clint_awready : I_bus_awready;
-    // w process
-    assign O_bus_wdata = bus_wr_process ? I_cache_wdata : 0;
-    assign O_bus_wstrb = bus_wr_process ? I_cache_wstrb : 0;
-    assign O_bus_wvalid = bus_wr_process & I_cache_wvalid;
-    assign O_bus_wlast = bus_wr_process & I_cache_wlast;
     assign O_clint_wdata = clint_wr_process ? I_cache_wdata : 0;
     assign O_clint_wstrb = clint_wr_process ? I_cache_wstrb : 0;
     assign O_clint_wvalid = clint_wr_process & I_cache_wvalid;
-    assign O_cache_wready = (clint_wr_process & I_clint_wready) | (bus_wr_process & I_bus_wready);
-    // b process
-    assign O_bus_bready = bus_wr_process & I_cache_bready;
+    assign O_clint_rready = I_cache_rready & clint_rd_process;
     assign O_clint_bready = clint_wr_process & I_cache_bready;
-    assign O_cache_bvalid = (clint_wr_process & I_clint_bvalid) | (bus_wr_process & I_bus_bvalid);
+    // ============ cache 侧回 (三选一 mux) ============
+    assign O_cache_arready = clint_ar_flag ? I_clint_arready : (psram_ar_flag ? m_arready : I_bus_arready);
+    assign O_cache_awready = clint_aw_flag ? I_clint_awready : (psram_aw_flag ? m_awready : I_bus_awready);
+    assign O_cache_wready = (clint_wr_process & I_clint_wready) | (psram_wr_process & m_wready) | (bus_wr_process & I_bus_wready);
+    assign O_cache_rdata  = ({64{clint_rd_process}} & I_clint_rdata) | ({64{psram_rd_process}} & m_rdata) | ({64{bus_rd_process}} & I_bus_rdata);
+    assign O_cache_rvalid = (clint_rd_process & I_clint_rvalid) | (psram_rd_process & m_rvalid) | (bus_rd_process & I_bus_rvalid);
+    assign O_cache_rlast  = (clint_rd_process & I_clint_rvalid) | (psram_rd_process & m_rlast) | (bus_rd_process & I_bus_rlast);
+    assign O_cache_bvalid = (clint_wr_process & I_clint_bvalid) | (psram_wr_process & m_bvalid) | (bus_wr_process & I_bus_bvalid);
 endmodule
 module ysyx_22040750_stall_unit(
     input [4:0] I_rs1_addr,// from ID only
@@ -4274,6 +4391,237 @@ module ysyx_22040750_sram_behav(
             end
         end
     end
+endmodule
+// ============================================================================
+// ysyx_22040750_axiburst2xxx
+//  AXI burst(64-bit, 32B cacheline) <-> 窄单拍(32-bit) 协议转换模块。
+//  master 侧(接 cache): 完整 AXI (AR/R/AW/W/B), 64-bit 数据总线。
+//  slave  侧(接 SoC io_master): 只发单拍(arlen=0) 32-bit 传输, 64-bit 数据总线,
+//           数据只占 awaddr[2] 选中的半字 lane (对齐 AXI4ToAPB 桥语义)。
+//  读转换(本轮已实现):
+//    32B burst(arlen=3,size=3) -> 8 次 32-bit 单拍读, 重组成 4x64-bit 回给 cache;
+//    MMIO 8B(size=3,len=0)     -> 2 次 32-bit 单拍读, 重组成 1x64-bit;
+//    MMIO <=4B(size<=2,len=0)  -> 1 次单拍读透传(桥已 Fill(2,prdata))。
+//  写转换(本轮留 stub, S1b 补):
+//    32B burst(awlen=3,size=3) -> 8 次 32-bit 单拍写;  MMIO 8B->2 次; MMIO<=4B->1 次。
+// ============================================================================
+module ysyx_22040750_axiburst2xxx(
+    input I_clk,
+    input I_rst,
+    // ---- master 侧 (cache) ----
+    input  [31:0] I_m_araddr,
+    input         I_m_arvalid,
+    output        O_m_arready,
+    input  [7:0]  I_m_arlen,
+    input  [2:0]  I_m_arsize,
+    input  [1:0]  I_m_arburst,
+    output [63:0] O_m_rdata,
+    output        O_m_rvalid,
+    output        O_m_rlast,
+    input         I_m_rready,
+
+    input  [31:0] I_m_awaddr,
+    input         I_m_awvalid,
+    output        O_m_awready,
+    input  [7:0]  I_m_awlen,
+    input  [2:0]  I_m_awsize,
+    input  [1:0]  I_m_awburst,
+    input  [63:0] I_m_wdata,
+    input         I_m_wvalid,
+    output        O_m_wready,
+    input         I_m_wlast,
+    input  [7:0]  I_m_wstrb,
+    output        O_m_bvalid,
+    input         I_m_bready,
+    // ---- slave 侧 (SoC) ----
+    output [31:0] O_s_araddr,
+    output        O_s_arvalid,
+    input         I_s_arready,
+    output [7:0]  O_s_arlen,
+    output [2:0]  O_s_arsize,
+    output [1:0]  O_s_arburst,
+    input  [63:0] I_s_rdata,
+    input         I_s_rvalid,
+    input         I_s_rlast,
+    output        O_s_rready,
+
+    output [31:0] O_s_awaddr,
+    output        O_s_awvalid,
+    input         I_s_awready,
+    output [7:0]  O_s_awlen,
+    output [2:0]  O_s_awsize,
+    output [1:0]  O_s_awburst,
+    output [63:0] O_s_wdata,
+    output        O_s_wvalid,
+    input         I_s_wready,
+    output        O_s_wlast,
+    output [7:0]  O_s_wstrb,
+    input         I_s_bvalid,
+    output        O_s_bready
+);
+    localparam S_IDLE    = 4'd0;
+    localparam S_R_ISSUE = 4'd1;   // 发 slave 读 AR
+    localparam S_R_WAIT  = 4'd2;   // 等 slave 读 R
+    localparam S_R_RESP  = 4'd3;   // 回 master R 拍
+    // 写路径状态 (S1b 启用)
+    localparam S_W_CAPW  = 4'd4;
+    localparam S_W_ISSUE = 4'd5;
+    localparam S_W_WAITB = 4'd6;
+    localparam S_W_RESP  = 4'd7;
+    reg [3:0] state, next_state;
+
+    // ---- read 侧寄存器 ----
+    reg [31:0] raddr;
+    reg [2:0]  rsize;
+    reg [3:0]  r_sbeat;       // 当前 slave 读拍 (0..rsbeats-1)
+    reg [3:0]  rsbeats;       // 总 slave 读拍数
+    reg [2:0]  rmbeats;       // 总 master 读拍数
+    reg [31:0] rlo;           // size==3 时缓存低 32-bit
+    reg [63:0] rdata_out;     // 组装好的 master R data
+    // ---- write 侧寄存器 ----
+    reg [31:0] waddr;
+    reg [2:0]  wsize;
+    reg [63:0] wbuf [0:3];    // 最多 4 拍 x 8B
+    reg [7:0]  wstrb_buf [0:3];
+    reg [2:0]  wmbeats;       // master 写拍数 (awlen+1)
+    reg [1:0]  wbeat;         // 收 W 拍计数
+    reg [3:0]  wslot;         // slave 写槽 (0..2*wmbeats-1)
+
+    // ---- 握手 ----
+    wire m_ar_hs = I_m_arvalid && O_m_arready;
+    wire m_aw_hs = I_m_awvalid && O_m_awready;
+    wire s_ar_hs = O_s_arvalid && I_s_arready;
+    wire s_r_hs  = I_s_rvalid && O_s_rready;
+    wire s_aw_hs = O_s_awvalid && I_s_awready && O_s_wvalid && I_s_wready;
+    wire s_b_hs  = I_s_bvalid && O_s_bready;
+
+    // ---- master 侧就绪: 仅 IDLE 接受新事务 (读优先) ----
+    assign O_m_arready = (state == S_IDLE);
+    assign O_m_awready = (state == S_IDLE) && !I_m_arvalid;
+    assign O_m_wready  = (state == S_W_CAPW);
+    assign O_m_bvalid  = (state == S_W_RESP);
+    // slave 侧常值
+    assign O_s_rready = 1'b1;
+    assign O_s_bready = 1'b1;
+    assign O_s_arlen  = 8'd0;
+    assign O_s_arburst= 2'd0;
+    assign O_s_awlen  = 8'd0;
+    assign O_s_awburst= 2'd0;
+
+    // slave 读请求
+    assign O_s_arvalid = (state == S_R_ISSUE);
+    assign O_s_araddr  = raddr + {26'd0, r_sbeat, 2'b00};   // s*4; size<=2 时 s==0
+    assign O_s_arsize  = (rsize == 3'd3) ? 3'd2 : rsize;
+
+    // master 读响应
+    assign O_m_rvalid = (state == S_R_RESP);
+    assign O_m_rdata  = rdata_out;
+    assign O_m_rlast  = (rsize == 3'd3) ? (r_sbeat == (rsbeats - 4'd1)) : 1'b1;
+
+    // slave 写请求 (wslot -> 哪一拍/半字; 单拍 32-bit)
+    /* verilator lint_off WIDTHEXPAND */
+    /* verilator lint_off WIDTHTRUNC */
+    wire [1:0] slot_beat = wslot[2:1];                 // wslot>>1 (0..3)
+    wire       slot_half = wslot[0];
+    wire       slot_active = slot_half ? (|wstrb_buf[slot_beat][7:4]) : (|wstrb_buf[slot_beat][3:0]);
+    assign O_s_awvalid = (state == S_W_ISSUE) && slot_active;
+    assign O_s_wvalid  = (state == S_W_ISSUE) && slot_active;
+    assign O_s_awaddr  = ((waddr[31:3] + slot_beat) << 3) + (slot_half ? 32'd4 : 32'd0);
+    assign O_s_awsize  = 3'd2;
+    assign O_s_wdata   = slot_half ? {wbuf[slot_beat][63:32], 32'b0} : {32'b0, wbuf[slot_beat][31:0]};
+    assign O_s_wstrb   = slot_half ? {wstrb_buf[slot_beat][7:4], 4'b0} : {4'b0, wstrb_buf[slot_beat][3:0]};
+    assign O_s_wlast   = 1'b1;                        // 单拍
+    /* verilator lint_on WIDTHTRUNC */
+    /* verilator lint_on WIDTHEXPAND */
+
+    always @(posedge I_clk)
+        if (I_rst)
+            state <= S_IDLE;
+        else
+            state <= next_state;
+
+    always @(*) begin
+        next_state = state;
+        case (state)
+            S_IDLE: begin
+                if (I_m_arvalid)                     next_state = S_R_ISSUE;
+                else if (I_m_awvalid)                next_state = S_W_CAPW;
+            end
+            S_R_ISSUE: if (s_ar_hs)                  next_state = S_R_WAIT;
+            S_R_WAIT:  if (s_r_hs) begin
+                if (rsize == 3'd3 && r_sbeat[0] == 1'b0) next_state = S_R_ISSUE; // 低半字已收, 发高半字
+                else                                     next_state = S_R_RESP;
+            end
+            S_R_RESP:  if (I_m_rready) begin
+                if (O_m_rlast)                       next_state = S_IDLE;
+                else                                 next_state = S_R_ISSUE;
+            end
+            S_W_CAPW:  if (I_m_wvalid && O_m_wready && I_m_wlast) next_state = S_W_ISSUE;
+            S_W_ISSUE: begin
+                if (!slot_active) begin
+                    if (wslot == {wmbeats, 1'b0} - 4'd1) next_state = S_W_RESP; // 全部槽走完
+                    else                                next_state = S_W_ISSUE;
+                end else if (s_aw_hs)                 next_state = S_W_WAITB;
+            end
+            S_W_WAITB: if (s_b_hs) begin
+                if (wslot == {wmbeats, 1'b0} - 4'd1) next_state = S_W_RESP;
+                else                                 next_state = S_W_ISSUE;
+            end
+            S_W_RESP:  if (I_m_bready)               next_state = S_IDLE;
+            default: next_state = state;
+        endcase
+    end
+
+    // ---- read 侧参数/数据锁存 ----
+    always @(posedge I_clk)
+        if (I_rst) begin
+            raddr <= 0; rsize <= 0; rmbeats <= 0; rsbeats <= 0; r_sbeat <= 0; rlo <= 0; rdata_out <= 0;
+        end else begin
+            if (m_ar_hs) begin
+                raddr   <= I_m_araddr;
+                rsize   <= I_m_arsize;
+                rmbeats <= I_m_arlen[2:0] + 3'd1;
+                rsbeats <= (I_m_arsize == 3'd3) ? (2 * (I_m_arlen[2:0] + 3'd1)) : (I_m_arlen[2:0] + 3'd1);
+                r_sbeat <= 0;
+            end
+            if (state == S_R_WAIT && s_r_hs) begin
+                if (rsize == 3'd3) begin
+                    if (r_sbeat[0] == 1'b0) begin
+                        rlo      <= I_s_rdata[31:0];       // 低半字(addr[2]=0)
+                        r_sbeat  <= r_sbeat + 4'd1;
+                    end else begin
+                        rdata_out <= {I_s_rdata[63:32], rlo}; // 高半字(addr[2]=1)
+                    end
+                end else begin
+                    rdata_out <= I_s_rdata;   // 桥已 Fill(2,prdata)/从端 8B 对齐, 透传
+                end
+            end
+            if (state == S_R_RESP && I_m_rready && !O_m_rlast)
+                r_sbeat <= r_sbeat + 4'd1;
+        end
+
+    // ---- write 侧参数/数据锁存 ----
+    always @(posedge I_clk)
+        if (I_rst) begin
+            waddr <= 0; wsize <= 0; wmbeats <= 0; wbeat <= 0; wslot <= 0;
+        end else begin
+            if (m_aw_hs) begin
+                waddr   <= I_m_awaddr;
+                wsize   <= I_m_awsize;
+                wmbeats <= I_m_awlen[2:0] + 3'd1;
+                wbeat   <= 0;
+            end
+            if (state == S_W_CAPW && I_m_wvalid && O_m_wready) begin
+                wbuf[wbeat]      <= I_m_wdata;
+                wstrb_buf[wbeat] <= I_m_wstrb;
+                wbeat <= wbeat + 2'd1;
+            end
+            if (state == S_W_CAPW && I_m_wvalid && O_m_wready && I_m_wlast)
+                wslot <= 0;
+            if ((state == S_W_ISSUE && !slot_active && wslot != {wmbeats,1'b0} - 4'd1) ||
+                (state == S_W_WAITB && s_b_hs && wslot != {wmbeats,1'b0} - 4'd1))
+                wslot <= wslot + 4'd1;
+        end
 endmodule
 module ysyx_22040750(
     input clock,

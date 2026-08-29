@@ -68,7 +68,7 @@ define deps_stamp
 	@if cmp -s $(1) $(1).tmp; then rm -f $(1).tmp; else mv -f $(1).tmp $(1); fi
 endef
 
-.PHONY: all run fst ptest pfst assert assert-cache formal bins clean FORCE
+.PHONY: all run fst ptest pfst assert assert-cache axiburst formal bins clean FORCE
 .DEFAULT_GOAL := all
 FORCE: ;
 
@@ -159,11 +159,24 @@ $(CMODEL): $(DEPS_AMODEL) $(STAMP_CMODEL)
 $(STAMP_CMODEL): $(DEPS_AMODEL) FORCE
 	$(call deps_stamp,$(STAMP_CMODEL),$(DEPS_AMODEL))
 
+# ---- S1：axiburst2xxx 模块级定向验证（独立 tb）---------------------------
+ABURST_OBJ   := $(BUILD)/obj_dir_ab
+ABURST_MODEL := $(ABURST_OBJ)/Vaxiburst
+
+axiburst: $(ABURST_MODEL)
+	./$(ABURST_MODEL)
+
+$(ABURST_MODEL): tb_axiburst.cpp $(RTL)
+	mkdir -p $(ABURST_OBJ)
+	verilator --build -cc -O3 -Wno-fatal -Wno-DECLFILENAME --noassert --trace-fst \
+		-Mdir $(ABURST_OBJ) --top-module ysyx_22040750_axiburst2xxx --timescale 1ns/1ns --no-timing \
+		--exe -o $(abspath $(ABURST_MODEL)) $(RTL) tb_axiburst.cpp
+
 # ---- 阶段2：形式化（SymbiYosys；需 yosys / sby / z3）----------------------
 formal: $(BINS) $(SBYS) $(VTRIM) $(STAMP_VTRIM)
 	@command -v sby >/dev/null 2>&1 || { \
 	  echo "SymbiYosys not found (Needs: apt yosys z3 + sby源码安装, 见 npc/README)"; exit 1; }
-	@rm -rf formal/dcache formal/div
+	@rm -rf formal/*/
 	@fail=0; \
 	for f in $(SBYS); do echo "== $$f"; \
 	  (cd formal && sby $$(basename $$f)); \
