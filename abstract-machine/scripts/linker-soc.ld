@@ -44,8 +44,10 @@ SECTIONS {
   _heap_end = _sram_start + 0x1000; */
   _stack_pointer = _sram_start + _stack_offt;
   . = _stack_pointer;
-  _heap_start = ALIGN(0x0008);
-  _heap_end = _heap_start;
+  /* 堆区分配在 PSRAM(0x80000000, 可缓存 4MB)。阶段A: 4KB 验收(mem-test);
+   * 后续阶段扩到完整 4MB(microbench/RT-Thread)。 */
+  _heap_start = 0x80000000;
+  _heap_end = 0x80001000;   /* 4KB */
   end = .;
   _end = .;
 }
