@@ -30,11 +30,17 @@ TOPNAME = ysyxSoCFull
 VERILATOR = verilator
 VERILATOR_INCPATH = ./ysyxSoC/perip/uart16550/rtl ./ysyxSoC/perip/spi/rtl
 VERILATOR_INCFLAGS := $(addprefix -I,$(VERILATOR_INCPATH))
+# WITH_TRACE: 是否编译 Verilator trace 支持（会显著拖慢仿真，即使运行时不 dump）。
+#   默认 y（保持可出波形）；跑大程序/长回归/纯性能仿真时用 WITH_TRACE=n 重建提速。
+WITH_TRACE ?= y
 VERILATOR_CFLAGS += -MMD --build -cc \
 		    -O3 --x-assign fast --x-initial fast \
-		    --noassert --trace -Wno-NOTREDOP \
+		    --noassert -Wno-NOTREDOP \
 			-autoflush \
 			$(VERILATOR_INCFLAGS)
+ifeq ($(WITH_TRACE), y)
+VERILATOR_CFLAGS += --trace
+endif
 
 
 default: $(BIN)
@@ -97,6 +103,18 @@ clean:
 sim: $(BIN)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo "Running $(CSRC)"
+	@rm -f $(BUILD_DIR)/soc.vcd    # 每次 run 前清理旧波形，避免残留大文件误导
 	@$(RUNARGS)
+	@if [ "$(WAVE_ON)" != "1" ] && [ -f $(BUILD_DIR)/soc.vcd ]; then \
+		rm -f $(BUILD_DIR)/soc.vcd; \
+		echo "waveform: removed $(BUILD_DIR)/soc.vcd (WAVE_ON!=1, 如需波形: 先 WAVE=1 重建再 WAVE_ON=1 运行)"; \
+	fi
+
+# 显式保留波形的一次性运行：需先用 WAVE=1 重建二进制（改 CFLAGS 需 rm -rf build）。
+#   WAVE_KEEP=1 时 sim 结束不删波形；WAVE_FILE=/path/xx.vcd 可指定输出路径。
+clean-wave:
+	rm -f $(BUILD_DIR)/soc.vcd
+
+.PHONY: clean-wave
 
 -include ../Makefile

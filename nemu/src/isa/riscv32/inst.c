@@ -142,6 +142,9 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 111 ????? 11100 11", csrrci , IS, R(rd) = C(imm); C(imm) &= ~src1);
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = isa_raise_intr((cpu.priv == 0 ? 0x8 : 0xb), s->pc));
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, C(MSTATUS) = ((BITS(C(MSTATUS),7,7) << 3) | (C(MSTATUS) & ~0x88ul) | 0x80ul); cpu.priv = BITS(C(MSTATUS), 12, 11); s->dnpc = C(MEPC));
+  // fence.i: NEMU 无 cache 一致性需求，实现为空操作（仅需 pc 前进）。
+  // 编码 0x0000100f：funct3=001（fence 是 000，fence.i 是 001）。
+  INSTPAT("0000000 00000 00000 001 00000 00011 11", fence  , N, s->dnpc = s->snpc);
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
   INSTPAT_END();

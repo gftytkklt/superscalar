@@ -1,4 +1,5 @@
 #include <am.h>
+#include <klib.h>
 #include <klib-macros.h>
 
 extern char _heap_start, _heap_end, _bss_start, _bss_end, _sidata, _sdata, _edata;
@@ -40,11 +41,9 @@ void uart_config_divisor() {
 }
 
 void loader() {
-  char *src = &_sidata;
-  char *dst = &_sdata;
-  while (dst < &_edata) {
-        *dst++ = *src++;
-  }
+  // 把 .data 从 flash(LMA, _sidata) 拷贝到 SRAM(VMA, _sdata)。
+  // 注意：_sdata 是 VMA，拷贝源必须用 LMA（LOADADDR 所得 _sidata）。
+  memcpy(&_sdata, &_sidata, (size_t)(&_edata - &_sdata));
   char *bss_start = &_bss_start;
   char *bss_end = &_bss_end;
   while (bss_start < bss_end){

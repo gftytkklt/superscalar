@@ -44,10 +44,11 @@ SECTIONS {
   _heap_end = _sram_start + 0x1000; */
   _stack_pointer = _sram_start + _stack_offt;
   . = _stack_pointer;
-  /* 堆区分配在 PSRAM(0x80000000, 可缓存 4MB)。阶段A: 4KB 验收(mem-test);
-   * 后续阶段扩到完整 4MB(microbench/RT-Thread)。 */
+  /* 堆区分配在 PSRAM(0x80000000, 可缓存 4MB)。大小由 LDFLAGS --defsym=_heap_size 指定
+   * （npc.mk 的 HEAP_SIZE，默认 32KB；microbench 等大堆程序传 HEAP_SIZE=0x400000）。
+   * 不要写死整个 4MB，否则 mem-test(用 _heap_start~_heap_end) 会扫描 4MB 极慢。 */
   _heap_start = 0x80000000;
-  _heap_end = 0x80001000;   /* 4KB */
+  _heap_end = _heap_start + _heap_size;
   end = .;
   _end = .;
 }

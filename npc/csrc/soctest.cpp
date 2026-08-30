@@ -1,10 +1,11 @@
 
 // #include <common.h>
+#include <cstdlib>
+#include <cstdio>
 #include <difftest.h>
 #include <probe.h>
 #include <memory.h>
 
-// #define CONFIG_WAVEFORM
 // #define CONFIG_WAVEFORM
 // #define CONFIG_DIFFTEST
 
@@ -16,6 +17,22 @@ uint64_t sim_time = 0;
 static char *img_path = NULL;
 static char *ref_so_file = NULL;
 
+// 波形输出路径/降频，供调试仿真用。
+//   编译期 WAVE=1 只决定二进制是否带 trace 支持（CONFIG_WAVEFORM）。
+//   运行期必须 WAVE_ON=1 才真正 dump（否则即使带 trace 支持也不写 VCD，避免
+//   长仿真/回归时 build/soc.vcd 持续膨胀爆盘）。
+//   WAVE_FILE: 波形文件路径（默认 build/soc.vcd，落在 npc/build/，不进工作区根目录）。
+//   WAVE_DIV : 每 N 个 posedge 帧 dump 一次（默认 1=全量）。长仿真看波形建议调大。
+static bool wave_enabled_flag = false;
+static const char* wave_file() {
+  const char* f = getenv("WAVE_FILE");
+  return f ? f : "build/soc.vcd";
+}
+static unsigned wave_div() {
+  const char* d = getenv("WAVE_DIV");
+  return (d && atoi(d) > 0) ? (unsigned)atoi(d) : 1u;
+}
+
 int main(int argc, char** argv){
     printf("hello ysyx!\n");
     if(argc > 1){
@@ -23,13 +40,22 @@ int main(int argc, char** argv){
     }
     init_memory(img_path, FLASH);
     Verilated::commandArgs(argc, argv);
+    // 运行期波形开关：仅 WAVE_ON=1 时 dump（无论二进制是否带 trace 支持）。
+    const char* won = getenv("WAVE_ON");
+    wave_enabled_flag = (won && strcmp(won, "1") == 0);
     soc = new TOP_NAME;
     // waveform
     #ifdef CONFIG_WAVEFORM
-    Verilated::traceEverOn(true);
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    soc->trace(tfp,99);
-    tfp->open("soc.vcd");
+    VerilatedVcdC* tfp = NULL;
+    if (wave_enabled_flag) {
+      Verilated::traceEverOn(true);
+      tfp = new VerilatedVcdC;
+      soc->trace(tfp,99);
+      tfp->open(wave_file());
+      printf("waveform: %s -> %s (dump div=%u)\n", ANSI_FMT("ON", ANSI_FG_GREEN), wave_file(), wave_div());
+    } else {
+      printf("waveform: %s (build has trace support, but WAVE_ON!=1)\n", ANSI_FMT("OFF", ANSI_FG_RED));
+    }
     #endif
     soc->reset = 1;
     soc->eval(); // init probe ptr
@@ -39,11 +65,6 @@ int main(int argc, char** argv){
         init_difftest(ref_so_file, FLSAH_SIZE, flash, cpu_gpr);
         #else
         printf("difftest: %s\n",ANSI_FMT("OFF", ANSI_FG_RED));
-        #endif
-        #ifdef CONFIG_WAVEFORM
-        printf("waveform: %s\n",ANSI_FMT("ON", ANSI_FG_GREEN));
-        #else
-        printf("waveform: %s\n",ANSI_FMT("OFF", ANSI_FG_RED));
         #endif
     while(!finish){
         // 半周期驱动：每个 sim_time 一次 eval。
@@ -63,7 +84,15 @@ int main(int argc, char** argv){
         soc->clock = posedge_phase;
         soc->eval();
         #ifdef CONFIG_WAVEFORM
-        if (posedge_phase) tfp->dump(sim_time);   // 仅 posedge 帧（信息不丢，去半拍冗余）
+        // 波形窗口：WAVE_START/WAVE_END 限制 dump 区间（用于只抓卡死前后的一小段逐拍波形）。
+        // 默认全量（div 控制降频）。
+        {
+          static unsigned wstart = (getenv("WAVE_START") ? (unsigned)strtoul(getenv("WAVE_START"),NULL,10) : 0u);
+          static unsigned wend   = (getenv("WAVE_END")   ? (unsigned)strtoul(getenv("WAVE_END"),NULL,10)   : 0xffffffffu);
+          if (wave_enabled_flag && posedge_phase &&
+              (sim_time >= (uint64_t)wstart) && (sim_time <= (uint64_t)wend) &&
+              ((sim_time >> 1) % wave_div() == 0)) tfp->dump(sim_time);
+        }
         #endif
         #ifdef CONFIG_DIFFTEST
         // printf("wb_pc: %x\n", *wb_pc);
@@ -82,11 +111,18 @@ int main(int argc, char** argv){
         #endif
         // difftest_step(*wb_pc, cpu_gpr, sim_time);
         sim_time++;
-        // if(sim_time > 400){break;}
+        // SIM_END: 提前终止（调试用，避免卡死无限跑）
+        {
+          static unsigned long s_end = (getenv("SIM_END") ? strtoul(getenv("SIM_END"),NULL,10) : 0ul);
+          if (s_end && sim_time >= s_end) { printf("[SIM] t=%lu reach SIM_END\n", sim_time); fflush(stdout); break; }
+        }
     }
     soc->final();
     #ifdef CONFIG_WAVEFORM
-    tfp->close(); 
+    if (wave_enabled_flag) {
+      tfp->close();
+      printf("waveform closed: %s\n", wave_file());
+    }
     #endif
     delete soc;
     printf("bye ysyx!\n");

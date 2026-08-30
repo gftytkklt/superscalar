@@ -2442,7 +2442,9 @@ module ysyx_22040750_decoder(
     assign O_dnpc_sel[3] = FENCEI;
     assign O_dnpc_sel[2] = csr_jr;
     assign O_dnpc_sel[1] = JALR;
-    assign O_dnpc_sel[0] = ~(JALR | JAL | typeB_jr | csr_jr | FENCEI);
+    // dnpc_sel[0]=顺序(snpc)。fence.i 不改变 PC(pc+4 顺序)，不能当作跳转，
+    // 否则 IF_ID 会插入 nop 冲刷 fence.i 之后已取出的指令(如紧跟的 auipc/jalr)。
+    assign O_dnpc_sel[0] = ~(JALR | JAL | typeB_jr | csr_jr);
     // alu op
     localparam OP_ADD = 15'b000_0000_0000_0001;
     localparam OP_SUB = 15'b000_0000_0000_0010;
