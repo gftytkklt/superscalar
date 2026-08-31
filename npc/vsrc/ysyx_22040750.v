@@ -2067,7 +2067,8 @@ module ysyx_22040750_dcachectrl #(
     // 避免 8B 单拍直连 AXI4ToAPB 触发 size>4 断言。
     assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
                        ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
-                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) );
+                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
+                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha1000000)) );
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
@@ -3290,7 +3291,8 @@ module ysyx_22040750_icachectrl #(
     // 两者均为 APB 单拍(无 AXI burst)：icache 发 32B burst，经 slave_crossbar 内
     // axiburst2xxx 统一转 8×32bit 单拍（flash 取指加速，复用 PSRAM 转换 IP）。
     assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
-                                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) );
+                                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
+                                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha1000000)) );
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -4119,6 +4121,8 @@ module ysyx_22040750_slave_crossbar(
     parameter CLINT_END = 'h02010000;
     parameter PSRAM_START  = 'h80000000;
     parameter PSRAM_END    = 'h80400000;
+    parameter SDRAM_START  = 'ha0000000;   // SDRAM 可缓存区（控制器 24bit 地址 = 16MB）
+    parameter SDRAM_END    = 'ha1000000;
     parameter FLASH_START  = 'h30000000;   // flash XIP (APB 单拍, 与 PSRAM 同, 复用 axiburst2xxx)
     parameter FLASH_END    = 'h40000000;
     wire clint_ar_flag, clint_aw_flag, psram_ar_flag, psram_aw_flag, bus_ar_flag, bus_aw_flag;
@@ -4138,8 +4142,10 @@ module ysyx_22040750_slave_crossbar(
     //         dcache 对 flash 的"单拍 MMIO 数据读"(如 loader 搬 .data 的 lbu, arlen=0)
     //         必须走 bus 直连(如 SRAM)，否则经 axiburst 重组会丢数据(实测读回 0)。
     assign psram_ar_flag = ((I_cache_araddr >= PSRAM_START) && (I_cache_araddr < PSRAM_END)) ||
+                           ((I_cache_araddr >= SDRAM_START) && (I_cache_araddr < SDRAM_END)) ||
                            (((I_cache_araddr >= FLASH_START) && (I_cache_araddr < FLASH_END)) && (I_cache_arlen != 8'd0));
-    assign psram_aw_flag = (I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END);
+    assign psram_aw_flag = ((I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END)) ||
+                           ((I_cache_awaddr >= SDRAM_START) && (I_cache_awaddr < SDRAM_END));
     assign bus_ar_flag = ~clint_ar_flag & ~psram_ar_flag;
     assign bus_aw_flag = ~clint_aw_flag & ~psram_aw_flag;
     assign clint_ar_handshake = I_clint_arready && O_clint_arvalid;
@@ -4547,6 +4553,9 @@ module ysyx_22040750_axiburst2xxx(
     //   写: 32B 突发(awlen=3, awsize=3) 或 单拍(awlen=0, awsize<=3)
     // 其它 size/len 组合未实现（拆分会错位/丢数据）。遇到违例立即终止仿真并报错，
     // 报错含 addr/len/size/burst，可直接定位，无需从头 trace。
+    // 用 ifdef VERILATOR 包裹：Verilator 仿真保留此拦截；yosys 形式化(-formal)剔除
+    // （$fatal 系统任务 yosys 无法解析，且形式化由 props_axiburst.sv 直接约束合法输入）。
+    `ifdef VERILATOR
     always @(posedge I_clk) begin
       if (I_m_arvalid && ~((I_m_arlen == 8'd3 && I_m_arsize == 3'd3) ||
                            (I_m_arlen == 8'd0 && I_m_arsize <= 3'd3))) begin
@@ -4561,6 +4570,7 @@ module ysyx_22040750_axiburst2xxx(
         $fatal;
       end
     end
+    `endif
 
     // ---- master 侧就绪: 仅 IDLE 接受新事务 (读优先) ----
     assign O_m_arready = (state == S_IDLE);
