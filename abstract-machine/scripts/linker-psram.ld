@@ -37,6 +37,26 @@ SECTIONS {
     _sdata = .;
     *(.data*)
     *(.sdata*)
+    /* RT-Thread 节信息（finsh 符号表 + 组件自动初始化表）。原本由 rt/bsp/abstract-machine 的
+     * extra.ld 以 INSERT BEFORE .data 注入；但 INSERT 在带 MEMORY 区域的脚本下会把该节错放到
+     * SRAM 基址(独立 LOAD 段)，导致 flash 镜像跨度巨大(528MB)无法加载。故直接并入 .data，
+     * 随 .data 一起被 bootloader/trm loader 搬入 PSRAM。对无这些输入节的程序无影响。 */
+    . = ALIGN(0x8);
+    __fsymtab_start = .;
+    KEEP(*(FSymTab))
+    __fsymtab_end = .;
+    . = ALIGN(0x8);
+    __vsymtab_start = .;
+    KEEP(*(VSymTab))
+    __vsymtab_end = .;
+    . = ALIGN(0x8);
+    __rt_init_start = .;
+    KEEP(*(SORT(.rti_fn*)))
+    __rt_init_end = .;
+    . = ALIGN(0x8);
+    __rt_utest_tc_tab_start = .;
+    KEEP(*(UtestTcTab))
+    __rt_utest_tc_tab_end = .;
     _edata = .;
   } > psram AT> flash
   _sidata = LOADADDR(.data);

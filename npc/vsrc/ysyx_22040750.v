@@ -2059,14 +2059,14 @@ module ysyx_22040750_dcachectrl #(
         
     // assign mmio_flag = (I_cpu_addr[31:27] != 5'b10000) && (I_cpu_rd_req || I_cpu_wr_req);
     // assign mmio_flag = !I_cpu_addr[31] && (I_cpu_rd_req || I_cpu_wr_req); // ysyx4
-    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80040000) + flash [0x30000000,0x40000000)（32B burst）。
-    // 其余（含 [0x80040000, 0x88000000) 空洞、外设、SRAM/MROM/SDRAM）走 MMIO 单拍。
+    // 可缓存区 = PSRAM 4MB [0x80000000, 0x80400000) + flash [0x30000000,0x40000000)（32B burst）。
+    // 其余（含 [0x80400000, 0x88000000) 空洞、外设、SRAM/MROM/SDRAM）走 MMIO 单拍。
     // flash 只读：程序不写 flash，故 dcache 缓存 flash 只发读 burst；若误写 flash，
     // host 侧 AXI4ToAPB 的 len/size 断言拦截（见 ysyxSoC/soc/AXI4ToAPB.scala）。
     // 此修改使 C 程序访问 flash 数据（如 .rodata 里的 8B 常量 `ld`）也走 32B burst，
     // 避免 8B 单拍直连 AXI4ToAPB 触发 size>4 断言。
     assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
-                       ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000)) ||
+                       ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
                           ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) );
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
@@ -3286,10 +3286,10 @@ module ysyx_22040750_icachectrl #(
     // RD_RELOAD: get axi rdata
     // RD_ALLOCATE: reload cacheline & send data to cpu
     // assign mmio_flag = !I_cpu_addr[31] && I_cpu_rd_req;// ysyx4
-    // 可缓存区(icache) = PSRAM [0x80000000,0x80040000) + flash [0x30000000,0x40000000)
+    // 可缓存区(icache) = PSRAM [0x80000000,0x80400000) + flash [0x30000000,0x40000000)
     // 两者均为 APB 单拍(无 AXI burst)：icache 发 32B burst，经 slave_crossbar 内
     // axiburst2xxx 统一转 8×32bit 单拍（flash 取指加速，复用 PSRAM 转换 IP）。
-    assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80040000)) ||
+    assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
                                           ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) );
     always @(posedge I_clk)
         if(I_rst)
@@ -4118,7 +4118,7 @@ module ysyx_22040750_slave_crossbar(
     parameter CLINT_START  = 'h02000000;
     parameter CLINT_END = 'h02010000;
     parameter PSRAM_START  = 'h80000000;
-    parameter PSRAM_END    = 'h80040000;
+    parameter PSRAM_END    = 'h80400000;
     parameter FLASH_START  = 'h30000000;   // flash XIP (APB 单拍, 与 PSRAM 同, 复用 axiburst2xxx)
     parameter FLASH_END    = 'h40000000;
     wire clint_ar_flag, clint_aw_flag, psram_ar_flag, psram_aw_flag, bus_ar_flag, bus_aw_flag;
