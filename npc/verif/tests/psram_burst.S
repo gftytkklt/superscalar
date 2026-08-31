@@ -1,7 +1,7 @@
 # PSRAM 可缓存区 32B burst 读写检查（主存模式 ptest）
-# 验证可缓存区 [0x80000000, 0x80040000) 支持 32B cacheline 对齐 burst 读写：
+# 验证可缓存 PSRAM [0x80000000, 0x80400000) 支持 32B cacheline 对齐 burst 读写：
 #   - 数据区 0x80010000（远离代码区 0x80000000）：写 4×sd = 32B，读回校验
-#   - 4MB 上界附近 0x8003ffc0：burst [0x8003ffc0, 0x80040000) 在 PSRAM 内
+#   - 0x8003ffc0（旧 256KB 窗口上界 0x80040000 的边界用例）：burst [0x8003ffc0, 0x80040000)
 # 任何校验失败 err++，err 写回 SRAM(0x0f000000) 供 tb 检查，然后 ebreak。
 	.section .text
 	.globl _start
