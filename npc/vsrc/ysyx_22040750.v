@@ -4446,6 +4446,10 @@ endmodule
 //    MMIO <=4B(size<=2,len=0)  -> 1 次单拍读透传(桥已 Fill(2,prdata))。
 //  写转换(本轮留 stub, S1b 补):
 //    32B burst(awlen=3,size=3) -> 8 次 32-bit 单拍写;  MMIO 8B->2 次; MMIO<=4B->1 次。
+//  ⚠️ 潜在 bug（只拦截不修复，2026-08-31）：
+//    目前仅支持上述 size/len 组合。其它组合（如非 32B 突发、size<3 且 len>0 等）的
+//    拆分逻辑未实现，会错位/丢数据。未来若需支持新模式，先在本模块底部协议检查处
+//    拦截报错（$fatal 带 addr/len/size/burst），避免静默错误，调试直接取该报错即可。
 // ============================================================================
 module ysyx_22040750_axiburst2xxx(
     input I_clk,
@@ -4536,6 +4540,27 @@ module ysyx_22040750_axiburst2xxx(
     wire s_r_hs  = I_s_rvalid && O_s_rready;
     wire s_aw_hs = O_s_awvalid && I_s_awready && O_s_wvalid && I_s_wready;
     wire s_b_hs  = I_s_bvalid && O_s_bready;
+
+    // ================= 协议违例拦截（只拦截不修复，2026-08-31） =================
+    // 本转换桥目前只支持两种访存模式：
+    //   读: 32B 突发(arlen=3, arsize=3) 或 单拍(arlen=0, arsize<=3)
+    //   写: 32B 突发(awlen=3, awsize=3) 或 单拍(awlen=0, awsize<=3)
+    // 其它 size/len 组合未实现（拆分会错位/丢数据）。遇到违例立即终止仿真并报错，
+    // 报错含 addr/len/size/burst，可直接定位，无需从头 trace。
+    always @(posedge I_clk) begin
+      if (I_m_arvalid && ~((I_m_arlen == 8'd3 && I_m_arsize == 3'd3) ||
+                           (I_m_arlen == 8'd0 && I_m_arsize <= 3'd3))) begin
+        $display("[axiburst] FATAL: unsupported READ  : addr=0x%08x len=%0d size=%0d burst=%0b",
+                 I_m_araddr, I_m_arlen, I_m_arsize, I_m_arburst);
+        $fatal;
+      end
+      if (I_m_awvalid && ~((I_m_awlen == 8'd3 && I_m_awsize == 3'd3) ||
+                           (I_m_awlen == 8'd0 && I_m_awsize <= 3'd3))) begin
+        $display("[axiburst] FATAL: unsupported WRITE : addr=0x%08x len=%0d size=%0d burst=%0b",
+                 I_m_awaddr, I_m_awlen, I_m_awsize, I_m_awburst);
+        $fatal;
+      end
+    end
 
     // ---- master 侧就绪: 仅 IDLE 接受新事务 (读优先) ----
     assign O_m_arready = (state == S_IDLE);

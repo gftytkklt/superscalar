@@ -1,12 +1,17 @@
 # 启动/链接方式可按程序选择：
 #   LDS    : 链接脚本。linker-soc.ld = flash XIP（默认，数据段搬 SRAM）；
-#            linker-sram.ld = 整程序搬入 SRAM 执行（阶段 D bootloader）。
-#   BOOT_S : 启动汇编。start.S = flash 直启；start_sram.S = bootloader 搬 code 到 SRAM。
+#            linker-sram.ld = 整程序搬入 SRAM 执行（阶段 D bootloader）；
+#            linker-psram.ld = 整程序搬入 PSRAM（阶段 E/F，单级 bootloader）；
+#            linker-psram-ssbl.ld = FSBL+SSBL 二级加载（阶段 G）。
+#   BOOT_S : 启动汇编。start.S = flash 直启；start_sram.S = 单级 bootloader；
+#            start_fsbl.S = FSBL（二级 bootloader 第一级）。
 LDS    ?= $(AM_HOME)/scripts/linker-soc.ld
 BOOT_S ?= riscv/npc/start.S
 
 AM_SRCS := $(BOOT_S) \
            riscv/npc/boot_sram.c \
+           riscv/npc/fsbl.c \
+           riscv/npc/ssbl.c \
            riscv/npc/trm.c \
            riscv/npc/ioe.c \
            riscv/npc/timer.c \
