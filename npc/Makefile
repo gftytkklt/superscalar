@@ -51,10 +51,22 @@ $(shell mkdir -p $(BUILD_DIR))
 CFLAGS += -DTOP_NAME="\"V$(TOPNAME)\""
 LDFLAGS += $(if $(filter y,$(WITH_SDL)),-lSDL2 -lSDL2_image,)
 #-include *.d
-$(BIN): $(VSRC) $(CSRC)
+# 编译配置 stamp：把影响 $(BIN) 的编译期开关（DIFF/WAVE/WITH_TRACE）记入 build/.build_cfg。
+# 任一开关变化 → stamp 内容变化 → $(BIN) 自动重建（免去手动 rm -rf build 的旧坑；
+# 运行时开关 WAVE_ON/WAVE_FILE/WAVE_DIV/WAVE_START/WAVE_END/SIM_END 不进 stamp，无需重建）。
+BUILD_CFG = $(BUILD_DIR)/.build_cfg
+$(BUILD_CFG): FORCE
+	@mkdir -p $(BUILD_DIR)
+	@printf 'DIFF=%s\nWAVE=%s\nWITH_TRACE=%s\n' '$(DIFF)' '$(WAVE)' '$(WITH_TRACE)' > $@.tmp
+	@cmp -s $@ $@.tmp || cp $@.tmp $@
+	@rm -f $@.tmp
+FORCE:
+.PHONY: FORCE
+
+$(BIN): $(VSRC) $(CSRC) $(BUILD_CFG)
 	@rm -rf $(OBJ_DIR)
 	$(VERILATOR) $(VERILATOR_CFLAGS) \
-		-top $(TOPNAME) $^ \
+		-top $(TOPNAME) $(VSRC) $(CSRC) \
 		$(addprefix -CFLAGS , $(CFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS)) \
 		--Mdir $(OBJ_DIR) --exe -o $(abspath $(BIN)) \
 		--timescale "1ns/1ns" --no-timing
