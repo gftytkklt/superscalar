@@ -92,11 +92,15 @@ int main(int argc, char** argv){
         if (posedge_phase && (sim_time > 20)) { soc->reset = 0; }
 
         soc->clock = posedge_phase;
-        soc->eval();
         #ifdef CONFIG_NVBOARD
-        // NVBoard 自适应限帧（内部 cpf 自调至 ~60fps），每周期调用即可。
-        nvboard_update();
+        // NVBoard 每全周期调用一次（主循环是半周期 eval）：UART 采样按全周期计，
+        // divisor 才与 16550 位周期（16×dl clk）对齐。内部再自适应限帧 ~60fps。
+        if (posedge_phase) nvboard_update();
+        #else
+        // 无 NVBoard 时 UART RX 空闲拉高，避免 16550 接收器把悬空/0 当起始位误收。
+        soc->externalPins_uart_rx = 1;
         #endif
+        soc->eval();
         #ifdef CONFIG_WAVEFORM
         // 波形窗口：WAVE_START/WAVE_END 限制 dump 区间（用于只抓卡死前后的一小段逐拍波形）。
         // 默认全量（div 控制降频）。

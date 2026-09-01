@@ -21,6 +21,13 @@ static const char mainargs[] = MAINARGS;
 #define UART_LCR_DLAB 0x80
 #define UART_LSR_THRE 0x20
 
+// UART 波特率除数：由 npc.mk 按 WITH_SDL 注入（见 abstract-machine/scripts/platform/npc.mk）。
+//   NVBoard（WITH_SDL）→ 1：位周期 16 clk 周期，匹配 NVBoard UART 默认 divisor 16；
+//   否则 → 54：115200 波特（真实）。默认 54。
+#ifndef UART_DIVISOR
+#define UART_DIVISOR 54
+#endif
+
 void putch(char ch) {
   while(!(*(volatile char *)(UART_LSR) & UART_LSR_THRE));
   *(volatile char *)(UART_THR) = ch;
@@ -34,8 +41,9 @@ void halt(int code) {
 void uart_config_divisor() {
   char div_enable_mask = UART_LCR_DLAB;
   *(volatile char *)(UART_LCR) |= div_enable_mask;// enable div access
-  // 100MHz/(16*115200) = 54
-  *(volatile char *)(UART_LDL) = 54;
+  // 除数由 UART_DIVISOR 决定：NVBoard 时 1（位周期 16 匹配 nvboard divisor 16）；
+  // 否则 54（115200 波特，真实）。
+  *(volatile char *)(UART_LDL) = UART_DIVISOR;
   *(volatile char *)(UART_MDL) = 0;
   *(volatile char *)(UART_LCR) &= ~div_enable_mask;// disable div access
 }
