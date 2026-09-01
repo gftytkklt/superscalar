@@ -47,9 +47,10 @@ static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 static uint8_t flash[CONFIG_FLASHSIZE] PG_ALIGN = {};
 static uint8_t sram[CONFIG_SRAMSIZE] PG_ALIGN = {};
 static uint8_t mrom[CONFIG_MROMSIZE] PG_ALIGN = {};
-// SDRAM 区 [0xa0000000, 0xa1000000) 与 NEMU 设备 MMIO（serial/rtc/keyboard/vga 等，默认也在
-// 0xa0000000 区）重叠。编译策略：仅当 DEVICE 关闭（difftest ref）时把 SDRAM 作为内存区注册；
-// DEVICE 开启（native 解释器模式）时该地址由 mmio_read/write 按外设处理，SDRAM 内存区不编译。
+// SDRAM 区 [0xa0000000, 0xa8000000)（阶段 I 字扩展 128MB，2 rank）与 NEMU 设备 MMIO
+// （serial/rtc/keyboard/vga 等，默认也在 0xa0000000 区）重叠。编译策略：仅当 DEVICE 关闭
+// （difftest ref）时把 SDRAM 作为内存区注册；DEVICE 开启（native 解释器模式）时该地址
+// 由 mmio_read/write 按外设处理，SDRAM 内存区不编译。
 #ifndef CONFIG_DEVICE
 static uint8_t sdram[CONFIG_SDRAMSIZE] PG_ALIGN = {};
 #endif

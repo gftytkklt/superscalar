@@ -906,12 +906,12 @@ module ysyx_22040750_cpu_core(
     localparam PSRAM_BASE = 32'h80000000;
     localparam PSRAM_END = 32'h88000000;
     localparam SDRAM_BASE = 32'ha0000000;
-    localparam SDRAM_END = 32'ha1000000;
+    localparam SDRAM_END = 32'ha8000000;
     // mmio = 非 SoC 内存区（uart/vga/spi/gpio 等外设寄存器）访问，
     // difftest 对 mmio 跳过 NEMU 对拍（NEMU 未建模这些设备）。
     // 注意：PSRAM(0x80000000) 不是 mmio —— NEMU 的 pmem 覆盖 0x80000000..0x88000000，
     // CPU 对它的 lw/sw 是真实访存指令，NEMU ref 会执行并返回数据，必须对拍不 skip。
-    // SDRAM(0xa0000000, 16MB) 同理：NEMU 已建模为内存区，对拍不 skip。
+    // SDRAM(0xa0000000, 128MB) 同理：NEMU 已建模为内存区，对拍不 skip。
     assign EX_MEM_mmio = EX_MEM_memop && !((EX_MEM_mem_addr >= MROM_BASE && EX_MEM_mem_addr < MROM_END) || (EX_MEM_mem_addr >= FLASH_BASE && EX_MEM_mem_addr < FLASH_END) || (EX_MEM_mem_addr >= SRAM_BASE && EX_MEM_mem_addr < SRAM_END) || (EX_MEM_mem_addr >= PSRAM_BASE && EX_MEM_mem_addr < PSRAM_END) || (EX_MEM_mem_addr >= SDRAM_BASE && EX_MEM_mem_addr < SDRAM_END));
     
     ysyx_22040750_npc npc_e(
@@ -2071,7 +2071,7 @@ module ysyx_22040750_dcachectrl #(
     assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
                        ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
                           ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
-                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha1000000)) );
+                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha8000000)) );
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
@@ -3295,7 +3295,7 @@ module ysyx_22040750_icachectrl #(
     // axiburst2xxx 统一转 8×32bit 单拍（flash 取指加速，复用 PSRAM 转换 IP）。
     assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
                                           ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
-                                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha1000000)) );
+                                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha8000000)) );
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -4124,8 +4124,8 @@ module ysyx_22040750_slave_crossbar(
     parameter CLINT_END = 'h02010000;
     parameter PSRAM_START  = 'h80000000;
     parameter PSRAM_END    = 'h80400000;
-    parameter SDRAM_START  = 'ha0000000;   // SDRAM 可缓存区（控制器 24bit 地址 = 16MB）
-    parameter SDRAM_END    = 'ha1000000;
+    parameter SDRAM_START  = 'ha0000000;   // SDRAM 可缓存区（字扩展后 128MB，2 rank 满列译码）
+    parameter SDRAM_END    = 'ha8000000;
     parameter FLASH_START  = 'h30000000;   // flash XIP (APB 单拍, 与 PSRAM 同, 复用 axiburst2xxx)
     parameter FLASH_END    = 'h40000000;
     wire clint_ar_flag, clint_aw_flag, psram_ar_flag, psram_aw_flag, bus_ar_flag, bus_aw_flag;

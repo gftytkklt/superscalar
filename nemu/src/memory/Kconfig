@@ -39,7 +39,7 @@ config SDRAMBASE
 
 config SDRAMSIZE
   hex "SDRAM size"
-  default 0x1000000
+  default 0x8000000
 
 config PC_RESET_OFFSET
   hex "Offset of reset vector from the base of memory"
