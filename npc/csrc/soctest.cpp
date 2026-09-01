@@ -9,6 +9,11 @@
 // #define CONFIG_WAVEFORM
 // #define CONFIG_DIFFTEST
 
+#ifdef CONFIG_NVBOARD
+#include <nvboard.h>
+void nvboard_bind_all_pins(TOP_NAME* top);   // 由 auto_pin_bind.cpp 生成
+#endif
+
 static TOP_NAME* soc = NULL;
 
 bool finish = false;
@@ -44,6 +49,11 @@ int main(int argc, char** argv){
     const char* won = getenv("WAVE_ON");
     wave_enabled_flag = (won && strcmp(won, "1") == 0);
     soc = new TOP_NAME;
+    #ifdef CONFIG_NVBOARD
+    // NVBoard（阶段 J0）：绑定外部引脚 + 初始化窗口（SDL）。
+    nvboard_bind_all_pins(soc);
+    nvboard_init();
+    #endif
     // waveform
     #ifdef CONFIG_WAVEFORM
     VerilatedVcdC* tfp = NULL;
@@ -83,6 +93,10 @@ int main(int argc, char** argv){
 
         soc->clock = posedge_phase;
         soc->eval();
+        #ifdef CONFIG_NVBOARD
+        // NVBoard 自适应限帧（内部 cpf 自调至 ~60fps），每周期调用即可。
+        nvboard_update();
+        #endif
         #ifdef CONFIG_WAVEFORM
         // 波形窗口：WAVE_START/WAVE_END 限制 dump 区间（用于只抓卡死前后的一小段逐拍波形）。
         // 默认全量（div 控制降频）。
@@ -118,6 +132,9 @@ int main(int argc, char** argv){
         }
     }
     soc->final();
+    #ifdef CONFIG_NVBOARD
+    nvboard_quit();
+    #endif
     #ifdef CONFIG_WAVEFORM
     if (wave_enabled_flag) {
       tfp->close();

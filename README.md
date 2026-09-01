@@ -15,7 +15,7 @@ bash init.sh subproject-name
 | 目录 | 角色 | 说明 |
 | --- | --- | --- |
 | `nemu/` | 软件参考模型 | RISC-V 指令级模拟器（NEMU），在真机流片中作为 difftest 对拍的 golden model |
-| `npc/` | **自研处理器** | 自研 RISC-V64 处理器（Verilog RTL `ysyx_22040750.v`），集成进 Chisel 生成的 `ysyxSoCFull` SoC，并经 AXI4 接入总线路由到存储与外设；内含独立验证环境 `npc/verif/`，详见 [npc/README.md](./npc/README.md) |
+| `npc/` | **自研处理器** | 自研 RISC-V64 处理器（Verilog RTL `ysyx_22040750.v`），集成进 Chisel 生成的 `ysyxSoCFull` SoC，并经 AXI4 接入总线路由到存储与外设；内含独立验证环境与文档 `npc/verif/`（调试工作流/阶段任务/访存性能分析，详见 [npc/README.md](./npc/README.md) §6 文档索引） |
 | `abstract-machine/` | 运行库 | AM（Abstract Machine）教学运行库：TRM / IOE / CTE / VME，为 OS 与 App 提供统一硬件抽象 |
 | `am-kernels/` | 核内测试集 | 运行在 AM 之上的内核测试程序 |
 | `nanos-lite/` | 操作系统 | 基于 AM 的教学操作系统（进程/虚存/文件系统/设备驱动） |

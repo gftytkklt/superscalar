@@ -18,7 +18,12 @@ NEMU 进行 difftest 逐指令对拍。
 npc/
 ├── vsrc/                    # RTL 源码
 │   └── ysyx_22040750.v      # 全部 30 个 module 的处理器核
-├── verif/                   # 独立 RTL 微验证环境（Verilator 裸核 testbench）
+├── verif/                   # 验证与调试文档 + 独立 RTL 微验证环境（见 §6 文档索引）
+│   ├── DEBUG_WORKFLOW.md    # 调试工作流与阶段 A–I 执行记录（权威验证链路、波形管理、启动流程）
+│   ├── VERIF_TESTS.md       # 测试体系（现行）
+│   ├── STAGE_H_ONWARDS_TASKS.md   # 阶段 H–K 任务定义与实现路径（进度见 §6）
+│   ├── MEM_PIPELINE_OPT.md  # 访存流水线性能分析与优化方向（架构/瓶颈/验证/优化）
+│   ├── records/             # 各阶段原始调试记录（STAGE1/2/3、STAGE_F、STAGE_I 等）
 │   ├── Makefile             # make / make run T=xxx / make fst T=xxx / make assert / make formal
 │   ├── tb_main.cpp          # AXI4 内存模型 + 时钟/复位 harness（断言失败返回非 0）
 │   ├── tests/               # 汇编微测试：bug2_csr bug3_div bug4_fencei
@@ -135,7 +140,11 @@ make -C npc sim IMG=$(pwd)/npc/test_prog/build/char-test.bin
 
 - 仿真结束后 difftest 逐指令与 NEMU 对拍，任何 GPR/PC 不一致立即 `DIFF ABORT` 报错；
 - `WAVE=1` 时输出 `soc.vcd`（ps 级，可 `vcd2fst` 转 FST 后结合 GTKWave/`soc.gtkw` 或
-   MCP 波形工具查看）。
+   MCP 波形工具查看）；
+- **NVBoard（阶段 J0，可选）**：`WITH_SDL=y` 接入虚拟板卡（LED/拨码/数码管/键盘/UART/VGA）。
+  需已装 `libsdl2-ttf-dev`/`libsdl2-image-dev`；用法
+  `cd npc/test_prog && make PROC=gpio_demo.c WITH_SDL=y SIM_END=1000000000 run`
+  （死循环演示靠 `SIM_END` 停止；引脚绑定见 `npc/constr/ysyxSoCFull.nxdc`）。
 
 ### 4.2 独立核微验证（npc/verif，定位 bug 用）
 在不编译 SoC、不依赖 NEMU 的前提下，用 Verilator 直接编译 CPU 核本身，配一个自写的
@@ -231,4 +240,22 @@ CPU 类同步设计的 UVM 化要点：
 
 ---
 
-*RTL 文件：`npc/vsrc/ysyx_22040750.v`；验证环境：`npc/verif/`；SoC：`npc/ysyxSoC/`。*
+## 6. 验证与调试文档索引（npc/verif/）
+
+> 本文档（README）描述处理器架构与验证环境概览；**详细工作流、阶段任务与性能分析以
+> `npc/verif/` 下文档为准**，按需查阅。
+
+| 文档 | 内容 | 进度 |
+|---|---|---|
+| `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE）、LDS/BOOT_S 链接启动、阶段 A–I 执行记录、程序启动流程 | 现行，持续更新 |
+| `verif/VERIF_TESTS.md` | 测试体系（cpu-tests/test_prog/microbench 等判定标准） | 现行 |
+| `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 | H/I/J0/J1 ✅，J2–J5/K 待开始 |
+| `verif/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
+| `verif/records/` | 各阶段原始调试记录：STAGE1 缓存重构、STAGE2 访存接口、STAGE3 PSRAM 读回、STAGE_F RT-Thread 提示词、STAGE_I SDRAM 位扩展/字扩展、STAGE_J1 GPIO | 归档 |
+
+> 注：`verif/` 下除 `records/README.md` 外的 md 文件被 `npc/.gitignore` 忽略（工作区本地文档，
+> 不进 git 状态），按上面索引即可定位到各主题。
+
+---
+
+*RTL 文件：`npc/vsrc/ysyx_22040750.v`；验证环境与文档：`npc/verif/`；SoC：`npc/ysyxSoC/`。*

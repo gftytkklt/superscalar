@@ -6,7 +6,24 @@ VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull.v")
 
 CSRC = $(shell find $(abspath ./csrc) -name "*.cpp")
 
+BUILD_DIR = ./build
 INC_PATH ?= $(NPC_HOME)/csrc/include
+
+# ---- NVBoard（阶段 J0，WITH_SDL=y 时接入）----
+NVBOARD_HOME ?= $(abspath ../nvboard)
+export NVBOARD_HOME
+NXDC_FILE = $(abspath ./constr/ysyxSoCFull.nxdc)
+SRC_AUTO_BIND = $(BUILD_DIR)/auto_bind.cpp
+ifeq ($(WITH_SDL), y)
+# 约束文件 → 引脚绑定代码（auto_bind.cpp：nvboard_bind_all_pins）
+$(SRC_AUTO_BIND): $(NXDC_FILE)
+	@mkdir -p $(BUILD_DIR)
+	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $< $@
+CSRC += $(SRC_AUTO_BIND)
+CFLAGS += -DCONFIG_NVBOARD
+include $(NVBOARD_HOME)/scripts/nvboard.mk   # 追加 NVBOARD_USR_INC 到 INC_PATH + SDL 链接
+endif
+
 INCLUDES = $(addprefix -I, $(INC_PATH))
 CFLAGS += -MMD -O3 $(INCLUDES) -I/usr/lib/llvm-12/include -std=c++14   -fno-exceptions -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -fPIE
 ifeq ($(DIFF), 1)
@@ -16,9 +33,8 @@ ifeq ($(WAVE), 1)
 	CFLAGS += -DCONFIG_WAVEFORM
 endif
 LDFLAGS += $(shell llvm-config --libs) -ldl
-# SDL2 仅 nvboard 需要；npc SoC 仿真用不到，缺库的环境下去掉（WITH_SDL=y 打开）
-LDFLAGS += $(if $(filter y,$(WITH_SDL)),-lSDL2 -lSDL2_image,)
-BUILD_DIR = ./build
+# NVBoard（WITH_SDL=y）由 nvboard.mk 提供 SDL 链接；这里只保留非 SDL 情况占位
+LDFLAGS += $(if $(filter y,$(WITH_SDL)),$(NVBOARD_ARCHIVE) $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf,)
 OBJ_DIR = $(BUILD_DIR)/obj_dir
 BIN = $(BUILD_DIR)/$(TOPNAME)
 
