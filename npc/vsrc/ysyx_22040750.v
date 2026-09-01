@@ -905,11 +905,14 @@ module ysyx_22040750_cpu_core(
     localparam SRAM_END = SRAM_BASE + SRAM_SIZE;
     localparam PSRAM_BASE = 32'h80000000;
     localparam PSRAM_END = 32'h88000000;
+    localparam SDRAM_BASE = 32'ha0000000;
+    localparam SDRAM_END = 32'ha1000000;
     // mmio = 非 SoC 内存区（uart/vga/spi/gpio 等外设寄存器）访问，
     // difftest 对 mmio 跳过 NEMU 对拍（NEMU 未建模这些设备）。
     // 注意：PSRAM(0x80000000) 不是 mmio —— NEMU 的 pmem 覆盖 0x80000000..0x88000000，
     // CPU 对它的 lw/sw 是真实访存指令，NEMU ref 会执行并返回数据，必须对拍不 skip。
-    assign EX_MEM_mmio = EX_MEM_memop && !((EX_MEM_mem_addr >= MROM_BASE && EX_MEM_mem_addr < MROM_END) || (EX_MEM_mem_addr >= FLASH_BASE && EX_MEM_mem_addr < FLASH_END) || (EX_MEM_mem_addr >= SRAM_BASE && EX_MEM_mem_addr < SRAM_END) || (EX_MEM_mem_addr >= PSRAM_BASE && EX_MEM_mem_addr < PSRAM_END));
+    // SDRAM(0xa0000000, 16MB) 同理：NEMU 已建模为内存区，对拍不 skip。
+    assign EX_MEM_mmio = EX_MEM_memop && !((EX_MEM_mem_addr >= MROM_BASE && EX_MEM_mem_addr < MROM_END) || (EX_MEM_mem_addr >= FLASH_BASE && EX_MEM_mem_addr < FLASH_END) || (EX_MEM_mem_addr >= SRAM_BASE && EX_MEM_mem_addr < SRAM_END) || (EX_MEM_mem_addr >= PSRAM_BASE && EX_MEM_mem_addr < PSRAM_END) || (EX_MEM_mem_addr >= SDRAM_BASE && EX_MEM_mem_addr < SDRAM_END));
     
     ysyx_22040750_npc npc_e(
 		.I_clk(I_sys_clk),

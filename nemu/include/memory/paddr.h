@@ -48,6 +48,13 @@ static inline bool in_mrom(paddr_t addr) {
   return addr - CONFIG_MROMBASE < CONFIG_MROMSIZE;
 }
 
+// SDRAM 仅在 DEVICE 关闭（difftest ref）时作为内存区；DEVICE 开启时 0xa0000000 归外设。
+#ifndef CONFIG_DEVICE
+static inline bool in_sdram(paddr_t addr) {
+  return addr - CONFIG_SDRAMBASE < CONFIG_SDRAMSIZE;
+}
+#endif
+
 word_t paddr_read(paddr_t addr, int len);
 void paddr_write(paddr_t addr, int len, word_t data);
 
