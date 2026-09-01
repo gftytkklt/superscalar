@@ -253,7 +253,7 @@ CPU 类同步设计的 UVM 化要点：
 |---|---|---|
 | `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE）、LDS/BOOT_S 链接启动、阶段 A–I 执行记录、程序启动流程 | 现行，持续更新 |
 | `verif/VERIF_TESTS.md` | 测试体系（cpu-tests/test_prog/microbench 等判定标准） | 现行 |
-| `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 | H–J2 ✅，J3 前置就绪，J4–J5/K 待开始 |
+| `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 | H–J2 ✅（UART TX/RX 全通），J3 前置就绪，J4–J5/K 待开始 |
 | `verif/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
 | `verif/records/` | 各阶段原始调试记录：STAGE1 缓存重构、STAGE2 访存接口、STAGE3 PSRAM 读回、STAGE_F RT-Thread 提示词、STAGE_I SDRAM 位扩展/字扩展、STAGE_J1 GPIO | 归档 |
 
