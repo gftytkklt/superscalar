@@ -38,7 +38,7 @@ static int _uart_putc(struct rt_serial_device *serial, char c) {
 
 static int _uart_getc(struct rt_serial_device *serial) {
   // 阶段 F/G 演示：先自动执行预置命令串；跑完后读 AM_UART_RX（NVBoard 终端键入，阶段 J2）。
-  static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\n";
+  static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\nam_hello\n";
   if (*p != '\0') return *(p ++);
   AM_UART_RX_T rx;
   ioe_read(AM_UART_RX, &rx);
