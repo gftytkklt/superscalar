@@ -252,11 +252,13 @@ CPU 类同步设计的 UVM 化要点：
 
 | 文档 | 内容 | 进度 |
 |---|---|---|
-| `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、阶段 A–J3 执行记录、程序启动流程 | 现行，持续更新 |
-| `verif/VERIF_TESTS.md` | 测试体系（cpu-tests/test_prog/microbench 等判定标准） | 现行 |
-| `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 | H–J5 ✅（UART 全通 + PS/2 键盘 + VGA 画面 + RT-Thread 跑 AM 程序 am_hello；fceux 待修） |
+| `verif/PROJECT_OVERVIEW.md` | **项目整体介绍（入口）**：组件地图、阶段 A–K 进度总表、文档索引、快速开始、关键事实 | ✅ 现行 |
+| `verif/RUN_GUIDE.md` | **运行速查**：cpu-tests/am-tests/microbench/rt(PSRAM+SDRAM)/test_prog/npc sim/verif 的编译运行命令 + 参数 + 常见坑 | ✅ 现行 |
+| `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、程序启动流程、硬件经验 | 现行，持续更新 |
+| `verif/VERIF_TESTS.md` | 测试体系（verif 微测试/断言/形式化；运行命令见 RUN_GUIDE） | 现行 |
+| `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 + 完成记录 | H–J5 ✅；K 🔶（ChipLink 结构保证） |
 | `verif/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
-| `verif/records/` | 各阶段原始调试记录：STAGE1 缓存重构、STAGE2 访存接口、STAGE3 PSRAM 读回、STAGE_F RT-Thread 提示词、STAGE_I SDRAM 位扩展/字扩展、STAGE_J0 NVBoard、STAGE_J1 GPIO、STAGE_J2 UART、STAGE_J3 PS/2、STAGE_J5 rt-am 合并 | 归档 |
+| `verif/records/` | 各阶段原始调试记录（STAGE1/2/3、STAGE_F/I/J0–J5、records/README 索引） | 归档 |
 
 > 注：`verif/` 下除 `records/README.md` 外的 md 文件被 `npc/.gitignore` 忽略（工作区本地文档，
 > 不进 git 状态），按上面索引即可定位到各主题。
