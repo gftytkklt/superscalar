@@ -97,8 +97,12 @@ int main(int argc, char** argv){
         // divisor 才与 16550 位周期（16×dl clk）对齐。内部再自适应限帧 ~60fps。
         if (posedge_phase) nvboard_update();
         #else
-        // 无 NVBoard 时 UART RX 空闲拉高，避免 16550 接收器把悬空/0 当起始位误收。
+        // 无 NVBoard 时外设输入空闲拉高，避免误触发：
+        //   - UART RX：16550 接收器把悬空/0 当起始位误收；
+        //   - PS/2：ps2_clk/ps2_data 悬空/0 会（ps2_clk 上升沿）被解码器当起始位误采。
         soc->externalPins_uart_rx = 1;
+        soc->externalPins_ps2_clk = 1;
+        soc->externalPins_ps2_data = 1;
         #endif
         soc->eval();
         #ifdef CONFIG_WAVEFORM
