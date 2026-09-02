@@ -16,6 +16,7 @@
 | `STAGE_J0_NVBOARD.md` | 阶段 J0 实施记录 | NVBoard 接入 soctest（Makefile/soctest/nxdc/auto_bind）+ GPIO 7 段译码；坑与验证 |
 | `STAGE_J2_UART.md` | 阶段 J2 实施记录 | AM_UART_RX + UART 除数随 NVBoard 条件化 + RT-Thread 键入命令 + am-tests hello 验证 |
 | `STAGE_J3_PS2.md` | 阶段 J3 实施记录 | PS/2 控制器 RTL（解码+FIFO）+ AM 键盘 IOE（翻译表）+ soctest 防误采；am-tests keyboard + NVBoard 打印 Got (kbd) |
+| `STAGE_J4_VGA.md` | 阶段 J4 实施记录 | VGA/timer/video：RTL vga_top_apb(已有)+AM GPU IOE+AM_TIMER_UPTIME(mtime 单8B读)；NVBoard 画面+FPS；坑=NVBoard UART 仅支持除数1、.bss 搬运、时间比例待定 |
 | `STAGE_J_ONWARDS_PROMPT.md` | 阶段 J 后续任务提示词 | J4 VGA → J5 RT-Thread 跑 AM 程序的现状/目标/实现路径（J3 已完成）——**新对话续作提示词** |
 | `STAGE_J5_RTTHREAD_AM.md` | 阶段 J5 准备：rt-am 合并 | rt-am 的 am-apps 集成机制并入 rt（保留 npc 布局适配，默认不集成）；兼容不带/带 NVBOARD；**附录含 RT-Thread 带 NVBoard 的 make 链路与组件归属** |
 | `rtthread-stackoverflow-debug.md` | RT-Thread 栈溢出调试（NEMU 平台） | 现象→定位→验证→修复：根因是 main 线程栈溢出破坏对象链表，非 NEMU bug |
