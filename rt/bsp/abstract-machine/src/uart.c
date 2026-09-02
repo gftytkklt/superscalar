@@ -72,7 +72,7 @@ int rt_hw_uart_init(void) {
 
   rt_hw_serial_register(serial,
       RT_CONSOLE_DEVICE_NAME,
-      RT_DEVICE_FLAG_STREAM | RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
+      RT_DEVICE_FLAG_STREAM | RT_DEVICE_FLAG_RDWR,
       uart);
   return 0;
 }

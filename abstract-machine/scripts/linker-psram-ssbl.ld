@@ -72,6 +72,12 @@ SECTIONS {
     __rt_utest_tc_tab_start = .;
     KEEP(*(UtestTcTab))
     __rt_utest_tc_tab_end = .;
+    /* 阶段 J5 am-apps：集成到 RT-Thread 的 AM 程序数据段（原 extra.ld 注入，并入 .data 同理由）。 */
+    . = ALIGN(0x8);
+    __am_apps_data_start = .;
+    *(__am_apps.data*)
+    *(__am_apps.sdata*)
+    __am_apps_data_end = .;
     _edata = .;
   } > psram AT> flash
   _sidata = LOADADDR(.data);
@@ -81,6 +87,13 @@ SECTIONS {
     *(.bss*)
     *(.sbss*)
     *(.scommon)
+    /* 阶段 J5 am-apps：集成 AM 程序的 bss 段。 */
+    . = ALIGN(0x8);
+    __am_apps_bss_start = .;
+    *(__am_apps.bss*)
+    *(__am_apps.sbss*)
+    *(__am_apps.scommon*)
+    __am_apps_bss_end = .;
     _bss_end = .;
   } > psram
 
