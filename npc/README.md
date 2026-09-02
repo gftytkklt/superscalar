@@ -19,7 +19,7 @@ npc/
 ├── vsrc/                    # RTL 源码
 │   └── ysyx_22040750.v      # 全部 30 个 module 的处理器核
 ├── verif/                   # 验证与调试文档 + 独立 RTL 微验证环境（见 §6 文档索引）
-│   ├── DEBUG_WORKFLOW.md    # 调试工作流与阶段 A–I 执行记录（权威验证链路、波形管理、启动流程）
+│   ├── DEBUG_WORKFLOW.md    # 调试工作流与阶段 A–J3 执行记录（权威验证链路、波形管理、启动流程）
 │   ├── VERIF_TESTS.md       # 测试体系（现行）
 │   ├── STAGE_H_ONWARDS_TASKS.md   # 阶段 H–K 任务定义与实现路径（进度见 §6）
 │   ├── MEM_PIPELINE_OPT.md  # 访存流水线性能分析与优化方向（架构/瓶颈/验证/优化）
@@ -32,8 +32,9 @@ npc/
 │   │   ├── csr_hazard_check.sv     # bug2：CSR 写读冒险（MEPC 定向）
 │   │   └── div_zero_check.sv       # bug3：除零商必须为 -1
 │   └── formal/              # 阶段2：SymbiYosys 形式化（.sby + SVA props；装 sby/z3 后 make formal）
-│       ├── props_div.sv  div.sby       # bug3 证明 + cover
-│       └── props_dcache.sv dcache.sby  # bug1 状态可达性 cover
+│       ├── div.sby  + props_div.sv                 # 除零(bug3)证明——✅ PASS
+│       ├── axiburst.sby + props_axiburst.sv        # axiburst2xxx 读通道证明——✅ PASS
+│       └── (props_dcache.sv 残留：dcache.sby 已移除——含大查找表 BMC 不可判定，见 VERIF_TESTS §4)
 ├── scripts/linker-soc.ld    # SoC 内存布局 / 链接脚本（flash 0x30000000, sram 0x0f000000）
 ├── csrc/                    # C++ 仿真侧
 │   ├── soctest.cpp          # Verilator 主循环（波形/复位/时钟/difftest）
@@ -78,42 +79,42 @@ ysyx_22040750 (vsrc/ysyx_22040750.v)
   AR/R 通道，D 缓存同时用 AW/W/B（写响应）通道；读通道经 `axi_crossbar` 仲裁后上总线。
 - **异常/中断**：ecall/ebreak/mret/定时中断走 CSR 写回 + `npc` 跳转（mtvec/mepc）。
 
-## 3. 已知 Bug（本次代码审查 + 微验证得出）
+## 3. 历史缺陷与修复（均已解决，2026-09-02 复验）
 
-> 均已通过 `npc/verif` 定向微测试在 RTL 级复现（观察值来自仿真）。
+> 以下三项在早期被 `npc/verif` 定向微测试在 RTL 级复现（观察值来自仿真）。**当前均已修复**：
+> `make`（10 例）、`make assert`（10 例）、`make assert-cache`（10 例）全 PASS，
+> `formal/div.sby`、`formal/axiburst.sby` 证明级 PASS（见 §4/§5）。此处保留根因/证据/修复作历史参考。
 
-### 3.1 【高】Level-I/D Cache 完全被旁路，恒走 MMIO 单拍
-- **根因**：`dcachectrl` 与 `icachectrl` 中 `mmio_flag` 被无条件置真——
-  `ysyx_22040750.v:2014` `assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req);`，
-  `:3199` `assign mmio_flag = I_cpu_rd_req;`。而 FSM 内 `if(mmio_flag) → MMIO_*` 先于
-  `rd_hit/rd_miss/wr_*` 判定，导致命中/缺失分支**结构上不可达**。
-- **证据**：全系统波形 `cache_e.icache_e.current_state` 全程仅出现
-  `IDLE(0)/MMIO_AR(0x10)/MMIO_RD(0x20)`；`dcache` 仅出现 `IDLE/MMIO_AR/MMIO_AW/MMIO_RD/MMIO_WR`，
-  从未进入 `RD_*/WR_*/FENCEI`。
-- **影响**：所有取指/访存都退化为总线单拍（`arlen=0`）访问；8 块 SRAM、tag/valid/dirty 表、
-  cacheline 回写与 fence.i 清缓存逻辑全部为死电路。IPC 极低（每指令一次总线往返）；对带读副作用
-  的外设（UART FIFO 等）语义不严谨。功能上因直连总线兜底仍能通过 difftest。
-- **修复方向**：将 `mmio_flag` 恢复为按地址区间的判定（源文件注释里保留的
-  `ysyx4/ysyx6` 版本），并回归验证 cache 命中/未命中/替换/写回/fence.i。
+### 3.1 【已修复】Level-I/D Cache 曾被完全旁路，恒走 MMIO 单拍
+- **根因**：`dcachectrl` 与 `icachectrl` 中 `mmio_flag` 曾被无条件置真（早期
+  `assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req);` 等），FSM 内 `if(mmio_flag) → MMIO_*`
+  先于 `rd_hit/rd_miss/wr_*` 判定，命中/缺失分支**结构上不可达**。
+- **证据（当时）**：全系统波形 `cache_e.icache_e.current_state` 全程仅出现
+  `IDLE/MMIO_AR/MMIO_RD`；`dcache` 仅出现 `IDLE/MMIO_AR/MMIO_AW/MMIO_RD/MMIO_WR`。
+- **影响（当时）**：取指/访存退化为总线单拍，cache/tag/写回/fence.i 全为死电路，IPC 极低。
+- **修复**：`mmio_flag` 恢复为**按地址区间判定**（现 `ysyx_22040750.v:2071-2074`），可缓存区 =
+  PSRAM `[0x80000000,0x80400000)` + flash `[0x30000000,0x40000000)` + SDRAM
+  `[0xa0000000,0xa8000000)`，其余（外设/SRAM/MROM/空洞）走 MMIO 单拍；并补齐 SRAM 存储
+  （`ysyx_22040750_sram_behav`×8）与完整 fence.i（脏行回写 + icache 失效）。
+- **验证**：`cache_data`/`cache_region`/`fencei_cache`/`partial_store`/`pmem_stress`/`psram_burst`
+  微测试全 PASS（flash 与 pmem 主存模式），`assert-cache` 的 `cache_bypass_check.sv` 不再报。
 
-### 3.2 【中】CSR 读写冒险：连续同址 CSR 操作读到旧值，且旧值回写会破坏 CSR
-- **根因**：`stall_unit` 的 `intr_op` 只涵盖 `ecall/ebreak/mret/中断`（`ysyx_22040750.v:4148`），普通
-  `CSRRW/CSRRS/CSRRC` 不触发任何停顿；`csr_foward`（`:1424-1429`）EX 前递源取的是译码
-  时快照 `ID_EX_csr`（旧值），而非更新后值。
-- **证据**（`verif/tests/bug2_csr.S`）：`csrw mepc,0x12345678` 后紧跟 `csrr t1,mepc`，
-  实测 `t1 = 0`（规范应为 `0x12345678`）；且该 `csrr`（CSRRS）在回写阶段用旧值把
-  `mepc` 从 `0x12345678` **改回 0**（波形 `csr_e.mepc`：0→0x12345678→0）。对照组
-  （重写后隔开若干条指令再读）得到正确的 `0x12345678`，说明写通路本身无误，纯粹是
-  冒险窗口问题。
-- **修复方向**：对普通 CSR 写指令同样生成停顿（或正确前递 `EX_MEM_csr/MEM_WB_csr` 新值）。
+### 3.2 【已修复】CSR 读写冒险：连续同址 CSR 操作会读到旧值并写坏 CSR
+- **根因**：早期 `csr_foward` 只取译码时快照 `ID_EX_csr`（旧值），而非更新后的在飞值。
+- **证据（当时）**（`bug2_csr.S`）：`csrw mepc,0x12345678` 后紧跟 `csrr t1,mepc` 得 `t1=0`；
+  且该 `csrr` 用旧值把 `mepc` 从 `0x12345678` 改回 0。
+- **修复**：新增 `ysyx_22040750_csr_foward`（`ysyx_22040750.v:1419-1449`），按
+  `I_csr_wen_EX/MEM/WB` 门控，读音取 EX→MEM→WB→ID 中最新的同址写值（注释 "bug2 fix"）。
+- **验证**：`bug2_csr` 微测试 + `csr_hazard_check.sv` 断言均 PASS。
 
-### 3.3 【中】有符号除零（负被除数）商错误
-- **根因**：`radix2_div`（`:3847-3885`）除零时每拍 `current_q=1`，`abs_quotient` 填全 1；
-  商符号 `q_flag = dividend 符号`，负被除数时 `商 = -abs_quotient = +1`，而 RV64 规范要求
-  `DIV x,neg,/0 = -1(全F)`。
-- **证据**（`verif/tests/bug3_div.S`）：`div a2,-5,0` → `0x0000000000000001`（规范 `-1`）；
-  `rem a3,-5,0` → `-5`（正确）；`div a5,5,0` → `-1`（正确，仅负被除数异常）。
-- **修复方向**：除零时直接把商置为全 1（被除数符号无关）、余数保持被除数，从而覆盖负被除数情形。
+### 3.3 【已修复】有符号除零（负被除数）商错误
+- **根因**：早期 `radix2_div` 除零时 `current_q=1`、`abs_quotient` 填全 1，负被除数经
+  `q_flag` 取反得商 `+1`，而 RV64 规范要求 `DIV x,neg,/0 = -1(全F)`。
+- **证据（当时）**（`bug3_div.S`）：`div a2,-5,0` → `0x1`（规范 `-1`）；`rem a3,-5,0` → `-5`。
+- **修复**：新增 `div_zero` 闩存（`ysyx_22040750.v:3974-3999`），
+  `quotient = div_zero ? {64{1'b1}} : ...`（`:4019`，被除数符号无关，覆盖负被除数），
+  余数保持被除数。
+- **验证**：`bug3_div` 微测试 + `div_zero_check.sv` 断言 + `formal/div.sby`（bmc）证明级 PASS。
 
 ### 3.4 曾被怀疑、经实验排除的项（避免误判）
 - `sltw` 符号扩展问题：`sltw` 并非 RV64I 合法指令（不存在 word 类有符号比较），gcc 直接拒绝
@@ -150,7 +151,7 @@ make -C npc sim IMG=$(pwd)/npc/test_prog/build/char-test.bin
   `cd npc/test_prog && make PROC=gpio_demo.c WITH_SDL=y SIM_END=1000000000 run`
   （死循环演示靠 `SIM_END` 停止；引脚绑定见 `npc/constr/ysyxSoCFull.nxdc`）。
 
-### 4.2 独立核微验证（npc/verif，定位 bug 用）
+### 4.2 独立核微验证（npc/verif，模块级/微测试用）
 在不编译 SoC、不依赖 NEMU 的前提下，用 Verilator 直接编译 CPU 核本身，配一个自写的
 AXI4 内存模型（`tb_main.cpp`）直接驱动取指/访存，适合写定向微用例。
 
@@ -160,7 +161,7 @@ rvalid、wdata 接收后延迟一拍再给 bvalid，全部握手驱动、无启�
 
 ```bash
 cd npc/verif
-make                  # 编译模型并跑全部 tests/*.S
+make             # 编译模型并跑全部 tests/*.S（当前 10/10 全 PASS）
 make run  T=bug2_csr  # 只跑某个用例
 make fst  T=bug2_csr  # 跑并保留 build/bug2_csr.fst 波形
 make clean
@@ -168,7 +169,9 @@ make clean
 
 - 用例机制：映像放到 Flash `0x30000000`（复位 PC `0x2ffffffc` → `snpc=pc+4` 自然引导）；
   程序把结果写入 SRAM `0x0f000000` 后 `ebreak` 结束；harness 打印 SRAM 区与 AXI 事务日志。
-- 现有用例：`bug2_csr`(CSR 冒险)、`bug3_div`(除零)、`bug4_fencei`(fence.i 流程)。
+- 现有用例（10 个，见 `VERIF_TESTS.md` §1）：`bug2_csr`(CSR 冒险)、`bug3_div`(除零)、
+  `bug4_fencei`(fence.i)、`cache_data`/`cache_region`/`fencei_cache`/`partial_store`/
+  `pmem_stress`(缓存路径)、`psram_burst`(PSRAM 32B burst)、`residual_mret`(mret)。
 
 ### 4.3 调试辅助
 - 波形：`soc.gtkw`（全系统）、`verif/build/<用例>.fst`（微验证）；
@@ -183,10 +186,10 @@ make clean
 - 自研/引入随机指令流生成器（约束 PC-跳转、寄存器依赖、访存对齐等），跑长随机回归；
 - 补齐边界用例：非对齐读写、乘除溢出（`INT64_MIN/-1`）、除零两种符号、CSR 组合与
   mret/ecall 连续、定时中断抢占、多周期指令后跟 load-use 等；
-- 等 **3.1 cache 修复**后补充命中/未命中/替换/脏写回/fence.i 序列用例；
+- cache 已修复（见 §3.1），可在此基础上补充更密的命中/未命中/替换/脏写回/fence.i 序列用例；
 - 将这些并入 `npc/verif`，形成可重复的回归套件。
 
-### 阶段 2：断言与形式化（轻量、性价比最高）—— ✅ 已落地
+### 阶段 2：断言与形式化（轻量、性价比最高）—— ✅ 已落地且全 PASS
 在 `npc/verif` 中实现，分两条腿：
 
 1. **仿真期断言（`npc/verif/assert/`）**
@@ -198,22 +201,20 @@ make clean
    - 运行：
      ```bash
      cd npc/verif
-     make assert        # 抓 bug2/bug3：当前结果 FAIL bug2_csr / FAIL bug3_div / PASS bug4_fencei
-     make assert-cache  # 连 bug1 一起：三个用例首拍即报 "ICACHE bypassed"
+     make assert        # 聚焦 bug2/bug3：当前 10/10 全 PASS
+     make assert-cache  # 连 bug1 一起：当前 10/10 全 PASS（cache 已不旁路）
      ```
-2. **形式化（`npc/verif/formal/`）** ✅ 已实跑（yosys+z3+sby）
+2. **形式化（`npc/verif/formal/`）** ✅ 已实跑且全部证明级 PASS（yosys+z3+sby）
    - 工具链：`apt install yosys z3`；`sby` 需另装（非 PyPI 包）——从
      `github.com/YosysHQ/sby` 拉源码后 `make install PREFIX=~/.local`，并软链
      `/usr/bin/yosys-smtbmc -> ~/.local/bin/smtbmc`，然后 `make formal` 即可；
-   - 内容：`props_div.sv`(除零规范断言+驱动) / `props_dcache.sv`(cache 状态可达性
-     cover)；RTL 经 `formal/trim_rtl.py` 抽出 `radix2_div`/`dcachectrl` 自包含块
-     给 yosys（避开 DPI-C），并修正 RTL 的 0 位宽字面量；
-   - **当前结果（buggy RTL）**：
-     - `div.sby`（bmc depth100）：z3 在 step 67 给出**真实反例**
-       `-5/0`：quotient=+1（规范 -1）、remainder=-5（正确），与仿真断言一致；
-     - `dcache.sby`（cover depth30）：RD_HIT/RD_MISS/WR_HIT/WR_MISS 四个 cover
-       全部不可达 → 形式化证明 cache 恒旁路；
-   - 修复对应 RTL 后两条均应转 PASS，作为"证明级"回归项。
+   - 内容：`div.sby`(除零规范断言+驱动，bmc) / `axiburst.sby`(axiburst2xxx 读通道)；
+     RTL 经 `formal/trim_rtl.py` 抽出自包含块给 yosys（避开 DPI-C），并修正 0 位宽字面量；
+   - **当前结果（修复后）**：
+     - `div.sby`（bmc depth100）：**PASS**——除零规范（商 -1、余=被除数）证明达成；
+     - `axiburst.sby`（bmc depth35）：**PASS**——读通道 32bit 单拍 + burst 重组 + ARVALID 保持；
+     - `dcache.sby` 因含 128-entry lookup_table + 256bit cacheline，BMC 状态空间不可判定，
+       已移除（改用仿真断言 + 定向微测试覆盖，见 VERIF_TESTS §4）。
 
 ### 阶段 3：接入 UVM 等验证流程
 CPU 类同步设计的 UVM 化要点：
@@ -251,7 +252,7 @@ CPU 类同步设计的 UVM 化要点：
 
 | 文档 | 内容 | 进度 |
 |---|---|---|
-| `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE）、LDS/BOOT_S 链接启动、阶段 A–I 执行记录、程序启动流程 | 现行，持续更新 |
+| `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、阶段 A–J3 执行记录、程序启动流程 | 现行，持续更新 |
 | `verif/VERIF_TESTS.md` | 测试体系（cpu-tests/test_prog/microbench 等判定标准） | 现行 |
 | `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 | H–J3 ✅（UART 全通 + PS/2 键盘 + RT-Thread 键入）；J4 待做；J5 am-apps 机制就绪 |
 | `verif/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
