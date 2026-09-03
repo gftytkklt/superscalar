@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// defined in audio.c; SDL_GetTicks/SDL_Delay poll it to fire timers & audio
+void CallbackHelper();
+
 #define MAX_TIMERS 16
 
 typedef struct {

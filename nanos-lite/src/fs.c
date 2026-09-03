@@ -23,6 +23,10 @@ size_t invalid_write(const void *buf, size_t offset, size_t len) {
   return 0;
 }
 
+size_t disk_read(void *buf, size_t offset, size_t len);
+size_t disk_write(const void *buf, size_t offset, size_t len);
+void init_disk();
+
 size_t serial_write(const void *buf, size_t offset, size_t len);
 size_t events_read(void *buf, size_t offset, size_t len);
 size_t dispinfo_read(void *buf, size_t offset, size_t len);
@@ -70,8 +74,8 @@ long fs_read(int fd, void *buf, size_t len) {
   // normal file
   if (file_table[fd].read == NULL) {
     size_t remain = (fp_offt[fd] < file_table[fd].size) ? (file_table[fd].size - fp_offt[fd]) : 0;
-    size_t ramdisk_rd_len = (len < remain) ? len : remain;
-    offt_incr = ramdisk_read(buf, rd_offt, ramdisk_rd_len);
+    size_t disk_rd_len = (len < remain) ? len : remain;
+    offt_incr = disk_read(buf, rd_offt, disk_rd_len);
   }
   // abstract file
   else {
@@ -86,8 +90,8 @@ long fs_write(int fd, const void *buf, size_t len) {
   long offt_incr = 0;
   if (file_table[fd].write == NULL) {
     size_t remain = (fp_offt[fd] < file_table[fd].size) ? (file_table[fd].size - fp_offt[fd]) : 0;
-    size_t ramdisk_wr_len = (len < remain) ? len : remain;
-    offt_incr = ramdisk_write(buf, wr_offt, ramdisk_wr_len);
+    size_t disk_wr_len = (len < remain) ? len : remain;
+    offt_incr = disk_write(buf, wr_offt, disk_wr_len);
   }
   else {
     offt_incr = file_table[fd].write(buf, wr_offt, len);
@@ -113,6 +117,7 @@ int fs_close(int fd) {
 }
 
 void init_fs() {
+  init_disk();
   fp_offt=(long*)malloc(filenum*sizeof(long));
   for(int i=0;i<filenum;i++){fp_offt[i] = 0;}
   // initialize the size of /dev/fb (screen_w * screen_h * 4)
