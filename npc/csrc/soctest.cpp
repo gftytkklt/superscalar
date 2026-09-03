@@ -138,6 +138,9 @@ int main(int argc, char** argv){
           static unsigned long s_end = (getenv("SIM_END") ? strtoul(getenv("SIM_END"),NULL,10) : 0ul);
           if (s_end && sim_time >= s_end) { printf("[SIM] t=%lu reach SIM_END\n", sim_time); fflush(stdout); break; }
         }
+        // 周期性 flush：长仿真重定向到文件时，PERF[snap] 等输出能及时落盘，
+        // 即便中途 Ctrl-C(终止) 也能在日志里看到最近的性能计数器快照。
+        if ((sim_time & 0xfffff) == 0) fflush(stdout);
     }
     soc->final();
     #ifdef CONFIG_NVBOARD

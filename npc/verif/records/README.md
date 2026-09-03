@@ -21,6 +21,8 @@
 | `STAGE_J_ONWARDS_PROMPT.md` | 阶段 J 后续任务提示词 | J 阶段 J1–J5 现状/目标/实现路径（J3–J5 已陆续完成）——**新对话续作提示词** |
 | `STAGE_J5_RTTHREAD_AM.md` | 阶段 J5：rt-am 合并 + am-apps 集成 | rt-am 的 am-apps 集成机制并入 rt（保留 npc 布局适配，默认不集成）；`make update` 集成 hello/microbench/typing-game/snake → msh `am_<app>` 跑 AM 程序线程（am_hello 目视验证）；fceux 编译阻塞待修；**附录含 RT-Thread 带 NVBoard 的 make 链路与组件归属 + SDRAM 路径** |
 | `rtthread-stackoverflow-debug.md` | RT-Thread 栈溢出调试（NEMU 平台） | 现象→定位→验证→修复：根因是 main 线程栈溢出破坏对象链表，非 NEMU bug |
+| `STAGE_B3_CACHE_PERF.md` | B3《性能优化和简易缓存》任务完成说明 | 讲义任务清单→现状映射；icache/dcache 参数化分析（容量/块大小→index/tag 已参数化，路数/行宽/替换策略/AXI 突发硬编码+原因）；icache 形式化（REF-vs-DUT 实测 3 次不可判定，与 dcache.sby 同因），form 化树保持 div/axiburst PASS |
+| `B3_PLAN.md` | B3 分阶段整体计划（工作流确认稿） | 把 B3 剩余可执行任务排成 阶段1 性能计数器 → 阶段2 扩展+Amdahl瓶颈 → 阶段3 cachesim → 阶段4 APB延迟校准 → 阶段5 make perf → 阶段6(可选)icache BMC；每阶段=一个"停点"，含人工决策/软件安装标识 |
 
 > 阶段 D/E/F/G/H/I 的最终结论、坑与修复已固化进 `../DEBUG_WORKFLOW.md` §4（阶段 A–I 记录）与
 > §5（启动流程）；`VERIF_TESTS.md`（测试体系）仍在 verif/ 根目录，作为现行参考。

@@ -21,6 +21,8 @@ WITH_SDL_B := $(if $(filter 1 y yes Y YES,$(WITH_SDL)),1,0)
 VSRC = $(shell find $(abspath ./vsrc) -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/perip) -type f -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull.v")
+# 非侵入式性能计数器（B3）：bind 注入 cpu_core，仿真结束 $display；不改核 RTL，不参与流片。
+VSRC += $(abspath ./verif/perf/perf_counters.sv)
 
 CSRC = $(shell find $(abspath ./csrc) -name "*.cpp")
 
