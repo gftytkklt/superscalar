@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect) {
   assert(dst && src);
@@ -31,7 +32,6 @@ void SDL_BlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_
 
   if (dstrect != NULL) { dstrect->w = sw; dstrect->h = sh; }
   if (sw <= 0 || sh <= 0) return;
-
   int bpp = src->format->BytesPerPixel;
   int row_bytes = sw * bpp;
   for (int i = 0; i < sh; i ++) {
@@ -77,8 +77,23 @@ void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
   if (y + h > s->h) h = s->h - y;
 
   if (s->format->BitsPerPixel == 32) {
-    uint32_t *px = (uint32_t *)s->pixels + y * (s->pitch / 4) + x;
-    NDL_DrawRect(px, x, y, w, h);
+    // SDL1.2 display surfaces carry no alpha: force the alpha byte to 0xff
+    // before handing pixels to NDL (whose framebuffer is opaque 0x00RRGGBB).
+    // A grown-once scratch buffer avoids a per-frame malloc/free.
+    static uint32_t *buf = NULL;
+    static size_t cap = 0;
+    size_t need = (size_t)w * h;
+    if (need > cap) {
+      free(buf);
+      buf = malloc(need * sizeof(uint32_t));
+      assert(buf);
+      cap = need;
+    }
+    for (int i = 0; i < h; i ++) {
+      uint32_t *src_row = (uint32_t *)s->pixels + (y + i) * (s->pitch / 4) + x;
+      for (int j = 0; j < w; j ++) buf[i * w + j] = src_row[j] | 0xff000000u;
+    }
+    NDL_DrawRect(buf, x, y, w, h);
   } else {
     assert(s->format->BitsPerPixel == 8);
     assert(s->format->palette != NULL);
