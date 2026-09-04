@@ -3,6 +3,16 @@ RAMDISK_FILE = build/ramdisk.img
 
 NAME = nanos-lite
 SRCS = $(shell find -L ./src/ -name "*.c" -o -name "*.cpp" -o -name "*.S")
+
+# The NPC SoC has no disk device: embed the whole fsimg (ramdisk) into the
+# kernel image instead. Other platforms use the AM disk device.
+# (Must come BEFORE including the AM Makefile so the define reaches the
+# pattern rules' flags.)
+ifeq ($(ARCH),riscv64-npc)
+CFLAGS += -DKERNEL_EMBED_RAMDISK
+ASFLAGS += -DKERNEL_EMBED_RAMDISK
+endif
+
 include $(AM_HOME)/Makefile
 
 ifeq ($(ARCH),native)

@@ -51,6 +51,12 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   int offset_y = screen_w*((screen_h-canvas_h)/2+y);
   int offset_x = (screen_w-canvas_w)/2 + x;
   int offset = offset_y + offset_x;
+  // full-width rects are contiguous rows in the framebuffer: one shot
+  if (w == screen_w) {
+    lseek(fbdev, offset*4, SEEK_SET);
+    write(fbdev, pixels, w*h*4);
+    return;
+  }
   uint32_t *current_row = pixels;
   // arbitrary canvas
   // this is correct for native

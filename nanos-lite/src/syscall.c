@@ -9,7 +9,10 @@
 #define BATCH_INIT_PROG "/bin/nterm"
 
 int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
-#if defined(MULTIPROGRAM) || defined(TEST_NTERM)
+// FG_PROCESS is a multiprogram build too: keep the exec-on-current-pcb path
+// (the batch `naive_uload(NULL, ...)` branch passes pcb=NULL to loader(),
+// which dereferences &pcb->as == 0x8 and crashes under HAS_VME).
+#if defined(MULTIPROGRAM) || defined(TEST_NTERM) || defined(TIME_SHARING) || defined(FG_PROCESS)
   // load the new program into the current process, then abandon the current
   // execution flow: switch to the boot PCB (never scheduled) and yield, so the
   // next schedule() resumes the newly loaded program.
@@ -24,7 +27,7 @@ int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
 }
 
 void sys_exit(uintptr_t code) {
-#if defined(MULTIPROGRAM) || defined(TEST_NTERM)
+#if defined(MULTIPROGRAM) || defined(TEST_NTERM) || defined(TIME_SHARING) || defined(FG_PROCESS)
   // 不再直接 halt 整个系统，而是重新运行批处理系统的初始程序
   char *const argv[] = {BATCH_INIT_PROG, NULL};
   char *const envp[] = {NULL};

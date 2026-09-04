@@ -56,14 +56,39 @@ static long *fp_offt = NULL;
 //   return (fd < filenum) ? file_table[fd].name : "undef file!";
 // }
 
+static int fs_open_normalized(const char *name) {
+  for (int i = 0; i < filenum; i++) {
+    if (!strcmp(file_table[i].name, name)) return i;
+  }
+  return -1;
+}
+
 int fs_open(const char *pathname, int flags, int mode) {
-  for(int i=0;i<filenum;i++){
-    if(!strcmp(file_table[i].name, pathname)){
-      fp_offt[i] = 0;   // open 语义：文件偏移量从 0 开始（覆盖 execve 后残留的偏移量）
-      return i;
+  // Canonicalize the path like a real FS would: collapse repeated slashes
+  // ("//nscript.dat" from ONScripter's "-r /" + relative name) and prepend a
+  // leading '/' for relative names ("nscript.dat" -> "/nscript.dat").
+  char canon[256];
+  int n = 0;
+  const char *p = pathname;
+  if (*p != '/') canon[n++] = '/';
+  while (*p != '\0' && n < (int)sizeof(canon) - 1) {
+    if (*p == '/') {
+      while (*p == '/') p++;
+      if (*p == '\0') break;
+      canon[n++] = '/';
+    } else {
+      canon[n++] = *p++;
     }
   }
-  panic("fs_open: file %s not found", pathname);
+  canon[n] = '\0';
+
+  int fd = fs_open_normalized(canon);
+  if (fd >= 0) {
+    fp_offt[fd] = 0;   // open 语义：文件偏移量从 0 开始（覆盖 execve 后残留的偏移量）
+    return fd;
+  }
+  // POSIX semantics: return -1 instead of panicking. Applications like
+  // ONScripter probe optional files (cursors, fonts) and tolerate failures.
   return -1;
 }
 

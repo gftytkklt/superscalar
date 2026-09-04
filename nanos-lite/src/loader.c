@@ -104,6 +104,11 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
 #ifdef HAS_VME
   protect(&pcb->as);
 #endif
+  // Reset the program break: the loader re-derives it from the new ELF's
+  // segments. A stale value from the previous program would make mm_brk()
+  // skip mapping (brk <= max_brk) and the new program would run on unmapped
+  // heap pages (exec-after-exit reload path).
+  pcb->max_brk = 0;
   Area kstack = {pcb->stack, pcb->stack + STACK_SIZE};
 
   // user stack: allocate a fresh 32KB region FIRST. Do not read argv/envp

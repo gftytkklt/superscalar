@@ -65,9 +65,9 @@ void init_proc() {
     context_uload(&pcb[0], "/bin/pal", argv, envp);
   }
   {
-    char *const argv[] = {"/bin/bird", NULL};
+    char *const argv[] = {"/bin/nterm", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[1], "/bin/bird", argv, envp);
+    context_uload(&pcb[1], "/bin/nterm", argv, envp);
   }
   {
     char *const argv[] = {"/bin/nslider", NULL};
