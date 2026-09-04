@@ -1,7 +1,7 @@
 # records/knowledge —— 经验性归档（案例复盘 / 方法论 / 性能分析）
 
 > 可复用的"怎么做/为什么"：独立成篇的经验文档 + 指向各过程文档中方法论章节的**经验地图**。
-> 过程时间线见 [`../process/README.md`](../process/README.md)；入口总览见 [`../../PROJECT_OVERVIEW.md`](../../PROJECT_OVERVIEW.md)。
+> 过程时间线见 [`../process/README.md`](../process/README.md)；入口总览见 [`../../docs/PROJECT_OVERVIEW.md`](../../docs/PROJECT_OVERVIEW.md)。
 
 ## 独立成篇
 
@@ -9,6 +9,7 @@
 |---|---|---|
 | `rtthread-stackoverflow-debug.md` | 案例复盘：RT-Thread 栈溢出（NEMU 平台） | 现象→定位→验证→修复的完整链路；根因是 main 线程栈溢出破坏对象链表，非 NEMU bug——"看似模拟器问题实为软件 bug"的典型样本 |
 | `MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向 | 架构分析/瓶颈定位方法/验证策略/优化方向/浪费点清单——**支撑未来目标"NEMU+NPC 双端 Linux + NPC 持续性能优化"的方法底座**（当前阶段 B3 调优在此基础上推进） |
+| `B3_STAGE2_PERF_ANALYSIS.md` | B3 阶段2 性能剖析 + Amdahl 瓶颈分析（microbench test） | IPC≈0.197；**内存相关周期占 59.5%（load 27.6% + store 25.5% + ifu 6.3%）**=头号瓶颈；store 平均延迟≈54cyc 可疑（写分配/脏回写，待波形复核）；数据访存理论上限 2.13×；未校准（偏乐观）。方法：perf 计数器按 load/store/ifu 周期拆账 + Amdahl |
 
 ## 经验地图（指向过程文档中的方法论章节）
 
@@ -23,4 +24,4 @@
 | NEMU MMU 断言的定位法 | `../process/ONSCRIPTER_RISCV_NEMU_PORT.md` §2 | 断言前打印 pc/ra/vaddr/satp → addr2line 对内核 ELF 落到源码行 → 反推调用链；"看似页表 bug"往往 是内核逻辑（NULL pcb / stale max_brk） |
 | Kconfig 修改静默失效 | 同上 §3 | 直接 sed `.config` 不触发 `autoconf.h` 重生成，须 `tools/kconfig/build/conf --syncconfig Kconfig` |
 | 差分调试锁定"被替换层" | `../process/ONSCRIPTER_FIX_PLAN.md`（用户裁决） | 两世界唯一差异层=被替换层（miniSDL/NDL），应优先锁定；复用层测出问题既不可修也解释不了参考侧正常 |
-| cache 掩码/时序/PSRAM/SRAM wmask 等硬件经验 | `../../DEBUG_WORKFLOW.md` §3 | 活跃文档，硬件坑汇总（现行参考） |
+| cache 掩码/时序/PSRAM/SRAM wmask 等硬件经验 | `../../docs/DEBUG_WORKFLOW.md` §3 | 活跃文档，硬件坑汇总（现行参考） |
