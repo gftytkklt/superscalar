@@ -9,7 +9,7 @@
 |---|---|---|
 | `rtthread-stackoverflow-debug.md` | 案例复盘：RT-Thread 栈溢出（NEMU 平台） | 现象→定位→验证→修复的完整链路；根因是 main 线程栈溢出破坏对象链表，非 NEMU bug——"看似模拟器问题实为软件 bug"的典型样本 |
 | `MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向 | 架构分析/瓶颈定位方法/验证策略/优化方向/浪费点清单——**支撑未来目标"NEMU+NPC 双端 Linux + NPC 持续性能优化"的方法底座**（当前阶段 B3 调优在此基础上推进） |
-| `B3_STAGE2_PERF_ANALYSIS.md` | B3 阶段2 性能剖析 + Amdahl 瓶颈分析（microbench test） | IPC≈0.197；**复核后（附录 A/B/C 为准，覆盖旧 §1–§4）**：.latency/占比旧数字因 `O_cpu_rvalid` held-valid 被放大、**不可信**；**可信**结论=① ~41% load/~49% store 落非缓存区 SRAM（栈+`.data/.bss`）→ 慢单拍 MMIO（数据布局问题）；② dcache 写缺失率 15.5% ≫ 读 3.2%，且 write-allocate+回写多 burst；③ 由此给出**优化方案**（P1 数据布局→P2 store 写路径→P4 修测量）与**计数器功能说明** + held-valid 计数教训 |
+| `B3_STAGE2_PERF_ANALYSIS.md` | B3 阶段2 性能剖析 + Amdahl 瓶颈分析（microbench test） | IPC≈0.197。**复核更正：旧 latency/占比数字因 `O_cpu_rvalid` held-valid 被放大、不可信**；改用"请求拍 + FSM 有边界计时"（附录 D=P4）。可信结论：① dcache 读缺失 3.21% / 写缺失 15.47%；读缺失代价 avg≈748cyc、写缺失 avg≈657cyc（未校准）；**② SRAM 端到端访问≈9cyc（非 1cyc，AXI/APB 桥往返）**→ 缓存 SRAM 有收益（命中≈2cyc），但需与用户确认 SRAM 本征延迟/桥开销取舍；③ **PERF-CHECK 自检**（decode==retire==exu、cat_sum==decode、deliver−decode≈bubble）实证 OK；含计数器含义/用法说明 + P4 修法 |
 
 ## 经验地图（指向过程文档中的方法论章节）
 

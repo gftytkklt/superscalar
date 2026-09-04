@@ -70,9 +70,9 @@ module perf_counters #(
     end else begin
       c_cycles <= c_cycles + 64'd1;
       if (I_inst_valid)        c_deliver <= c_deliver + 64'd1;
+      if (I_mem_rd_data_valid) c_lsu     <= c_lsu     + 64'd1;
       if (O_pc_valid && !I_inst_valid) c_ifu_miss <= c_ifu_miss + 64'd1; // 取指在等 icache（供给缺口）
       if (ID_EX_valid && ID_EX_alu_multicycle) c_mul_cycles <= c_mul_cycles + 64'd1; // 乘/除多周期占用 EX
-      if (I_mem_rd_data_valid) c_lsu     <= c_lsu     + 64'd1;
       if (exu_ev)              c_exu     <= c_exu     + 64'd1;
       if (difftest_valid)      c_ret     <= c_ret     + 64'd1;
       if (decode_bubble)       c_bubble  <= c_bubble  + 64'd1;
@@ -128,6 +128,24 @@ module perf_counters #(
       c_mem, c_csr, c_branch, c_compute, c_other, c_bubble);
   end
 
+  // ---- 一致性自检（counter 正确性校验）----
+  // 不变式：decode_total == retire == exu；各类别和 == decode_total；
+  //         ifu_deliver - decode == bubble（被冲刷的取指槽）。
+  // 仅在计数逻辑正确时成立；若 fail 说明计数信号选错或被 held-valid 污染。
+  wire [63:0] cat_sum = c_mem + c_csr + c_branch + c_compute + c_other;
+  wire [63:0] deliver_minus_decode = (c_deliver >= c_decode_total) ? (c_deliver - c_decode_total) : 0;
+  wire [63:0] retire_full = c_ret + 64'd1; // ebreak 计入
+  always @(posedge I_clk) if (ebreak) begin
+    if (c_decode_total != retire_full) $display("PERF-CHECK FAIL decode!=retire: decode=%0d retire=%0d", c_decode_total, retire_full);
+    else $display("PERF-CHECK OK decode==retire==exu==%0d", c_decode_total);
+    if (c_exu != retire_full) $display("PERF-CHECK FAIL exu!=retire: exu=%0d retire=%0d", c_exu, retire_full);
+    if (cat_sum != c_decode_total) $display("PERF-CHECK FAIL cat_sum!=decode: sum=%0d decode=%0d", cat_sum, c_decode_total);
+    else $display("PERF-CHECK OK cat_sum==decode==%0d (mem=%0d branch=%0d compute=%0d other=%0d csr=%0d)", c_decode_total, c_mem, c_branch, c_compute, c_other, c_csr);
+    // deliver - decode 应为 bubble；允许 ±1（尾部一个被取但不计 bubble 的边界取指/复位边沿）。
+    if (deliver_minus_decode > c_bubble + 64'd1) $display("PERF-CHECK FAIL deliver-decode!=bubble: diff=%0d bubble=%0d", deliver_minus_decode, c_bubble);
+    else $display("PERF-CHECK OK deliver-decode≈bubble==%0d", c_bubble);
+  end
+
   // ebreak：MEM_WB_inst == 0x00100073，即 HIT GOOD TRAP 前一拍（retire 中 ebreak 未计入 c_ret）
   wire ebreak = (MEM_WB_inst == 32'h00100073) && MEM_WB_valid && !I_rst;
   always @(posedge I_clk) if (ebreak) begin
@@ -138,10 +156,10 @@ module perf_counters #(
       (c_deliver>c_decode_total)?(c_deliver-c_decode_total):(c_decode_total-c_deliver), c_bubble);
     $display("PERF[ebreak]  classes: mem=%0d csr=%0d branch=%0d compute=%0d other=%0d bubble=%0d",
       c_mem, c_csr, c_branch, c_compute, c_other, c_bubble);
-    $display("PERF[ebreak]  stall: ifu_miss(fetch wait)=%0d  mul_multicycle=%0d  lsu_lat_total=%0d  st_lat_total=%0d",
-      c_ifu_miss, c_mul_cycles, c_lsu_lat_total, c_st_lat_total);
-    $display("PERF[ebreak]  LSU: loads=%0d avg_load_lat=%0d  (total_time≈cycles=%0d)",
-      c_lsu, (c_lsu != 64'd0 ? (c_lsu_lat_total/c_lsu) : 64'd0), c_cycles);
+    // 注意：按拍累加的 lsu/latency（c_lsu/c_lsu_lat_total/c_st_lat_total）因 O_cpu_rvalid/O_cpu_bvalid
+    // 可保持多拍而**不可信**（真实 load/store 数与延迟见 dcache_stats.sv 的缺失代价/MMIO 延迟 + 区域分类）。
+    $display("PERF[ebreak]  ifu_miss(fetch wait)=%0d  mul_multicycle=%0d  (注意: lsu/latency 已下放到 dcache_stats)",
+      c_ifu_miss, c_mul_cycles);
     $display("PERF[ebreak]  rd_region: psram(heap,cache)=%0d flash(rodata)=%0d sram(.data/.bss+stack,MMIO)=%0d sdram=%0d | st_region: psram=%0d sram=%0d mmio=%0d",
       rd_psram, rd_flash, rd_sram, rd_rdonly, st_psram, st_sram, st_mmio);
   end
