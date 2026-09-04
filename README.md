@@ -40,6 +40,19 @@ bash init.sh subproject-name
 - 仿真侧：`npc` 经 Verilator 编译成 `ysyxSoCFull` 仿真模型，与 `nemu` 进行 difftest 逐指令对拍，保证 RTL 与参考模型行为一致；
 - 软件侧：`abstract-machine` 及以上运行于处理器之上，支撑整机程序与操作系统实验。
 
+## 现状与目标
+
+本工作区作为同时包含 **RISC-V 软件解释器（NEMU）、自研处理器 RTL（NPC）、简易操作系统
+（nanos-lite / RT-Thread）与 SoC 集成（ysyxSoCFull）** 的完整平台：
+
+- ✅ **NEMU**：已完成 PA 全部内容（指令集/系统调用/difftest/设备，含磁盘设备）；
+- ✅ **NPC**：支持 **ChipLink 以外**的全部功能（cache/SDRAM/外设/RT-Thread/VGA/AM-apps 等，
+  阶段 A–K 完成情况见 `npc/verif/PROJECT_OVERVIEW.md` §3）；
+- 🎯 **未来目标**：
+  1. 在 **NEMU 与 NPC 双端启动 Linux 操作系统**；
+  2. **持续对 NPC 架构进行性能分析与优化**（当前阶段 B3：性能计数器与缓存调优，
+     见 `npc/verif/B3_PLAN.md`；分析方法见 `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`）。
+
 ## 使用
 
 - 子项目编译/仿真各自在自己的目录内以 `make` 驱动（参见各子项目 README）；

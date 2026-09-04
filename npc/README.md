@@ -21,9 +21,8 @@ npc/
 ├── verif/                   # 验证与调试文档 + 独立 RTL 微验证环境（见 §6 文档索引）
 │   ├── DEBUG_WORKFLOW.md    # 调试工作流与阶段 A–J3 执行记录（权威验证链路、波形管理、启动流程）
 │   ├── VERIF_TESTS.md       # 测试体系（现行）
-│   ├── STAGE_H_ONWARDS_TASKS.md   # 阶段 H–K 任务定义与实现路径（进度见 §6）
-│   ├── MEM_PIPELINE_OPT.md  # 访存流水线性能分析与优化方向（架构/瓶颈/验证/优化）
-│   ├── records/             # 各阶段原始调试记录（STAGE1/2/3、STAGE_F、STAGE_I 等）
+│   ├── B3_PLAN.md + STAGE_B3_CACHE_PERF.md  # 当前阶段：B3 性能计数器与缓存调优
+│   ├── records/             # 归档区：process/(阶段过程日志) + knowledge/(经验复盘)，见其 README
 │   ├── Makefile             # make / make run T=xxx / make fst T=xxx / make assert / make formal
 │   ├── tb_main.cpp          # AXI4 内存模型 + 时钟/复位 harness（断言失败返回非 0）
 │   ├── tests/               # 汇编微测试：bug2_csr bug3_div bug4_fencei
@@ -256,11 +255,12 @@ CPU 类同步设计的 UVM 化要点：
 | `verif/RUN_GUIDE.md` | **运行速查**：cpu-tests/am-tests/microbench/rt(PSRAM+SDRAM)/test_prog/npc sim/verif 的编译运行命令 + 参数 + 常见坑 | ✅ 现行 |
 | `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、程序启动流程、硬件经验 | 现行，持续更新 |
 | `verif/VERIF_TESTS.md` | 测试体系（verif 微测试/断言/形式化；运行命令见 RUN_GUIDE） | 现行 |
-| `verif/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 + 完成记录 | H–J5 ✅；K 🔶（ChipLink 结构保证） |
-| `verif/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
-| `verif/records/` | 各阶段原始调试记录（STAGE1/2/3、STAGE_F/I/J0–J5、records/README 索引） | 归档 |
+|  `verif/records/process/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 + 完成记录 | H–J5 ✅；K 🔶（ChipLink 结构保证） |
+|  `verif/records/knowledge/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
+| `verif/records/process/` | 日志型归档：各阶段实施/调试过程记录与任务提示词 | 归档 |
+| `verif/records/knowledge/` | 经验性归档：案例复盘/方法论/性能分析 | 归档 |
 
-> 注：`verif/` 下除 `records/README.md` 外的 md 文件被 `npc/.gitignore` 忽略（工作区本地文档，
+> 注：`verif/` 下除各级 `README.md` 外的 md 文件被 `npc/.gitignore` 忽略（工作区本地文档，
 > 不进 git 状态），按上面索引即可定位到各主题。
 
 ---
