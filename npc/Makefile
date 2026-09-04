@@ -23,6 +23,7 @@ VSRC += $(shell find $(abspath ./ysyxSoC/perip) -type f -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull.v")
 # 非侵入式性能计数器（B3）：bind 注入 cpu_core，仿真结束 $display；不改核 RTL，不参与流片。
 VSRC += $(abspath ./verif/perf/perf_counters.sv)
+VSRC += $(abspath ./verif/perf/dcache_stats.sv)
 
 CSRC = $(shell find $(abspath ./csrc) -name "*.cpp")
 

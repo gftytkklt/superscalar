@@ -25,6 +25,7 @@ module perf_counters #(
   input I_mem_rd_data_valid,       // 读数据有效（cpu_core 端口）
   input I_mem_wr_data_valid,       // store 完成(bvalid)（cpu_core 端口）
   input O_mem_wen,                 // store 请求发送到 dcache 拍（cpu_core 端口）
+  input [31:0] O_mem_addr,         // 访存地址（cpu_core 输出端口，=EX_MEM_mem_addr）
   input O_pc_valid,                // cpu 向 icache 发出取指请求（cpu_core 输出端口）
   input EX_MEM_mem_rd_en,          // load 请求发送到 dcache 拍（cpu_core 内部）
   input ID_EX_alu_multicycle,      // 乘/除多周期标志（cpu_core 内部）
@@ -43,6 +44,14 @@ module perf_counters #(
   reg [63:0] c_mem, c_csr, c_branch, c_compute, c_other, c_bubble;
   reg [63:0] c_cycles, c_ifu_miss, c_lsu_lat_total, c_mul_cycles, c_st_lat_total;
   reg [63:0] st_pend_len; reg st_pend;
+  // 访存地址区域分类（在 load/store 请求拍采样 O_mem_addr）
+  reg [63:0] rd_sram, rd_psram, rd_flash, rd_rdonly, st_sram, st_psram, st_mmio;
+  wire [31:0] a = O_mem_addr;
+  wire is_sram   = (a >= 32'h0f000000) && (a <  32'h0f002000);
+  wire is_psram  = (a >= 32'h80000000) && (a <  32'h80400000);
+  wire is_flash  = (a >= 32'h30000000) && (a <  32'h40000000);
+  wire is_sdram  = (a >= 32'ha0000000) && (a <  32'ha8000000);
+  wire is_cacheable = is_psram || is_flash || is_sdram;
 
   wire decode_ev = IF_ID_valid && ID_EX_allowin && !IF_ID_bubble;
   wire decode_bubble = IF_ID_valid && ID_EX_allowin && IF_ID_bubble;
@@ -57,6 +66,7 @@ module perf_counters #(
       c_mem<=0; c_csr<=0; c_branch<=0; c_compute<=0; c_other<=0; c_bubble<=0;
       c_cycles<=0; c_ifu_miss<=0; c_lsu_lat_total<=0; c_mul_cycles<=0; c_st_lat_total<=0;
       ld_pend<=0; ld_pend_len<=0; st_pend<=0; st_pend_len<=0;
+      rd_sram<=0; rd_psram<=0; rd_flash<=0; rd_rdonly<=0; st_sram<=0; st_psram<=0; st_mmio<=0;
     end else begin
       c_cycles <= c_cycles + 64'd1;
       if (I_inst_valid)        c_deliver <= c_deliver + 64'd1;
@@ -87,6 +97,18 @@ module perf_counters #(
       if (st_pend && I_mem_wr_data_valid) begin
         c_st_lat_total <= c_st_lat_total + st_pend_len + 64'd1;
         st_pend <= 0;
+      end
+      // 区域分类（load 请求 / store 请求拍）
+      if (EX_MEM_mem_rd_en) begin
+        if (is_psram) rd_psram <= rd_psram + 64'd1;
+        else if (is_flash) rd_flash <= rd_flash + 64'd1;
+        else if (is_sdram) rd_rdonly <= rd_rdonly + 64'd1;
+        else if (is_sram) rd_sram <= rd_sram + 64'd1;
+      end
+      if (O_mem_wen) begin
+        if (is_psram) st_psram <= st_psram + 64'd1;
+        else if (is_sram) st_sram <= st_sram + 64'd1;
+        else if (!is_cacheable) st_mmio <= st_mmio + 64'd1;
       end
     end
   end
@@ -120,6 +142,8 @@ module perf_counters #(
       c_ifu_miss, c_mul_cycles, c_lsu_lat_total, c_st_lat_total);
     $display("PERF[ebreak]  LSU: loads=%0d avg_load_lat=%0d  (total_time≈cycles=%0d)",
       c_lsu, (c_lsu != 64'd0 ? (c_lsu_lat_total/c_lsu) : 64'd0), c_cycles);
+    $display("PERF[ebreak]  rd_region: psram(heap,cache)=%0d flash(rodata)=%0d sram(.data/.bss+stack,MMIO)=%0d sdram=%0d | st_region: psram=%0d sram=%0d mmio=%0d",
+      rd_psram, rd_flash, rd_sram, rd_rdonly, st_psram, st_sram, st_mmio);
   end
 
   final begin
@@ -134,6 +158,7 @@ bind ysyx_22040750_cpu_core perf_counters u_perf (
   .I_mem_rd_data_valid(I_mem_rd_data_valid),
   .I_mem_wr_data_valid(I_mem_wr_data_valid),
   .O_mem_wen(O_mem_wen),
+  .O_mem_addr(O_mem_addr),
   .O_pc_valid(O_pc_valid),
   .EX_MEM_mem_rd_en(EX_MEM_mem_rd_en),
   .ID_EX_alu_multicycle(ID_EX_alu_multicycle),
