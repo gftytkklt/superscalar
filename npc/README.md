@@ -18,10 +18,10 @@ NEMU 进行 difftest 逐指令对拍。
 npc/
 ├── vsrc/                    # RTL 源码
 │   └── ysyx_22040750.v      # 全部 30 个 module 的处理器核
-├── verif/                   # 验证与调试文档 + 独立 RTL 微验证环境（见 §6 文档索引）
-│   ├── DEBUG_WORKFLOW.md    # 调试工作流与阶段 A–J3 执行记录（权威验证链路、波形管理、启动流程）
-│   ├── VERIF_TESTS.md       # 测试体系（现行）
-│   ├── B3_PLAN.md + STAGE_B3_CACHE_PERF.md  # 当前阶段：B3 性能计数器与缓存调优
+├── verif/                   # 验证与调试文档 + 独立 RTL 微验证环境（结构与功能见 verif/README.md）
+│   ├── README.md            # verif 目录结构/文件功能总索引（代码 + 文档区）
+│   ├── docs/                # 活跃文档：PROJECT_OVERVIEW(入口)/DEBUG_WORKFLOW/RUN_GUIDE/VERIF_TESTS/
+│   │                        #   WORKFLOW_POLICY + 当前阶段 B3_PLAN·STAGE_B3_CACHE_PERF
 │   ├── records/             # 归档区：process/(阶段过程日志) + knowledge/(经验复盘)，见其 README
 │   ├── Makefile             # make / make run T=xxx / make fst T=xxx / make assert / make formal
 │   ├── tb_main.cpp          # AXI4 内存模型 + 时钟/复位 harness（断言失败返回非 0）
@@ -251,12 +251,13 @@ CPU 类同步设计的 UVM 化要点：
 
 | 文档 | 内容 | 进度 |
 |---|---|---|
-| `verif/PROJECT_OVERVIEW.md` | **项目整体介绍（入口）**：组件地图、阶段 A–K 进度总表、文档索引、快速开始、关键事实 | ✅ 现行 |
-| `verif/RUN_GUIDE.md` | **运行速查**：cpu-tests/am-tests/microbench/rt(PSRAM+SDRAM)/test_prog/npc sim/verif 的编译运行命令 + 参数 + 常见坑 | ✅ 现行 |
-| `verif/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、程序启动流程、硬件经验 | 现行，持续更新 |
-| `verif/VERIF_TESTS.md` | 测试体系（verif 微测试/断言/形式化；运行命令见 RUN_GUIDE） | 现行 |
+| `verif/docs/PROJECT_OVERVIEW.md` | **项目整体介绍（入口）**：组件地图、阶段 A–K 进度总表、文档索引、快速开始、关键事实 | ✅ 现行 |
+| `verif/docs/RUN_GUIDE.md` | **运行速查**：cpu-tests/am-tests/microbench/rt(PSRAM+SDRAM)/test_prog/npc sim/verif 的编译运行命令 + 参数 + 常见坑 | ✅ 现行 |
+| `verif/docs/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、程序启动流程、硬件经验 | 现行，持续更新 |
+| `verif/docs/VERIF_TESTS.md` | 测试体系（verif 微测试/断言/形式化；运行命令见 RUN_GUIDE） | 现行 |
 |  `verif/records/process/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 + 完成记录 | H–J5 ✅；K 🔶（ChipLink 结构保证） |
 |  `verif/records/knowledge/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
+| `verif/README.md` | verif 目录结构与文件功能总索引（验证环境代码 + 文档区入口） | ✅ 现行 |
 | `verif/records/process/` | 日志型归档：各阶段实施/调试过程记录与任务提示词 | 归档 |
 | `verif/records/knowledge/` | 经验性归档：案例复盘/方法论/性能分析 | 归档 |
 

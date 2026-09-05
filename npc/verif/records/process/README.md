@@ -2,7 +2,7 @@
 
 > 按时间顺序的"当时做了什么"：实施记录、调试时间线、任务定义与续作提示词（PROMPT）、修复计划。
 > 可复用的经验与方法论见 [`../knowledge/README.md`](../knowledge/README.md)。
-> 入口总览/现状目标见 [`../../PROJECT_OVERVIEW.md`](../../PROJECT_OVERVIEW.md)。
+> 入口总览/现状目标见 [`../../docs/PROJECT_OVERVIEW.md`](../../docs/PROJECT_OVERVIEW.md)。
 
 ## 访存体系（阶段 1–3）
 

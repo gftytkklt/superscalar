@@ -47,11 +47,11 @@ bash init.sh subproject-name
 
 - ✅ **NEMU**：已完成 PA 全部内容（指令集/系统调用/difftest/设备，含磁盘设备）；
 - ✅ **NPC**：支持 **ChipLink 以外**的全部功能（cache/SDRAM/外设/RT-Thread/VGA/AM-apps 等，
-  阶段 A–K 完成情况见 `npc/verif/PROJECT_OVERVIEW.md` §3）；
+  阶段 A–K 完成情况见 `npc/verif/docs/PROJECT_OVERVIEW.md` §3）；
 - 🎯 **未来目标**：
   1. 在 **NEMU 与 NPC 双端启动 Linux 操作系统**；
   2. **持续对 NPC 架构进行性能分析与优化**（当前阶段 B3：性能计数器与缓存调优，
-     见 `npc/verif/B3_PLAN.md`；分析方法见 `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`）。
+     见 `npc/verif/docs/B3_PLAN.md`；分析方法见 `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`）。
 
 ## 使用
 

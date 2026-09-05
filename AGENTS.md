@@ -1,6 +1,6 @@
 # AGENTS.md — 全局工作规则
 
-本工作区（ysyx-workbench）内的开发/验证/文档任务**一律遵守** `npc/verif/WORKFLOW_POLICY.md`：
+本工作区（ysyx-workbench）内的开发/验证/文档任务**一律遵守** `npc/verif/docs/WORKFLOW_POLICY.md`：
 
 1. **先产出整体计划文档并对齐**：从任务/讲义/需求清单出发必须先写《整体计划文档》（目标、范围、
    阶段划分、每阶段交付物、验收标准、结束节点、含人工决策/安装的阶段标识），**用户确认后**才分阶段执行。
