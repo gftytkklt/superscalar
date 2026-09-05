@@ -38,8 +38,13 @@ module perf_counters #(
   input reg_wen,
   input [31:0] MEM_WB_inst,
   input MEM_WB_valid,
+  input [31:0] MEM_WB_pc,          // 提交 PC（= 该指令取指 PC）
   input difftest_valid
 );
+  // cachesim trace 导出（仅当 C 侧 setenv CACHESIM_TRACE 时落盘，否则 no-op）
+  import "DPI-C" function void csim_ifetch(input int pc);
+  import "DPI-C" function void csim_dread(input int addr);
+  import "DPI-C" function void csim_dwrite(input int addr);
   reg [63:0] c_deliver, c_lsu, c_exu, c_ret, c_decode_total;
   reg [63:0] c_mem, c_csr, c_branch, c_compute, c_other, c_bubble;
   reg [63:0] c_cycles, c_ifu_miss, c_lsu_lat_total, c_mul_cycles, c_st_lat_total;
@@ -98,6 +103,10 @@ module perf_counters #(
         c_st_lat_total <= c_st_lat_total + st_pend_len + 64'd1;
         st_pend <= 0;
       end
+      // cachesim trace：每条真实指令取指 1 次、每条 load/store 访问 1 次
+      if (difftest_valid) csim_ifetch(MEM_WB_pc);
+      if (EX_MEM_mem_rd_en) csim_dread(O_mem_addr);
+      if (O_mem_wen) csim_dwrite(O_mem_addr);
       // 区域分类（load 请求 / store 请求拍）
       if (EX_MEM_mem_rd_en) begin
         if (is_psram) rd_psram <= rd_psram + 64'd1;
@@ -186,5 +195,6 @@ bind ysyx_22040750_cpu_core perf_counters u_perf (
   .csr_wen(csr_wen), .csr_mret(csr_mret), .csr_intr(csr_intr),
   .reg_wen(reg_wen),
   .MEM_WB_inst(MEM_WB_inst), .MEM_WB_valid(MEM_WB_valid),
+  .MEM_WB_pc(MEM_WB_pc),
   .difftest_valid(difftest_valid)
 );
