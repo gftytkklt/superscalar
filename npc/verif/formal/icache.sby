@@ -1,0 +1,15 @@
+[options]
+mode bmc
+depth 20
+
+[engines]
+smtbmc boolector
+
+[script]
+read_verilog -formal -sv vsrc_fm.v
+read_verilog -formal -sv props_icache.sv
+prep -top icache_transparency
+
+[files]
+../build/vsrc_fm.v
+props_icache.sv
