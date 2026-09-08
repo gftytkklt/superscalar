@@ -13,10 +13,14 @@ DIFF ?= 0
 WAVE ?= 0
 WITH_TRACE ?= 1
 WITH_SDL ?= 0
+PERF ?= 0
+DEBUG_APBDLY ?= 0
 DIFF_B := $(if $(filter 1 y yes Y YES,$(DIFF)),1,0)
 WAVE_B := $(if $(filter 1 y yes Y YES,$(WAVE)),1,0)
 WITH_TRACE_B := $(if $(filter 1 y yes Y YES,$(WITH_TRACE)),1,0)
 WITH_SDL_B := $(if $(filter 1 y yes Y YES,$(WITH_SDL)),1,0)
+PERF_B := $(if $(filter 1 y yes Y YES,$(PERF)),1,0)
+DEBUG_APBDLY_B := $(if $(filter 1 y yes Y YES,$(DEBUG_APBDLY)),1,0)
 
 VSRC = $(shell find $(abspath ./vsrc) -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/perip) -type f -name "*.v")
@@ -78,6 +82,16 @@ VERILATOR_CFLAGS += -MMD --build -cc \
 ifeq ($(WITH_TRACE_B), 1)
 VERILATOR_CFLAGS += --trace
 endif
+# PERF: 是否启用 apb_delayer 的真实延迟（性能校准模型）。
+#   只有性能测试（make perf）置 PERF=1 才定义 +define+PERF_DELAY，启用 B 方案延迟；
+#   默认（功能/回归）为直通，不影响正确性。
+ifeq ($(PERF_B), 1)
+VERILATOR_CFLAGS += +define+PERF_DELAY
+endif
+# DEBUG_APBDLY: 诊断 apb_delayer 事务悬死（默认关；仅在调 bf 等死锁时开，否                                                                                    海量事务刷屏）
+ifeq ($(DEBUG_APBDLY_B), 1)
+VERILATOR_CFLAGS += +define+DEBUG_APBDLY
+endif
 
 
 default: $(BIN)
@@ -95,7 +109,7 @@ CFLAGS += -DTOP_NAME="\"V$(TOPNAME)\""
 BUILD_CFG = $(BUILD_DIR)/.build_cfg
 $(BUILD_CFG): FORCE
 	@mkdir -p $(BUILD_DIR)
-	@printf 'DIFF=%s\nWAVE=%s\nWITH_TRACE=%s\nWITH_SDL=%s\n' '$(DIFF_B)' '$(WAVE_B)' '$(WITH_TRACE_B)' '$(WITH_SDL_B)' > $@.tmp
+	@printf 'DIFF=%s\nWAVE=%s\nWITH_TRACE=%s\nWITH_SDL=%s\nPERF=%s\nDEBUG_APBDLY=%s\n' '$(DIFF_B)' '$(WAVE_B)' '$(WITH_TRACE_B)' '$(WITH_SDL_B)' '$(PERF_B)' '$(DEBUG_APBDLY_B)' > $@.tmp
 	@cmp -s $@ $@.tmp || cp $@.tmp $@
 	@rm -f $@.tmp
 FORCE:
@@ -183,9 +197,9 @@ clean-wave:
 #      E1c apb_delayer 叠加后 microbench test 在 bf 处卡死，先修复再复现性能表。
 # ============================================================================
 perf:
-	@echo "== npc make perf: microbench (test scale, mainargs=test) =="
+	@echo "== npc make perf: microbench (test scale) — apb_delayer=PERF_DELAY =="
 	@cd $(abspath ../am-kernels/benchmarks/microbench) && \
-	  $(MAKE) ARCH=riscv64-npc HEAP_SIZE=0x400000 WITH_TRACE=0 mainargs=test run
+	  $(MAKE) ARCH=riscv64-npc HEAP_SIZE=0x400000 WITH_TRACE=0 PERF=1 mainargs=test run
 
 .PHONY: perf
 
