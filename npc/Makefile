@@ -193,8 +193,8 @@ clean-wave:
 #   依赖：AM_HOME / npc bin；WITH_TRACE=0 提速（透传给 npc sim）。
 #   用法：make perf            （mainargs=test）
 #         make perf mainargs=ref （可临时改规模；默认 test）
-#   ⚠️ 数据/堆在 PSRAM：需 HEAP_SIZE=0x400000（microbench 大堆，见 npc.mk）。当前
-#      E1c apb_delayer 叠加后 microbench test 在 bf 处卡死，先修复再复现性能表。
+#   ⚠️ 数据/堆在 PSRAM：需 HEAP_SIZE=0x400000（microbench 大堆，见 npc.mk）。
+#      E1c 延迟桥 + PSRAM 状态机握手修复后，microbench test 已可全过。
 # ============================================================================
 perf:
 	@echo "== npc make perf: microbench (test scale) — apb_delayer=PERF_DELAY =="
