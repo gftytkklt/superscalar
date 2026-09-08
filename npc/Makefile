@@ -173,4 +173,20 @@ clean-wave:
 
 .PHONY: clean-wave
 
+# ============================================================================
+# B3 阶段5：make perf —— 性能测试（默认 microbench test 规模）
+#   暂只跑 test 规模（约 300K 指令，避免 train/ref/huge 的 ysyxSoC 数小时仿真）。
+#   依赖：AM_HOME / npc bin；WITH_TRACE=0 提速（透传给 npc sim）。
+#   用法：make perf            （mainargs=test）
+#         make perf mainargs=ref （可临时改规模；默认 test）
+#   ⚠️ 数据/堆在 PSRAM：需 HEAP_SIZE=0x400000（microbench 大堆，见 npc.mk）。当前
+#      E1c apb_delayer 叠加后 microbench test 在 bf 处卡死，先修复再复现性能表。
+# ============================================================================
+perf:
+	@echo "== npc make perf: microbench (test scale, mainargs=test) =="
+	@cd $(abspath ../am-kernels/benchmarks/microbench) && \
+	  $(MAKE) ARCH=riscv64-npc HEAP_SIZE=0x400000 WITH_TRACE=0 mainargs=test run
+
+.PHONY: perf
+
 -include ../Makefile
