@@ -12,6 +12,7 @@
 | `B3_STAGE2_PERF_ANALYSIS.md` | B3 阶段2 性能剖析 + Amdahl 瓶颈分析（microbench test） | IPC≈0.197。**复核更正：旧 latency/占比数字因 `O_cpu_rvalid` held-valid 被放大、不可信**；改用"请求拍 + FSM 有边界计时"（附录 D=P4）。可信结论：① dcache 读缺失 3.21% / 写缺失 15.47%；读缺失代价 avg≈748cyc、写缺失 avg≈657cyc（未校准）；**② SRAM 端到端访问≈9cyc（非 1cyc，AXI/APB 桥往返）**→ 缓存 SRAM 有收益（命中≈2cyc），但需与用户确认 SRAM 本征延迟/桥开销取舍；③ **PERF-CHECK 自检**（decode==retire==exu、cat_sum==decode、deliver−decode≈bubble）实证 OK；含计数器含义/用法说明 + P4 修法 |
 | `B3_CACHESIM_ANALYSIS.md` | B3 阶段3：cachesim 参数化设计空间探索（8KB/整颗SRAM约束） | 工具 `npc/verif/cachesim/`（C++），trace 由 npc 仿真 DPI 导出（`CACHESIM_TRACE`）。microbench test：icache 命中 99.95%、dcache 91.26%、extra-stall≈6.58M；**8KB 内几何重分配最优仅 ~+3.5%（Amdahl 限制）→ cache 几何非瓶颈**；瓶颈在**固定 MMIO（UART printf 456K 次 + SRAM 栈/全局 43K 次×8cyc）**与**单次缺失代价（flash 1309 / dcache 写缺失含脏回写）**；改 `RegionCost()` 初值/配置接口可校正成本模型 |
 | `APB_PSRAM_HANDSHAKE_DEBUG.md` | **控制器 IP 状态机握手调试**（E1c/E1d 延迟校准暴露的重触发 bug） | 核心原则：从机状态机只在「新请求握手」（access 上升沿）触发，不能拿持续电平（psel/wb_valid 常高）当事件；两种失效（回 IDLE 重读、组合触发器 mr_rd 洪水）+ 检测法（计数 trigger/done 1:1、写→读一致性小模型）+ 修复范式（prev 信号构造 new_access 单脉冲 + stb=penable） |
+| `FORMAL_VERIFICATION_NPC.md` | **形式化验证入门**（SymbiYosys+Yosys+SMT/sby+z3/btormc，新手友好） | assume/assert/cover 三角色、bmc/cover 两模式、depth/mode/solver 关键参数含义、REF-vs-DUT 等价思想、完整编译链（trim_rtl.py→vsrc_fm.v→sby→yosys-smtbmc→z3/btormc）、文件清单、五大坑（BMC 任意初态/空泛 PASS/规模先测/宽位用 boolector/REF 别带真实存储）+ 新手起步路径 |
 
 ## 经验地图（指向过程文档中的方法论章节）
 
