@@ -27,9 +27,10 @@
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| **yosos‑sta（`ysyx-workbench/yosys-sta/`）** | ⚠️ 已 clone，**未装** | `iEDA/` 子模块未初始化、`bin/` 为空。用于 E1（APB 访存延迟校准）算 `r`（综合频率/100MHz）。安装见其 `README.md`：Yosys ≥0.48（本机 0.33）+ `apt install libunwind-dev liblzma-dev`(sudo) + `make init`(联网拉预编译 iEDA+icsprout55) |
-| **oss‑cad‑suite / 新版 Yosys** | ⚠️ 未装 | README 建议用 oss‑cad‑suite 的 yosys（≥0.48）；或源码构建 Yosys。本机 yosys 0.33 太旧 |
-| **OpenSTA** | ⚠️ 未装 | 本 yosys‑sta 实际用 **iEDA/iSTA**（非 OpenSTA），故不强制；装 iEDA 即可 |
-| **npc 可综合化适配** | 🔶 待做 | yosys 无法综合 `import "DPI-C"` 与行为级 SRAM；需去 DPI + blackbox SRAM + 选 `DESIGN`/写 `SDC`（clock=`I_sys_clk`）后才能 `make sta` 出频率 |
+| ~~yosos‑sta（`ysyx-workbench/yosys-sta/`）~~ | ✅ **已安装（2026-09-08）** | oss-cad-suite (Yosys 0.68) + `make init` 拉的 iEDA/icsprout55 均就绪，GCD 样例与 npc 均跑通 |
+| ~~oss‑cad‑suite / 新版 Yosys~~ | ✅ 已装（`~/oss-cad-suite`，Yosys 0.68） | btormc/sby/boolector 同步可用（Stage6 解锁） |
+| ~~OpenSTA~~ | — 不需要 | yosys‑sta 用 iEDA/iSTA |
+| **npc 可综合化适配** | ✅ **已完成（E1a）** | `npc/verif/sta/gen_synth_rtl.py`：去 17 处 DPI + blackbox `sram_behav`；`ysyx_22040750_synth.v` 可综合 |
+| **E1b：STA 出频率算 `r`** | ✅ **已完成** | 500MHz 目标/DELAY-4：**f_max≈349.7MHz**（worst path=icache FSM 2.832ns；次=PC dnpc），面积 163689.68（SRAM blackbox→频率偏乐观）。**`r ≈ 3.5`**。产物在 `npc/verif/sta/result/ysyx_22040750-500MHz/` |
 
-> 工具装好（`./bin/iEDA -v` 有输出）后，即可继续 E1：适配 npc 综合 → `make sta` → 频率 → `r` → APB 延迟模块。
+> 下一步（E1c 起）：APB/访存延迟模块集成（需定 `r`/`s` 取值与插入点），校准后重测性能。
