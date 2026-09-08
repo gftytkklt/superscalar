@@ -28,6 +28,12 @@
 | `STAGE_J5_RTTHREAD_AM.md` | J5 rt-am 合并 + am-apps 集成 | make update 集成 hello/microbench/snake → msh am_<app>；附录含 RT-Thread 带 NVBoard 的 make 链路 |
 | `STAGE_J_ONWARDS_PROMPT.md` | 阶段 J 后续任务提示词 | J1–J5 现状/目标/实现路径——新对话续作提示词 |
 
+## B3 性能优化（阶段 1–5）
+
+| 文件 | 主题 | 要点 |
+|---|---|---|
+| `B3_STAGE5_PERF.md` | B3 阶段5：访存延迟校准 + `make perf` IPC 对比 | E1c/E1d 结论：`apb_delayer` r=3.5；IPC 无校准 0.196 → 有校准 0.074；XIP/PSRAM 状态机重触发根因（mr_rd 洪水）+ commit 清单 |
+
 ## ONScripter 移植（PA4.5 选做，2026-09-03 ~ 09-04）
 
 | 文件 | 主题 | 要点 |
