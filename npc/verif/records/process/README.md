@@ -33,6 +33,7 @@
 | 文件 | 主题 | 要点 |
 |---|---|---|
 | `B3_STAGE5_PERF.md` | B3 阶段5：访存延迟校准 + `make perf` IPC 对比 | E1c/E1d 结论：`apb_delayer` r=3.5；IPC 无校准 0.196 → 有校准 0.074；XIP/PSRAM 状态机重触发根因（mr_rd 洪水）+ commit 清单 |
+| `B3_STAGE6_ICACHE_BMC.md` | B3 阶段6：icache 数据透明性 BMC（btormc PASS） | 规模数据（状态≈1500 位；depth 20/30/35 PASS、depth 40 超时=可判定上限≈35；`mode cover` 证实 O_cpu_rvalid step10 可达非空泛）；断言加 `!I_rst&&qv` 门控排除初始态伪反例 |
 
 ## ONScripter 移植（PA4.5 选做，2026-09-03 ~ 09-04）
 
