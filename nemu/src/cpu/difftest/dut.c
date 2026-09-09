@@ -31,9 +31,13 @@ void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 static bool is_skip_ref = false;
 static int skip_dut_nr_inst = 0;
 
+// 是否启用 DiffTest（detach 后关闭，attach 后重新开启）
+static bool difftest_enabled = true;
+
 // this is used to let ref skip instructions which
 // can not produce consistent behavior with NEMU
 void difftest_skip_ref() {
+  if (!difftest_enabled) return;
   is_skip_ref = true;
   // If such an instruction is one of the instruction packing in QEMU
   // (see below), we end the process of catching up with QEMU's pc to
@@ -52,6 +56,7 @@ void difftest_skip_ref() {
 //   Let REF run `nr_ref` instructions first.
 //   We expect that DUT will catch up with REF within `nr_dut` instructions.
 void difftest_skip_dut(int nr_ref, int nr_dut) {
+  if (!difftest_enabled) return;
   skip_dut_nr_inst += nr_dut;
 
   while (nr_ref -- > 0) {
@@ -108,6 +113,9 @@ static void checkregs(CPU_state *ref, vaddr_t pc) {
 void difftest_step(vaddr_t pc, vaddr_t npc) {
   CPU_state ref_r;
 
+  // detach 模式下不进行任何比对
+  if (!difftest_enabled) return;
+
   if (skip_dut_nr_inst > 0) {
     ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
     if (ref_r.pc == npc) {
@@ -132,6 +140,29 @@ void difftest_step(vaddr_t pc, vaddr_t npc) {
   ref_difftest_regcpy(&ref_r, DIFFTEST_TO_DUT);
 
   checkregs(&ref_r, pc);
+}
+
+// 退出 DiffTest 模式：之后 DUT 执行的指令不再与 REF 比对
+void difftest_detach() {
+  difftest_enabled = false;
+}
+
+// 进入 DiffTest 模式：把 DUT 的内存与寄存器同步到 REF，使二者状态一致
+void difftest_attach() {
+  if (difftest_enabled) return;
+
+  // 同步物理内存到 REF（riscv64 无 x86 的 GDT/0x7c00 区域问题，可整段同步）
+  paddr_t start = CONFIG_MBASE;
+  paddr_t end = CONFIG_MBASE + CONFIG_MSIZE;
+  const int CHUNK = 4096;
+  for (paddr_t a = start; a < end; a += CHUNK) {
+    size_t n = (end - a) < CHUNK ? (end - a) : CHUNK;
+    ref_difftest_memcpy(a, guest_to_host(a), n, DIFFTEST_TO_REF);
+  }
+  // 同步寄存器到 REF
+  ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
+
+  difftest_enabled = true;
 }
 #else
 void init_difftest(char *ref_so_file, long img_size, int port) { }

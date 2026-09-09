@@ -10,7 +10,9 @@ INC_PATH = $(REPO_PATH)/include
 LIBS += libminiSDL libfixedptc
 include $(NAVY_HOME)/Makefile
 
-install: install-file
+install: app install-file
+	@mkdir -p $(NAVY_HOME)/fsimg/bin
+	@cp $(APP) $(NAVY_HOME)/fsimg/bin/$(NAME)
 init:;
 
 install-file:

@@ -40,6 +40,13 @@ f(30) f(31)
 .align 3
 .globl __am_asm_trap
 __am_asm_trap:
+  # kernel-stack switch: mscratch holds the kernel stack top when trapping from
+  # user mode, or 0 when trapping from kernel mode.
+  csrrw sp, mscratch, sp   # (1) atomically exchange sp and mscratch
+  bnez sp, __am_asm_save_context # (2) branch if we trapped from user (mscratch was ksp)
+  csrr sp, mscratch        # (3) trapped from kernel: restore the original sp
+
+__am_asm_save_context:
   addi sp, sp, -CONTEXT_SIZE
 
   MAP(REGS, PUSH)
@@ -47,10 +54,12 @@ __am_asm_trap:
   csrr t0, mcause
   csrr t1, mstatus
   csrr t2, mepc
+  csrr t3, mscratch        # the original sp (user sp / kernel sp)
 
   STORE t0, OFFSET_CAUSE(sp)
   STORE t1, OFFSET_STATUS(sp)
   STORE t2, OFFSET_EPC(sp)
+  STORE t3, OFFSET_SP(sp)  # c->gpr[sp] = original sp
 
   # set mstatus.MPRV to pass difftest
   li a0, (1 << 17)
@@ -68,5 +77,5 @@ __am_asm_trap:
 
   MAP(REGS, POP)
 
-  addi sp, sp, CONTEXT_SIZE
+  LOAD sp, OFFSET_SP(sp)   # restore the original sp
   mret

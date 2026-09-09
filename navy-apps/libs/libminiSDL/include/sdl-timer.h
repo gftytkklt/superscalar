@@ -9,4 +9,8 @@ int SDL_RemoveTimer(SDL_TimerID id);
 uint32_t SDL_GetTicks();
 void SDL_Delay(uint32_t ms);
 
+// fired by CallbackHelper (audio.c) so that timers are checked whenever any
+// SDL API is polled
+void SDL_TimerHelper();
+
 #endif

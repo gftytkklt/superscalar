@@ -22,14 +22,38 @@
 #define PMEM_RIGHT ((paddr_t)CONFIG_MBASE + CONFIG_MSIZE - 1)
 #define RESET_VECTOR (PMEM_LEFT + CONFIG_PC_RESET_OFFSET)
 
+// extern FILE* itrace;
+// extern FILE* dtrace;
+
 /* convert the guest physical address in the guest program to host virtual address in NEMU */
 uint8_t* guest_to_host(paddr_t paddr);
 /* convert the host virtual address in NEMU to guest physical address in the guest program */
 paddr_t host_to_guest(uint8_t *haddr);
+/* convert the addr to soc memory pointer */
+uint8_t* addr_to_soc(paddr_t addr);
 
 static inline bool in_pmem(paddr_t addr) {
   return addr - CONFIG_MBASE < CONFIG_MSIZE;
 }
+
+static inline bool in_flash(paddr_t addr) {
+  return addr - CONFIG_FLASHBASE < CONFIG_FLASHSIZE;
+}
+
+static inline bool in_sram(paddr_t addr) {
+  return addr - CONFIG_SRAMBASE < CONFIG_SRAMSIZE;
+}
+
+static inline bool in_mrom(paddr_t addr) {
+  return addr - CONFIG_MROMBASE < CONFIG_MROMSIZE;
+}
+
+// SDRAM 仅在 DEVICE 关闭（difftest ref）时作为内存区；DEVICE 开启时 0xa0000000 归外设。
+#ifndef CONFIG_DEVICE
+static inline bool in_sdram(paddr_t addr) {
+  return addr - CONFIG_SDRAMBASE < CONFIG_SDRAMSIZE;
+}
+#endif
 
 word_t paddr_read(paddr_t addr, int len);
 void paddr_write(paddr_t addr, int len, word_t data);

@@ -23,12 +23,12 @@ void init_difftest(char *ref_so_file, long img_size, int port);
 void init_device();
 void init_sdb();
 void init_disasm(const char *triple);
-
 static void welcome() {
   Log("Trace: %s", MUXDEF(CONFIG_TRACE, ANSI_FMT("ON", ANSI_FG_GREEN), ANSI_FMT("OFF", ANSI_FG_RED)));
   IFDEF(CONFIG_TRACE, Log("If trace is enabled, a log file will be generated "
         "to record the trace. This may lead to a large log file. "
         "If it is not necessary, you can disable it in menuconfig"));
+  Log("FTrace : %s", MUXDEF(CONFIG_FTRACE, ANSI_FMT("ON", ANSI_FG_GREEN), ANSI_FMT("OFF", ANSI_FG_RED)));
   Log("Build time: %s, %s", __TIME__, __DATE__);
   printf("Welcome to %s-NEMU!\n", ANSI_FMT(str(__GUEST_ISA__), ANSI_FG_YELLOW ANSI_BG_RED));
   printf("For help, type \"help\"\n");
@@ -86,7 +86,14 @@ static int parse_args(int argc, char *argv[]) {
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
-      case 'e': elf_num++;elf_file = (char **)realloc(elf_file, sizeof(char *)*elf_num);elf_file[elf_num-1] = optarg;break;
+      case 'e': {
+        char **tmp = (char **)realloc(elf_file, sizeof(char *) * (elf_num + 1));
+        Assert(tmp, "realloc elf_file failed");
+        elf_file = tmp;
+        elf_file[elf_num] = optarg;
+        elf_num++;
+        break;
+      }
       case 1: img_file = optarg; return 0;
       default:
         printf("Usage: %s [OPTION...] IMAGE [args]\n\n", argv[0]);
@@ -115,8 +122,7 @@ static func *func_pool = NULL;
 
 void buf_assignment(FILE *fp, unsigned long offset, int base, char* buf, unsigned len) {
   fseek(fp,offset,base);
-  if(fgets(buf, len+1, fp)==NULL){printf("null pointer\n");return;}
-  
+  if(fread(buf, 1, len, fp) != len){printf("read error at %ld\n", offset);}
 }
 
 static void init_elf() {
@@ -136,6 +142,7 @@ static void init_elf() {
   #define STSIZE_OFFT 16// // symtable size offt relative to strtab/symtab
   #define FUNC 0x12// type FUNC
   func_pool = malloc(func_num * sizeof(func));
+  Assert(func_pool, "malloc func_pool failed");
   for (int i=0;i<elf_num;i++){
     Log("elf file %d: %s", i, elf_file[i]);
   }
@@ -219,47 +226,89 @@ static void init_elf() {
         symname_offt = *((unsigned*) buf);
         if(symname_offt != 0) {
           buf_assignment(elf_fp, (strofft+symname_offt), SEEK_SET, buf, BUF_SIZE-1);
-          // add name to func list
-          strcpy(func_pool[func_idx].func_name, buf);
+          buf[BUF_SIZE-1] = '\0';                          // fread 不写 NUL，手动补上
+          strncpy(func_pool[func_idx].func_name, buf, BUF_SIZE-1);
+          func_pool[func_idx].func_name[BUF_SIZE-1] = '\0'; // 确保目标以 NUL 结尾
         }
         //printf("%d %s %lx\n",func_idx, func_pool[func_idx].func_name, func_pool[func_idx].entry_addr);
         func_idx++;
         if(func_idx >= func_num) {
           func_num += 32;
-          func_pool = realloc(func_pool, func_num * sizeof(func));
+          func *tmp = (func *)realloc(func_pool, func_num * sizeof(func));
+          Assert(tmp, "realloc func_pool failed");
+          func_pool = tmp;
         }
       }
     }
   }
 }
 static int func_depth = 0;
-void print_ftrace(unsigned long pc, unsigned long dnpc, unsigned inst) {
-  //unsigned long func_addr=0;
-  //char func_name[128] = {'\0'};
-  //FILE* fp = fopen("ftrace.txt","a");
-  unsigned dest = BITS(inst,11,7);
-  for(int i=0;i<func_idx;i++){  
-    //printf("%s %lx\n", func_pool[func_idx].func_name, func_pool[func_idx].entry_addr);
-    if(dnpc == func_pool[i].entry_addr && (dest != 0)){
-      func_depth++;
-      printf("%lx:%*s",pc,func_depth," ");
-      // print info & depth update
-      printf("call [%s@0x%lx]\n",func_pool[i].func_name,func_pool[i].entry_addr);
-    }
-    //else if((dnpc > func_pool[i].entry_addr) && (dnpc < func_pool[i].entry_addr + func_pool[i].func_size) && (inst==0x00008067)){
-    else if((pc > func_pool[i].entry_addr) && (pc < func_pool[i].entry_addr + func_pool[i].func_size) && (inst==0x00008067)){
-      printf("%lx:%*s",pc,func_depth," ");
-      printf("ret [%s]\n",func_pool[i].func_name);
-      func_depth--;
-    }
-    else if(inst == 0x00100073){
-      printf("%lx:%*sebreak\n",pc,func_depth," ");
-      //func_depth--;
-      break;
-      
-    }
+#define MAX_CALL_DEPTH 64
+static int call_stack[MAX_CALL_DEPTH];   // 保存被调函数的 func_idx，用于真实调用栈匹配
+static int call_top = 0;
+
+// 返回 func_pool 中入口地址 == addr 的函数下标，找不到返回 -1
+static int find_func_by_entry(unsigned long addr) {
+  for (int i = 0; i < func_idx; i ++) {
+    if (func_pool[i].entry_addr == addr) return i;
   }
-  //fclose(fp);
+  return -1;
+}
+
+// 返回 func_pool 中 addr 落在 [entry, entry+size) 的函数下标，找不到返回 -1
+static int find_func_by_addr(unsigned long addr) {
+  for (int i = 0; i < func_idx; i ++) {
+    if (addr >= func_pool[i].entry_addr &&
+        addr <  func_pool[i].entry_addr + func_pool[i].func_size) return i;
+  }
+  return -1;
+}
+
+void print_ftrace(unsigned long pc, unsigned long dnpc, unsigned inst) {
+  // ebreak：单独处理（调试断点，不算函数调用）
+  if (inst == 0x00100073) {
+    printf("%lx:%*sebreak\n", pc, func_depth, " ");
+    return;
+  }
+
+  unsigned opcode = BITS(inst, 6, 0);
+  unsigned rd = BITS(inst, 11, 7);
+  unsigned rs1 = BITS(inst, 19, 15);
+
+  if (opcode == 0x6f) {           // jal
+    if (rd != 0) {                // rd!=0 保存返回地址 => 函数调用
+      int i = find_func_by_entry(dnpc);
+      if (i >= 0) {
+        printf("%lx:%*scall [%s@0x%lx]\n", pc, func_depth, " ",
+               func_pool[i].func_name, func_pool[i].entry_addr);
+        if (call_top < MAX_CALL_DEPTH) call_stack[call_top ++] = i;
+        func_depth = call_top;
+      }
+    }
+    // rd == 0 的 jal 是无返回跳转（goto），不算调用，不记录
+  }
+  else if (opcode == 0x67) {      // jalr
+    if (rd == 0 && rs1 == 1) {    // ret: jalr x0, imm(x1)
+      int i = find_func_by_addr(pc);
+      if (i >= 0) {
+        printf("%lx:%*sret [%s]\n", pc, func_depth, " ",
+               func_pool[i].func_name);
+      }
+      if (call_top > 0) call_top --;
+      func_depth = call_top;
+    }
+    else if (rd != 0) {           // 间接调用（如函数指针）
+      int i = find_func_by_entry(dnpc);
+      if (i >= 0) {
+        printf("%lx:%*scall [%s@0x%lx]\n", pc, func_depth, " ",
+               func_pool[i].func_name, func_pool[i].entry_addr);
+        if (call_top < MAX_CALL_DEPTH) call_stack[call_top ++] = i;
+        func_depth = call_top;
+      }
+    }
+    // rd==0 且 rs1!=1 的 jalr：无返回跳转，不记录
+  }
+  // 其它指令（分支、普通指令）不参与 call/ret 判定
 }
 #endif
 

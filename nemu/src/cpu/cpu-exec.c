@@ -32,7 +32,7 @@ void write_ringbuf(char *str);
 #ifdef CONFIG_FTRACE
 void print_ftrace(unsigned long pc, unsigned long dnpc, unsigned inst);
 #endif
-CPU_state cpu = {.csr[1] = 0xa00001800};
+CPU_state cpu = {.csr[1] = 0xa00001800, .priv = 3};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
@@ -78,6 +78,7 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
+  p += sprintf(p, "0x%08lx", cpu.gpr[8]);
   write_ringbuf(s->logbuf);
 #else
   p[0] = '\0'; // the upstream llvm does not support loongarch32r
@@ -93,6 +94,11 @@ static void execute(uint64_t n) {
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
+    // poll the INTR line after each instruction: the timer may raise an interrupt
+    word_t intr = isa_query_intr();
+    if (intr != INTR_EMPTY) {
+      cpu.pc = isa_raise_intr(intr, cpu.pc);
+    }
   }
 }
 

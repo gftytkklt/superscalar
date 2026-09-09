@@ -2,10 +2,13 @@
 *
 !*/
 !Makefile
+!*.py
 !*.mk
 !*.scala
 !*.[cSh]
 !*.v
+!*.sv
+!*.sby
 !*.cpp
 !*.cc
 !.gitignore
@@ -13,6 +16,7 @@
 !build.sc
 !README.md
 build/
+ysyxSoC/
 
 # mill
 out/
@@ -20,3 +24,4 @@ out/
 .idea/
 .idea_modules/
 test_run_dir/
+test_prog/

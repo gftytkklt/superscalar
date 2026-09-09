@@ -8,12 +8,9 @@
 #endif
 
 struct Context {
-  // TODO: fix the order of these members to match trap.S
-  // uintptr_t mepc, mcause, gpr[NR_REGS], mstatus;
-  // void *pdir;
   union{
     void *pdir;
-    struct {uintptr_t gpr[32], mcause, mstatus, mepc, np;}; // addr 0-31, addr 32-34
+    struct {uintptr_t gpr[NR_REGS], mcause, mstatus, mepc, np;}; // addr 0-31, addr 32-35
   };
 };
 

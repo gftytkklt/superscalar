@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -41,15 +42,21 @@ void NDL_OpenCanvas(int *w, int *h) {
     }
     close(fbctl);
   }
-  if ((*w==0) || (*h==0)){*w = screen_w;*h = screen_h;}
-  canvas_w = *w;canvas_h = *h;
-  printf("canvas: %d*%d\n",canvas_w, canvas_h);
+  if (*w == 0 && *h == 0) {*w = screen_w; *h = screen_h;}
+  assert(*w <= screen_w && *h <= screen_h);
+  canvas_w = *w; canvas_h = *h;
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   int offset_y = screen_w*((screen_h-canvas_h)/2+y);
   int offset_x = (screen_w-canvas_w)/2 + x;
   int offset = offset_y + offset_x;
+  // full-width rects are contiguous rows in the framebuffer: one shot
+  if (w == screen_w) {
+    lseek(fbdev, offset*4, SEEK_SET);
+    write(fbdev, pixels, w*h*4);
+    return;
+  }
   uint32_t *current_row = pixels;
   // arbitrary canvas
   // this is correct for native
@@ -61,18 +68,31 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
   }
 }
 
+static int sbctl_fd = -1, sb_fd = -1;
+
 void NDL_OpenAudio(int freq, int channels, int samples) {
+  sbctl_fd = open("/dev/sbctl", 0, 0);
+  assert(sbctl_fd != -1);
+  sb_fd = open("/dev/sb", 0, 0);
+  assert(sb_fd != -1);
+  int p[3] = {freq, channels, samples};
+  write(sbctl_fd, p, sizeof(p));
 }
 
 void NDL_CloseAudio() {
+  close(sbctl_fd);
+  close(sb_fd);
+  sbctl_fd = sb_fd = -1;
 }
 
 int NDL_PlayAudio(void *buf, int len) {
-  return 0;
+  return write(sb_fd, buf, len);
 }
 
 int NDL_QueryAudio() {
-  return 0;
+  int free = 0;
+  read(sbctl_fd, &free, sizeof(free));
+  return free;
 }
 
 int NDL_Init(uint32_t flags) {
@@ -83,13 +103,23 @@ int NDL_Init(uint32_t flags) {
     evtdev = open("/dev/events", 0, 0);
   }
   fbctl = open("/dev/dispinfo", 0, 0);
-  char buf[64];
-  read(fbctl, buf, 64);
-  sscanf(buf, "%d, %d", &screen_w, &screen_h);
+  char buf[128];
+  int nread = read(fbctl, buf, sizeof(buf) - 1);
+  buf[nread > 0 ? nread : 0] = '\0';
+  // format: "WIDTH : <w>\nHEIGHT:<h>\n", whitespace around ':' is flexible
+  // (see navy-apps/README.md)
+  const char *p = strstr(buf, "WIDTH");
+  if (p != NULL) {
+    p = strchr(p, ':');
+    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; screen_w = atoi(p); }
+  }
+  p = strstr(buf, "HEIGHT");
+  if (p != NULL) {
+    p = strchr(p, ':');
+    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; screen_h = atoi(p); }
+  }
   close(fbctl);
   fbdev = open("/dev/fb", 0, 0);
-  printf("screen_size: %d*%d\n", screen_w, screen_h);
-  printf("boot time: %d ms\n", NDL_GetTicks());
   return 0;
 }
 

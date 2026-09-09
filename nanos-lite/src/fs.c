@@ -11,7 +11,7 @@ typedef struct {
   WriteFn write;
 } Finfo;
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENT, FD_DISPINFO, FD_FB, };
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENT, FD_DISPINFO, FD_FB, FD_SBCTL, FD_SB, };
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
@@ -23,10 +23,18 @@ size_t invalid_write(const void *buf, size_t offset, size_t len) {
   return 0;
 }
 
+size_t disk_read(void *buf, size_t offset, size_t len);
+size_t disk_write(const void *buf, size_t offset, size_t len);
+void init_disk();
+
 size_t serial_write(const void *buf, size_t offset, size_t len);
 size_t events_read(void *buf, size_t offset, size_t len);
 size_t dispinfo_read(void *buf, size_t offset, size_t len);
 size_t fb_write(const void *buf, size_t offset, size_t len);
+size_t audio_init();
+size_t audio_read(void *buf, size_t offset, size_t len);
+size_t audio_ctrl_write(const void *buf, size_t offset, size_t len);
+size_t audio_play_write(const void *buf, size_t offset, size_t len);
 
 /* This is the information about all files in disk. */
 static Finfo file_table[] __attribute__((used)) = {
@@ -36,6 +44,8 @@ static Finfo file_table[] __attribute__((used)) = {
   [FD_EVENT] = {"/dev/events", 0, 0, events_read, invalid_write},
   [FD_DISPINFO] = {"/dev/dispinfo", 0, 0, dispinfo_read, invalid_write},
   [FD_FB] = {"/dev/fb", 0, 0, invalid_read, fb_write},
+  [FD_SBCTL] = {"/dev/sbctl", 0, 0, audio_read, audio_ctrl_write},
+  [FD_SB] = {"/dev/sb", 0, 0, invalid_read, audio_play_write},
 #include "files.h"
 };
 
@@ -46,10 +56,39 @@ static long *fp_offt = NULL;
 //   return (fd < filenum) ? file_table[fd].name : "undef file!";
 // }
 
-int fs_open(const char *pathname, int flags, int mode) {
-  for(int i=0;i<filenum;i++){
-    if(!strcmp(file_table[i].name, pathname)){return i;}
+static int fs_open_normalized(const char *name) {
+  for (int i = 0; i < filenum; i++) {
+    if (!strcmp(file_table[i].name, name)) return i;
   }
+  return -1;
+}
+
+int fs_open(const char *pathname, int flags, int mode) {
+  // Canonicalize the path like a real FS would: collapse repeated slashes
+  // ("//nscript.dat" from ONScripter's "-r /" + relative name) and prepend a
+  // leading '/' for relative names ("nscript.dat" -> "/nscript.dat").
+  char canon[256];
+  int n = 0;
+  const char *p = pathname;
+  if (*p != '/') canon[n++] = '/';
+  while (*p != '\0' && n < (int)sizeof(canon) - 1) {
+    if (*p == '/') {
+      while (*p == '/') p++;
+      if (*p == '\0') break;
+      canon[n++] = '/';
+    } else {
+      canon[n++] = *p++;
+    }
+  }
+  canon[n] = '\0';
+
+  int fd = fs_open_normalized(canon);
+  if (fd >= 0) {
+    fp_offt[fd] = 0;   // open 语义：文件偏移量从 0 开始（覆盖 execve 后残留的偏移量）
+    return fd;
+  }
+  // POSIX semantics: return -1 instead of panicking. Applications like
+  // ONScripter probe optional files (cursors, fonts) and tolerate failures.
   return -1;
 }
 
@@ -59,8 +98,9 @@ long fs_read(int fd, void *buf, size_t len) {
   long offt_incr = 0;
   // normal file
   if (file_table[fd].read == NULL) {
-    size_t ramdisk_rd_len = (fp_offt[fd] + len) < file_table[fd].size ? len : (file_table[fd].size - fp_offt[fd]);
-    offt_incr = ramdisk_read(buf, rd_offt, ramdisk_rd_len);
+    size_t remain = (fp_offt[fd] < file_table[fd].size) ? (file_table[fd].size - fp_offt[fd]) : 0;
+    size_t disk_rd_len = (len < remain) ? len : remain;
+    offt_incr = disk_read(buf, rd_offt, disk_rd_len);
   }
   // abstract file
   else {
@@ -74,8 +114,9 @@ long fs_write(int fd, const void *buf, size_t len) {
   long wr_offt = fp_offt[fd] + file_table[fd].disk_offset;
   long offt_incr = 0;
   if (file_table[fd].write == NULL) {
-    size_t ramdisk_wr_len = (fp_offt[fd] + len) < file_table[fd].size ? len : (file_table[fd].size - fp_offt[fd]);
-    offt_incr = ramdisk_write(buf, wr_offt, ramdisk_wr_len);
+    size_t remain = (fp_offt[fd] < file_table[fd].size) ? (file_table[fd].size - fp_offt[fd]) : 0;
+    size_t disk_wr_len = (len < remain) ? len : remain;
+    offt_incr = disk_write(buf, wr_offt, disk_wr_len);
   }
   else {
     offt_incr = file_table[fd].write(buf, wr_offt, len);
@@ -101,7 +142,12 @@ int fs_close(int fd) {
 }
 
 void init_fs() {
+  init_disk();
   fp_offt=(long*)malloc(filenum*sizeof(long));
   for(int i=0;i<filenum;i++){fp_offt[i] = 0;}
-  // TODO: initialize the size of /dev/fb
+  // initialize the size of /dev/fb (screen_w * screen_h * 4)
+  AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
+  file_table[FD_FB].size = cfg.width * cfg.height * 4;
+  // initialize the sound card
+  audio_init();
 }

@@ -8,6 +8,8 @@ Context* __am_irq_handle(Context *c) {
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
+      case 0x0b: c->mepc += 4;ev.event = (c->gpr[17] == -1) ? EVENT_YIELD : EVENT_SYSCALL; break;
+      case 0x8000000000000007: ev.event = EVENT_IRQ_TIMER; break;
       default: ev.event = EVENT_ERROR; break;
     }
 
@@ -31,7 +33,17 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 }
 
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
-  return NULL;
+  Context *cp = (Context*)kstack.end - 1;
+  // printf("kstack end addr:%p, cp addr:%p\n",kstack.end,cp);
+  cp->mstatus = 0xa00001880;
+  cp->mepc = (uintptr_t)entry;
+  //printf("kernel entry: %lx\n",cp->mepc);
+  cp->gpr[10] = (uintptr_t)arg;
+  //cp->gpr[2] = (uintptr_t)cp;
+  cp->gpr[2] = (uintptr_t)kstack.end;// sp should be end or end - CONTEXT_SIZE?
+  cp->np = 0;
+  cp->pdir = NULL;
+  return cp;
 }
 
 void yield() {
@@ -43,8 +55,16 @@ void yield() {
 }
 
 bool ienabled() {
-  return false;
+  unsigned long mstatus;
+  asm volatile ("csrr %0, mstatus" : "=r" (mstatus));
+  return (mstatus & (1UL << 3)) != 0;
 }
 
 void iset(bool enable) {
+  if(enable){
+    asm volatile ("csrrs zero, mstatus, %0" :: "rK" (1 << 3));
+  }
+  else{
+    asm volatile ("csrrc zero, mstatus, %0" :: "rK" (1 << 3));
+  }
 }
