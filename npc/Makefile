@@ -15,12 +15,14 @@ WITH_TRACE ?= 1
 WITH_SDL ?= 0
 PERF ?= 0
 DEBUG_APBDLY ?= 0
+DEBUG_AXIDLY ?= 0
 DIFF_B := $(if $(filter 1 y yes Y YES,$(DIFF)),1,0)
 WAVE_B := $(if $(filter 1 y yes Y YES,$(WAVE)),1,0)
 WITH_TRACE_B := $(if $(filter 1 y yes Y YES,$(WITH_TRACE)),1,0)
 WITH_SDL_B := $(if $(filter 1 y yes Y YES,$(WITH_SDL)),1,0)
 PERF_B := $(if $(filter 1 y yes Y YES,$(PERF)),1,0)
 DEBUG_APBDLY_B := $(if $(filter 1 y yes Y YES,$(DEBUG_APBDLY)),1,0)
+DEBUG_AXIDLY_B := $(if $(filter 1 y yes Y YES,$(DEBUG_AXIDLY)),1,0)
 
 VSRC = $(shell find $(abspath ./vsrc) -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/perip) -type f -name "*.v")
@@ -28,7 +30,14 @@ VSRC += $(shell find $(abspath ./ysyxSoC/generated) -name "ysyxSoCFull.v")
 # 非侵入式性能计数器（B3）：bind 注入 cpu_core，仿真结束 $display；不改核 RTL，不参与流片。
 VSRC += $(abspath ./verif/perf/perf_counters.sv)
 VSRC += $(abspath ./verif/perf/dcache_stats.sv)
+VSRC += $(abspath ./verif/perf/icache_stats.sv)
 VSRC += $(abspath ./verif/perf/apbdly_check.sv)
+VSRC += $(abspath ./verif/perf/axidly_check.sv)
+VSRC += $(abspath ./verif/perf/axiwatch.sv)
+VSRC += $(abspath ./verif/perf/sdramprobe.sv)
+VSRC += $(abspath ./verif/perf/sdramcore_probe.sv)
+VSRC += $(abspath ./verif/perf/pmem_probe.sv)
+VSRC += $(abspath ./verif/perf/dcache_axi_probe.sv)
 
 CSRC = $(shell find $(abspath ./csrc) -name "*.cpp")
 
@@ -91,6 +100,10 @@ endif
 # DEBUG_APBDLY: 诊断 apb_delayer 事务悬死（默认关；仅在调 bf 等死锁时开，否                                                                                    海量事务刷屏）
 ifeq ($(DEBUG_APBDLY_B), 1)
 VERILATOR_CFLAGS += +define+DEBUG_APBDLY
+endif
+# DEBUG_AXIDLY: 诊断 axi4_delayer/axi64to32 通道悬死（默认关；调 SDRAM 死锁时开）
+ifeq ($(DEBUG_AXIDLY_B), 1)
+VERILATOR_CFLAGS += +define+DEBUG_AXIDLY
 endif
 
 

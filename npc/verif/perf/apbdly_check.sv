@@ -19,6 +19,10 @@ module apbdly_check (
   input [31:0] in_prdata
 );
   localparam int R_S = 7, S_SHIFT = 1;           // r = 3.5
+  // 挂起看门狗阈值（周期）：最长合法等待 = flash XIP refill ≈4,529cyc（dcache 实测），
+  // 经延迟桥呈现 ≤ 3.5×4,529 ≈ 15,852；refill+写回复合 ≤ ~3.2 万。取 10 万（≈3× 余量），
+  // 超过即判死锁：打印现场并结束仿真，便于快速定位（详见面调试记录）。
+  localparam int HANG_LIMIT = 100000;
 
   reg        prev_active, in_tq, have_k, g_done;
   reg [31:0] t, k_latch, last_paddr;
@@ -26,6 +30,21 @@ module apbdly_check (
   reg [31:0] max_k;
 
   wire acc_start = !prev_active && in_psel && in_penable;
+  reg [31:0] wait_slave;
+  reg hang_reported;
+  // 看门狗：①从设备迟迟不响应 ②延迟桥迟迟不呈现（均为死锁特征）
+  always @(posedge clock) begin
+    if (reset) begin wait_slave <= 0; hang_reported <= 0; end
+    else if (acc_start) wait_slave <= 32'd1;
+    else if (in_psel && in_penable && !out_pready) wait_slave <= wait_slave + 32'd1;
+    else if (!hang_reported) wait_slave <= 0;
+    if (!reset && !hang_reported && (wait_slave > HANG_LIMIT)) begin
+      hang_reported <= 1;
+      $display("APBDLY HANG(WATCHDOG): APB 从设备无响应 wait=%0d addr=0x%08x %s in_psel=%b in_pen=%b out_pready=%b",
+                wait_slave, in_paddr, in_pwrite?"W":"R", in_psel, in_penable, out_pready);
+      $finish;
+    end
+  end
 
   always @(posedge clock) begin
     if (reset) begin

@@ -1694,8 +1694,12 @@ module ysyx_22040750_dcachectrl #(
     genvar i;
     reg [TAG_LEN-1:0] lookup_table [BLOCK_NUM-1:0];
     reg [BLOCK_NUM-1:0] valid_table, dirty_table;
-    wire [BLOCK_NUM-1:0] lookup_table_index;
-    wire [BLOCK_NUM-1:0] dirty_table_hit_index, dirty_table_miss_index, dirty_table_fencei_index;
+    // A1 面积改造（V2，保留逐行结构防 memory 推断换贵单元）：原 4 组逐行比较器中
+    // alloc 与 miss 两组表达式完全相同 (i == {mem_index, ~isway0_op})，合并为一组共享，
+    // 128 份 × ~13 cell 的重复译码由此消除。
+    wire [BLOCK_NUM-1:0] cmp_alloc_line;  // (i == {mem_index, ~isway0_op})
+    wire [BLOCK_NUM-1:0] cmp_hit_line;    // (i == {index, way1_hit})
+    wire [BLOCK_NUM-1:0] cmp_fencei_line; // (i == fencei_index)
     // signals below compare hit & miss(use in IDLE state)
     wire [TAG_LEN-1:0] way0_tag, way1_tag;
     wire way0_valid, way1_valid;
@@ -1747,7 +1751,8 @@ module ysyx_22040750_dcachectrl #(
     assign fencei_sram_addr = fencei_index[INDEX_LEN:1];
     assign fencei_group = fencei_index[0];
     assign fencei_process = (current_state == FENCEI);
-    assign fencei_addr = {lookup_table[fencei_index], fencei_index[INDEX_LEN:1], {OFFT_LEN{1'b0}}};
+    // A1: fencei 回写地址的 tag 读改用下方 way1/fencei 共享读口（tag_rd2）
+    assign fencei_addr = {tag_rd2, fencei_index[INDEX_LEN:1], {OFFT_LEN{1'b0}}};
     assign fencei_sram_cen = fencei_group ? 4'b0011 : 4'b1100;
     always @(posedge I_clk)
         if(I_rst)
@@ -1791,8 +1796,8 @@ module ysyx_22040750_dcachectrl #(
             cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <=
                 (I_cpu_data & i_wmask64) | (cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~i_wmask64);
         else if(wr_allocate)
-            cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <=
-                (cpu_reg & lane_wmask) | (cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~lane_wmask);
+            // A1：复用下方 alloc_lane（同一 merge 表达式，原处重复展开了一份 64bit 电路）
+            cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= alloc_lane;
         else if(rd_x_active && I_mem_rvalid && ~mmio_process)
             cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
         else
@@ -1934,7 +1939,11 @@ module ysyx_22040750_dcachectrl #(
             cen_dcache = 4'b1111;
     // fsm ctrl signal impl
     assign way0_tag = lookup_table[{index,1'b0}];
-    assign way1_tag = lookup_table[{index,1'b1}];
+    // A1: way1/fencei 共享 tag 读口 —— FENCEI 态与命中路径互斥（FENCEI 期间 mem_ready=0、
+    // CPU 无请求，way1_tag 不被引用），省去 64:1×21 的第三读口译码 mux
+    wire [INDEX_LEN:0] tag_rd2_idx = fencei_process ? fencei_index : {index, 1'b1};
+    wire [TAG_LEN-1:0] tag_rd2     = lookup_table[tag_rd2_idx];
+    assign way1_tag = tag_rd2;
     assign way0_valid = valid_table[{index,1'b0}];
     assign way1_valid = valid_table[{index,1'b1}];
     assign way0_hit = (tag == way0_tag) && way0_valid;
@@ -1968,22 +1977,17 @@ module ysyx_22040750_dcachectrl #(
     assign replace_dirty = (way0_dirty && isway0_op) || (way1_dirty && ~isway0_op);
     // lookup table impl
     generate for(i=0;i<BLOCK_NUM;i=i+1) begin
-        assign lookup_table_index[i] = (i == {mem_index, ~isway0_op}) ? 1 : 0;
-        assign dirty_table_hit_index[i] = (i == {index, way1_hit}) ? 1 : 0;
-        assign dirty_table_miss_index[i] = (i == {mem_index, ~isway0_op}) ? 1 : 0;
-        assign dirty_table_fencei_index[i] = (i == fencei_index) ? 1 : 0;
+        assign cmp_alloc_line[i]  = (i == {mem_index, ~isway0_op});
+        assign cmp_hit_line[i]    = (i == {index, way1_hit});
+        assign cmp_fencei_line[i] = (i == fencei_index);
         always @(posedge I_clk)
             if(I_rst) begin
                 lookup_table[i] <= 0;
                 valid_table[i] <= 0;
             end
-            // else if(rd_allocate || wr_allocate) begin
-            //     lookup_table[{mem_index, ~isway0_op}] <= mem_tag;
-            //     valid_table[{mem_index, ~isway0_op}] <= 1;
-            // end
-            else if((rd_allocate || wr_allocate) && lookup_table_index[i]) begin
+            else if((rd_allocate || wr_allocate) && cmp_alloc_line[i]) begin
                 lookup_table[i] <= mem_tag;
-                valid_table[i] <= 1;
+                valid_table[i] <= 1'b1;
             end
             else begin
                 lookup_table[i] <= lookup_table[i];
@@ -1991,24 +1995,16 @@ module ysyx_22040750_dcachectrl #(
             end
         always @(posedge I_clk)
             if(I_rst) begin
-                dirty_table[i] <= 0;
+                dirty_table[i] <= 1'b0;
             end
-            // else if(wr_hit)
-            //     dirty_table[{index, way1_hit}] <= 1;
-            // else if(rd_wb && I_mem_bvalid)
-            //     dirty_table[{mem_index, ~isway0_op}] <= 0;
-            // else if(wr_allocate)
-            //     dirty_table[{mem_index, ~isway0_op}] <= 1;
-            // else if(fencei_process & I_mem_bvalid)
-            //     dirty_table[fencei_index] <= 0;
-            else if(wr_hit && dirty_table_hit_index[i])
-                dirty_table[i] <= 1;
-            else if(rd_wb && I_mem_bvalid && dirty_table_miss_index[i])
-                dirty_table[i] <= 0;
-            else if(wr_allocate && dirty_table_miss_index[i])
-                dirty_table[i] <= 1;
-            else if(fencei_process && I_mem_bvalid && dirty_table_fencei_index[i])
-                dirty_table[i] <= 0;
+            else if(wr_hit && cmp_hit_line[i])
+                dirty_table[i] <= 1'b1;
+            else if(rd_wb && I_mem_bvalid && cmp_alloc_line[i])
+                dirty_table[i] <= 1'b0;
+            else if(wr_allocate && cmp_alloc_line[i])
+                dirty_table[i] <= 1'b1;
+            else if(fencei_process && I_mem_bvalid && cmp_fencei_line[i])
+                dirty_table[i] <= 1'b0;
             else begin
                 dirty_table[i] <= dirty_table[i];
             end
@@ -2068,16 +2064,30 @@ module ysyx_22040750_dcachectrl #(
     // host 侧 AXI4ToAPB 的 len/size 断言拦截（见 ysyxSoC/soc/AXI4ToAPB.scala）。
     // 此修改使 C 程序访问 flash 数据（如 .rodata 里的 8B 常量 `ld`）也走 32B burst，
     // 避免 8B 单拍直连 AXI4ToAPB 触发 size>4 断言。
+    // A1 面积改写：三段区间均 2^k 对齐，>=/< 比较链 → 前缀相等（逻辑严格等价、门数更少）
     assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
-                       ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
-                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
-                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha8000000)) );
+                       ~( (I_cpu_addr[31:22] == 10'h200) ||  // PSRAM [0x80000000, 0x80400000)
+                          (I_cpu_addr[31:28] == 4'h3)    ||  // flash  [0x30000000, 0x40000000)
+                          (I_cpu_addr[31:27] == 5'h14) );    // SDRAM  [0xa0000000, 0xa8000000)
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
             current_state <= IDLE;
         else
             current_state <= next_state;
+
+`ifdef DEBUG_AXIDLY
+  // P-D 调试：打印发往 SDRAM 区(0xa0..)的非宽(awsize/arsize!=3)AXI请求，定位单拍来源
+  always @(posedge I_clk) begin
+    if (!I_rst) begin
+      if (O_mem_awvalid && (O_mem_awaddr[31:24] == 8'ha0))
+        $display("DC AW-SDRAM addr=%h len=%0d size=%0d mmio=%b state=%h awst=%h", O_mem_awaddr, O_mem_awlen, O_mem_awsize, mmio_process, current_state, aw_state);
+      if (rd_ax_busy && I_mem_arready && (mem_addr[31:24] == 8'ha0) && (O_mem_arsize != 3'b011))
+        $display("DC AR-SDRAM-NONWIDE addr=%h len=%0d size=%0d mmio=%b state=%h", mem_addr, O_mem_arlen, O_mem_arsize, mmio_process, current_state);
+    end
+  end
+`endif
+
     always @(*) begin
         next_state = IDLE;
         case(current_state)
@@ -3191,10 +3201,6 @@ module ysyx_22040750_icachectrl #(
                 lookup_table[i] <= 0;
                 valid_table[i] <= 0;
             end
-            // else if(rd_allocate) begin
-            //     lookup_table[{mem_index, way1_replace}] <= mem_tag;
-            //     valid_table[{mem_index, way1_replace}] <= 1;
-            // end
             else if(rd_allocate && lookup_table_index[i]) begin
                 lookup_table[i] <= mem_tag;
                 valid_table[i] <= 1;
@@ -3293,9 +3299,9 @@ module ysyx_22040750_icachectrl #(
     // 可缓存区(icache) = PSRAM [0x80000000,0x80400000) + flash [0x30000000,0x40000000)
     // 两者均为 APB 单拍(无 AXI burst)：icache 发 32B burst，经 slave_crossbar 内
     // axiburst2xxx 统一转 8×32bit 单拍（flash 取指加速，复用 PSRAM 转换 IP）。
-    assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
-                                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
-                                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha8000000)) );
+    assign mmio_flag = I_cpu_rd_req && ~( (I_cpu_addr[31:22] == 10'h200) ||  // PSRAM [0x80000000,0x80400000)
+                                         (I_cpu_addr[31:28] == 4'h3)    ||  // flash  [0x30000000,0x40000000)
+                                         (I_cpu_addr[31:27] == 5'h14) );    // SDRAM  [0xa0000000,0xa8000000)
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -4144,11 +4150,11 @@ module ysyx_22040750_slave_crossbar(
     // ⚠️ 重要：flash 只有" burst 请求"(icache 取指, arlen!=0) 才需要 axiburst 转单拍；
     //         dcache 对 flash 的"单拍 MMIO 数据读"(如 loader 搬 .data 的 lbu, arlen=0)
     //         必须走 bus 直连(如 SRAM)，否则经 axiburst 重组会丢数据(实测读回 0)。
+    // P-D：SDRAM 已挂 AXI（原生突发），走 bus 直连把 64bit 32B burst 直传 io_master
+    //       —— 不再经 axiburst2xxx 拆单拍（当年 SDRAM 在 APB 从端时才需要）。
     assign psram_ar_flag = ((I_cache_araddr >= PSRAM_START) && (I_cache_araddr < PSRAM_END)) ||
-                           ((I_cache_araddr >= SDRAM_START) && (I_cache_araddr < SDRAM_END)) ||
                            (((I_cache_araddr >= FLASH_START) && (I_cache_araddr < FLASH_END)) && (I_cache_arlen != 8'd0));
-    assign psram_aw_flag = ((I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END)) ||
-                           ((I_cache_awaddr >= SDRAM_START) && (I_cache_awaddr < SDRAM_END));
+    assign psram_aw_flag = ((I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END));
     assign bus_ar_flag = ~clint_ar_flag & ~psram_ar_flag;
     assign bus_aw_flag = ~clint_aw_flag & ~psram_aw_flag;
     assign clint_ar_handshake = I_clint_arready && O_clint_arvalid;
@@ -4599,6 +4605,10 @@ module ysyx_22040750_axiburst2xxx(
     assign O_m_rlast  = (rsize == 3'd3) ? (r_sbeat == (rsbeats - 4'd1)) : 1'b1;
 
     // slave 写请求 (wslot -> 哪一拍/半字; 单拍 32-bit)
+    // ⚠️ 约定（标准 64bit AXI 道语义）：32bit 窄拍的数据/字节使能落在"地址对应的半字"
+    //    —— addr[2]=0 → [31:0]/[3:0]，addr[2]=1 → [63:32]/[7:4]。
+    //    下游若是 32bit 从端，必须由宽转换器（axi64to32）按道取回；直接取 [31:0] 会得到 0。
+    //    （本模块自身正确：全 0 strb 的槽会被 slot_active 跳过，wslot 照常推进。）
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
     wire [1:0] slot_beat = wslot[2:1];                 // wslot>>1 (0..3)

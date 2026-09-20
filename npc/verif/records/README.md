@@ -28,10 +28,11 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | ~~yosos‑sta（`ysyx-workbench/yosys-sta/`）~~ | ✅ **已安装（2026-09-08）** | oss-cad-suite (Yosys 0.68) + `make init` 拉的 iEDA/icsprout55 均就绪，GCD 样例与 npc 均跑通 |
+| **ysyxSoC Chisel 重生成链** | ✅ **已打通（2026-09-09，P-D 前置）** | rocket-chip 浅克隆+cde/hardfloat 嵌套子模块、mill 0.11.12/firtool 1.51.0（aliyun 镜像）、JDK 17（21 不兼容 scala 2.13.10）；**学号定制点=`soc/CPU.scala` BlackBox 类名**；apb_delayer 拼接已固化进重生成链。**重生成后 PERF 与基线逐位一致**。详见 `process/YSYXSOC_REGEN_SETUP.md` |
 | ~~oss‑cad‑suite / 新版 Yosys~~ | ✅ 已装（`~/oss-cad-suite`，Yosys 0.68） | btormc/sby/boolector 同步可用（Stage6 解锁） |
 | ~~OpenSTA~~ | — 不需要 | yosys‑sta 用 iEDA/iSTA |
 | **npc 可综合化适配** | ✅ **已完成（E1a）** | `npc/verif/sta/gen_synth_rtl.py`：去 17 处 DPI + blackbox `sram_behav`；`ysyx_22040750_synth.v` 可综合 |
-| **E1b：STA 出频率算 `r`** | ✅ **已完成** | 500MHz 目标/DELAY-4：**f_max≈349.7MHz**（worst path=icache FSM 2.832ns；次=PC dnpc），面积 163689.68（SRAM blackbox→频率偏乐观）。**`r ≈ 3.5`**。产物在 `npc/verif/sta/result/ysyx_22040750-500MHz/` |
+| **E1b：STA 出频率算 `r`** | ✅ **已完成** | 500MHz 目标/DELAY-4：**f_max≈349.7MHz**（worst path=icache FSM 2.832ns；次=PC dnpc），面积 163689.68（SRAM blackbox→频率偏乐观）。**`r ≈ 3.5`**。产物在 `npc/verif/sta/result/ysyx_22040750-500MHz/`。⚠️ **该结果为 icsprout55 库**；**nangate45 复测（2026-09-09，讲义 25000 约束口径）：面积 120,383.62μm²、f_max≈411MHz**，见 `process/B3_STAGE8_AREA_N45.md` |
 | **E1c：APB 延迟校准模块** | ✅ **已完成（2026-09-08）** | `apb_delayer.v`（B 方案：请求直通+响应整拍延迟 `t1'=t0+floor(r·k)`），`` `PERF_DELAY` `` 宏门控（默认直通，`make perf` 才启）；并修复 SPI XIP / PSRAM 控制器"持续电平重触发"缺陷（见 `knowledge/APB_PSRAM_HANDSHAKE_DEBUG.md`） |
 | **E1d：延迟等式校验 + 校准后 IPC** | ✅ **已完成（2026-09-08）** | `verif/perf/apbdly_check.sv` 校验 `(t1-t0)*r == t1'-t0`（PERF_DELAY 下 EQUATION OK，microbench test 全过）；IPC：无校准 0.196 → 有校准 0.074（`process/B3_STAGE5_PERF.md`） |
 

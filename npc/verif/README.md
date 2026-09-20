@@ -16,6 +16,7 @@
 | `perf/` | `perf_counters.sv`：B3 阶段非侵入式性能计数器（`bind` 注入 `ysyx_22040750_cpu_core`，不改核 RTL，分 `ifu_deliver`/`decode_*`/`retire`/`lsu`/`exu`/类别 + 周期快照）。**接入点**：经 `npc/Makefile` 的 `VSRC += ./verif/perf/perf_counters.sv`（第 25 行）随全系统 SoC 仿真（top=`ysyxSoCFull`）编译，在 ebreak/HIT GOOD TRAP 时 `$display` 输出、并周期 `PERF[snap]` 快照。**不接入**本 `verif/Makefile`（裸核 harness，top=`ysyx_22040750`），故 `make run`/`make ptest` 不会出 PERF |
 | `cachesim/` | B3 阶段3 参数化 cache 模拟器（C++）：读 trace（`CACHESIM_TRACE` 由 npc 导出）→ 按 8KB/整颗SRAM 约束扫配置 → 命中率 + extra-stall TMT + 推荐。用法/编译见其 `README.md`；分析见 `records/knowledge/B3_CACHESIM_ANALYSIS.md` |
 | `boot/` | 裸机探针启动代码：`boot.S`（微测试公共启动）、`psram_memtest.S`（PSRAM 存储测试） |
+| `sdram/` | **SDRAM AXI 控制器定向回归 TB**（P-D 收尾新增）：`tb_sdram_ctrl.sv` + `run.sh`，AXI BFM 直驱 `sdram_top_axi` + 自制颗粒模型，覆盖单/突发读写、读写交替、16 拍长突发、跨 512 列行边界（7 case）；**P-D 双根因**（`sdram.v` 背靠背读、`axi64to32` FIXED 宽拆）的固定防回归测试，见 `records/knowledge/SDRAM_AXI_BURST_DEBUG.md` |
 | `build/` | 构建产物（Verilator 模型/编译中间物），不入库 |
 
 ## 2. 文档区
