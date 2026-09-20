@@ -50,8 +50,10 @@ bash init.sh subproject-name
   阶段 A–K 完成情况见 `npc/verif/docs/PROJECT_OVERVIEW.md` §3）；
 - 🎯 **未来目标**：
   1. 在 **NEMU 与 NPC 双端启动 Linux 操作系统**；
-  2. **持续对 NPC 架构进行性能分析与优化**（当前阶段 B3：性能计数器与缓存调优，
-     见 `npc/verif/docs/B3_PLAN.md`；分析方法见 `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`）。
+  2. **持续对 NPC 架构进行性能分析与优化**（当前阶段 B3：性能计数器与缓存调优；
+     阶段 8 进展：P-A A1 面积/频率双改善、P-C AMAT/TMT 平台、**P-D SDRAM AXI 突发链全绿**
+     （2026-09-20）已完成，剩余 P-B/P-E/P-F/P-G/P-H；见 `npc/verif/docs/B3_PLAN.md`；
+     分析方法见 `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`）。
 
 ## 使用
 
