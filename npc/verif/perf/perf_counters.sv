@@ -47,6 +47,15 @@ module perf_counters #(
   import "DPI-C" function void csim_ifetch(input int pc);
   import "DPI-C" function void csim_dread(input int addr);
   import "DPI-C" function void csim_dwrite(input int addr);
+  // 性能计数器周期快照（讲义"性能计数器的trace"；仅当 setenv PERF_CTR_TRACE 时落盘）
+  import "DPI-C" function void ctr_snap(
+    input longint unsigned cyc, input longint unsigned retire, input longint unsigned deliver,
+    input longint unsigned decode, input longint unsigned exu, input longint unsigned ifu_miss,
+    input longint unsigned lsu, input longint unsigned bubble, input longint unsigned mem,
+    input longint unsigned csr, input longint unsigned branch, input longint unsigned compute,
+    input longint unsigned other, input longint unsigned lsu_lat, input longint unsigned st_lat);
+  localparam SNAP_CYCLES = 32'd100000;   // 快照间隔（周期）
+  reg [31:0] snap_cyc;
   reg [63:0] c_deliver, c_lsu, c_exu, c_ret, c_decode_total;
   reg [63:0] c_mem, c_csr, c_branch, c_compute, c_other, c_bubble;
   reg [63:0] c_cycles, c_ifu_miss, c_lsu_lat_total, c_mul_cycles, c_st_lat_total;
@@ -72,7 +81,7 @@ module perf_counters #(
       c_deliver<=0; c_lsu<=0; c_exu<=0; c_ret<=0; c_decode_total<=0;
       c_mem<=0; c_csr<=0; c_branch<=0; c_compute<=0; c_other<=0; c_bubble<=0;
       c_cycles<=0; c_ifu_miss<=0; c_lsu_lat_total<=0; c_mul_cycles<=0; c_st_lat_total<=0;
-      ld_pend<=0; ld_pend_len<=0; st_pend<=0; st_pend_len<=0;
+      ld_pend<=0; ld_pend_len<=0; st_pend<=0; st_pend_len<=0; snap_cyc<=0;
       rd_sram<=0; rd_psram<=0; rd_flash<=0; rd_rdonly<=0; st_sram<=0; st_psram<=0; st_mmio<=0;
     end else begin
       c_cycles <= c_cycles + 64'd1;
@@ -110,6 +119,12 @@ module perf_counters #(
       if (O_pc_valid && I_pc_ready) csim_ifetch(O_pc);
       if (EX_MEM_mem_rd_en) csim_dread(O_mem_addr);
       if (O_mem_wen) csim_dwrite(O_mem_addr);
+      // 性能计数器周期快照（讲义"性能计数器的trace"；SNAP_CYCLES 一行 CSV，环境变量门控）
+      if (snap_cyc == SNAP_CYCLES - 1) begin
+        snap_cyc <= 32'd0;
+        ctr_snap(c_cycles, c_ret, c_deliver, c_decode_total, c_exu, c_ifu_miss, c_lsu, c_bubble,
+                 c_mem, c_csr, c_branch, c_compute, c_other, c_lsu_lat_total, c_st_lat_total);
+      end else snap_cyc <= snap_cyc + 32'd1;
       // 区域分类（load 请求 / store 请求拍）
       if (EX_MEM_mem_rd_en) begin
         if (is_psram) rd_psram <= rd_psram + 64'd1;

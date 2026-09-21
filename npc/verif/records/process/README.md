@@ -1,66 +1,163 @@
 # records/process —— 日志型归档（阶段实施/调试过程/任务提示词）
 
-> 按时间顺序的"当时做了什么"：实施记录、调试时间线、任务定义与续作提示词（PROMPT）、修复计划。
-> 可复用的经验与方法论见 [`../knowledge/README.md`](../knowledge/README.md)。
-> 入口总览/现状目标见 [`../../docs/PROJECT_OVERVIEW.md`](../../docs/PROJECT_OVERVIEW.md)。
+> **按项目推进顺序组织**：访存体系（阶段1–3）→ RT-Thread/SDRAM/外设（阶段F–K）→ B3 性能优化
+> （阶段1–8）→ ONScripter（PA4.5 选做）→ 环境。每组内按「任务入口（PROMPT/TASKS）→ 计划（PLAN）
+> → 结果（RECORD）」排列，附件（图/表）列在所属记录行下。
+> 经验性文档见 [`../knowledge/README.md`](../knowledge/README.md)；入口总览见
+> [`../../docs/PROJECT_OVERVIEW.md`](../../docs/PROJECT_OVERVIEW.md)。
+> 重复/取代关系见文末 §7「权威 / 快照 / 被取代」。
 
-## 访存体系（阶段 1–3）
+**状态图例**：✅ 结案/完成 ｜ ⏸ 用户裁决暂停 ｜ 📦 历史快照（保留过程价值，结论以权威文档为准） ｜ ⚠️ 部分结论过期（见 §7）
 
-| 文件 | 主题 | 要点 |
+## 1. 访存体系（阶段1–3）✅
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `STAGE1_CACHE_REWORK.md` | RECORD | 缓存重构 + SoC 访存接口适配：AX/X 耦合点 C1–C8、dcache 写分配掩码、fence.i/cacheline 写回 bug、验证体系；**§9 为阶段2 设计草稿**（与 STAGE2 重叠，以 STAGE2 为准） | ✅ |
+| `STAGE2_MEM_IF.md` | PLAN | 阶段2 访存接口重构设计基线：CPU↔cache 接口、AXI burst/MMIO 生成、slave_crossbar、SoC 地址映射、S0–S5 实施计划 | ✅ |
+| `STAGE3_PSRAM_READDBG.md` | RECORD | 阶段3 PSRAM 读回错位调试：flash 数据通路修复、逐级定位、根因=dcache 写分配掩码 | ✅ |
+
+## 2. RT-Thread / SDRAM / 外设（阶段F–K）✅
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `STAGE_F_RTTHREAD_PROMPT.md` | PROMPT | 阶段F 任务入口（bootloader 把 RT-Thread 搬 PSRAM 执行）；最终结论见 `../../docs/DEBUG_WORKFLOW.md` 阶段F | 📦 |
+| `STAGE_H_ONWARDS_TASKS.md` | PLAN | 阶段 H–K 任务定义与实现路径（SDRAM 位/字扩展、J1–J5、ChipLink）；各阶段结论已固化到对应 `STAGE_*` 记录 | ✅ |
+| `STAGE_J_ONWARDS_PROMPT.md` | PROMPT | 阶段J 任务入口（J4/J5 现状/目标/实现路径；J1–J3 见 H_ONWARDS） | 📦 |
+| `STAGE_I_SDRAM_EXT_PROMPT.md` | PROMPT | 阶段I 任务入口（SDRAM 位扩展 2→32bit + 字扩展 4 颗粒） | 📦 |
+| `STAGE_I_SDRAM_EXT.md` | RECORD | 阶段I 实施：位扩展(64MB)+字扩展(128MB) 相位推导/改动/坑/验证数据 | ✅ |
+| `STAGE_J0_NVBOARD.md` | RECORD | J0 NVBoard 接入 soctest + GPIO 7 段译码；坑与验证 | ✅ |
+| `STAGE_J1_GPIO.md` | RECORD | J1 GPIO：控制器 RTL + 寄存器/引脚验证（difftest ON + 波形） | ✅ |
+| `STAGE_J2_UART.md` | RECORD | J2 UART：AM_UART_RX + 除数条件化 + RT-Thread 键入 + hello 验证 | ✅ |
+| `STAGE_J3_PS2.md` | RECORD | J3 PS/2 键盘：RTL 解码+FIFO + AM 键盘 IOE 翻译表 | ✅ |
+| `STAGE_J4_VGA.md` | RECORD | J4 VGA/timer/video：vga_top_apb + AM GPU IOE + mtime | ✅ |
+| `STAGE_J5_RTTHREAD_AM.md` | RECORD | J5 rt-am 合并 + am-apps 集成（hello/microbench/snake → msh am_<app>） | ✅ |
+
+## 3. B3 性能优化（阶段1–8）✅（E4 用户裁决暂停）
+
+> 阶段8 按计划顺序 **P-A → P-H** 分组，每组「入口/计划 → 结果 → 附件」；
+> `STAGE_B3_CACHE_PERF.md` §1 是讲义 34 项全清单与状态，`B3_PLAN.md` 是整体计划。
+
+### 3.1 阶段1–4：性能计数 / Amdahl / cachesim / APB 校准
+
+> 阶段1–4 无独立过程记录，结果沉淀在 knowledge：
+> `../knowledge/B3_STAGE2_PERF_ANALYSIS.md`（阶段2，⚠️旧数字）、`../knowledge/B3_CACHESIM_ANALYSIS.md`
+> （阶段3，⚠️旧成本模型）、`../knowledge/APB_PSRAM_HANDSHAKE_DEBUG.md`（阶段4 E1c/E1d 根因与修复范式）；
+> 阶段4/5 的校准结论与 IPC 见 `B3_STAGE5_PERF.md`。
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_CTR_TRACE.md` | RECORD | 补充讲义「性能计数器的trace」（选做）：`PERF_CTR_TRACE` 环境变量 → 每 10 万周期 CSV + `verif/perf/ctr_trace_plot.py` 四联图；基线逐位复现（18,318,000/1,352,016）；区间 IPC p50=0.012/p90=0.241/max=0.553（相位时变可视化） | ✅ |
+
+附件：`B3_CTR_TRACE.png`、`B3_CTR_TRACE_summary.md`
+
+### 3.2 阶段5–7（`make perf` / icache 形式化 / 校准后瓶颈与主频取舍）✅
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE5_PERF.md` | RECORD | 阶段5：APB 延迟校准（E1c/E1d，r=3.5）+ `make perf` IPC 对比：无校准 0.196 → 有校准 0.074；含 XIP/PSRAM 状态机重触发根因（与 knowledge APB 篇配套） | ✅ |
+| `B3_STAGE6_ICACHE_BMC.md` | RECORD | 阶段6：icache 数据透明性 BMC（btormc PASS @ depth≤35，状态≈1500 位；depth 40 超时=判定上限；cover 证实非空泛） | ✅ |
+| `B3_STAGE7_PROMPT.md` | PROMPT | 阶段7 任务入口（校准后重新找瓶颈 + 主频是否值得） | 📦 |
+| `B3_STAGE7_RECALIB_PERF.md` | RECORD | 阶段7 结案：r=3.5 IPC=0.0738；**store 写路径 41%T 为 #1（Amdahl 1.69×）**、load 29.5%、UART 轮询 12.4%；提频：p_mem=0.70 天花板 +42%、α=2 已取 90% 但 IPC −36% → 先降 p_mem 再提频 | ✅ |
+
+### 3.3 阶段8（P-A → P-H）✅
+
+**P-A 面积专题（#29，讲义"远超上限马上优化"）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_AREA_N45.md` | RECORD | 面积复测（nangate45）：**120,383.62μm²（4.8× 上限）/ f_max≈411MHz**，关键路径=icache FSM；层级面积表（dcachectrl 36.3K/icachectrl 25.9K/gpr 18.0K=67%）+ 根因（逐行译码写、FF 寄存器堆）；含 #15 dcache 理想收益 3.38×、#31 性价比快答 | ✅ |
+| `B3_STAGE8_PA_A1.md` | RECORD | A1 面积优化：**118,805.71μm²（−1.3%）/ f_max≈426MHz（+3.7%）双改善**；"编码冗余"假设被实验否定（V1 已回退）；A2/A3 清单已定义、**暂停**；功能零变化（微测试 16/16 + PERF 逐位） | ✅（A2/A3 ⏸） |
+
+**P-B 部件级最高频率（#6）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PB_FMAX.md` | RECORD | 探针平台 `verif/sta/probe/`：**gpr 2,041MHz / 64bit 加减法器 697MHz**（全芯片 426MHz，关键路径仍 icache FSM）→ 数据通路非提频瓶颈；**用户拍板 C：`PERF_R426=1` 参数化 r**（默认 3.5 不动）；§6 r=4.25 复跑（EQUATION OK，SDRAM 代价超线性、布局排序翻转） | ✅ |
+
+**P-C AMAT/TMT 平台（#17/#27）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PC_PD_PLAN.md` | PLAN | P-C+P-D 执行计划（架构核实：bus 直连 64bit 突发；SoC 侧 delayer + 64→32 保形；D1–D6 步骤） | ✅（已执行） |
+| `B3_STAGE8_PC_AMAT.md` | RECORD | P-C 平台：`icache_stats.sv` + `amat_report.py`（日志→AMAT/TMT）；基线 **icache AMAT=3.02**；新洞察 icache flash refill≈19%T；关闭 #17 | ✅ |
+| `B3_STAGE8_PC_AMAT_LAYOUT.md` | RECORD | P-C 三配置复跑（A xip/B sdram-heap/C 全 SDRAM）：堆放 SDRAM 写缺失 2244→1422、端到端 18.32M→15.33M；**.text 进 SDRAM icache AMAT 3.02→1.58、纯 kernel −31%**，但 boot 搬运 ~5.5M 吃掉端到端；§6 追加 r=4.25 排序翻转（**写于 P-E/P-F 期间，晚于 P-D**） | ✅ |
+
+**P-D SDRAM AXI 突发链（#23–26）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PD_PROMPT.md` | PROMPT | P-D 任务入口（遗留 bug A/B 直至全绿） | 📦 |
+| `B3_STAGE8_PD_DEBUG.md` | RECORD | **P-D 结案（权威）**：§7 双根因=①自制 `sdram.v` 读输出不支持背靠背读→CAS 流水线（RD_DELAY=2）；②`axi64to32` 宽拆保留 FIXED→强制 INCR；验证：定向 TB 7 case + 配置 X/Z microbench 全绿 + mem-test + 等式 OK + `make perf` 逐位一致 | ✅ |
+| `B3_STAGE8_PD_HANDOFF.md` | SNAPSHOT | P-D 中途交接快照；其中"写拍重复 4160 vs 986"已被 PD_DEBUG §7.1 证伪（探针窗口口径），A/B 已结案 | 📦 |
+
+**P-E cachesim 闭环 + 面积约束 DSE（#18/#20/#21/#22/#30）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PE_PLAN.md` | PLAN | P-E 阶段计划 E1–E4（计划已执行：E1/E2/E3 结案、E4 暂停） | ✅（计划） |
+| `B3_STAGE8_PE_CACHESIM_DIFF.md` | RECORD | E1 对账：trace F 钩子改取指握手后 F 与 ICACHE 精确一致、替换策略对齐后**结构 0 偏差**；**成本模型校准**（`--cal`）后缺失 TMT 精确；**校准后 16B 块成最优（−13.2%），推翻旧 +3.5% 结论** | ✅ |
+| `B3_STAGE8_PE_DSE.md` | RECORD | E2/E3：16B 块 TMT 最优但 8KB 内需 5 路（面积 +59%）；**全局 Pareto 推荐 icache 2KB/32B/1w + dcache 8KB/64B/2w（TMT −6.5%、面积持平）**；省面积/激进方案并列 | ✅ |
+| `B3_STAGE8_PE_E4_PLAN.md` | PLAN | E4 实施计划（A 方案、E4.1–E4.4、PSRAM 64B 风险）——**未按此执行** | 📦 |
+| `B3_STAGE8_PE_E4_SAMPLE.md` | RECORD | E4.1 `dcachectrl` 参数化（默认零回归）+ E4.2 面积采样（实测 +13.9% vs 模型 −2.2%，偏差 >15% 停点）→ **用户裁决暂停 E4，P-E 结案**；资产保留（参数化/采样 wrapper/校准 cachesim） | ⏸ |
+
+**P-F 加载路径 / 程序内存布局（#28）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PF_LOADER.md` | RECORD | 加载路径：搬运 ~30KB = **5.58M cyc（77% flash 行填充）**、`boot_sram.c` 拷贝改 8B 批量（端到端 −0.14M）；**break-even≈50M cyc → 默认 sdram-heap、长跑 sdram**；§6 #28 填充/对齐（align 8/64/128）全负收益、`.rodata` 留 flash 否决 | ✅ |
+
+**P-G train 规模性能记录（#8）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PG_TRAIN.md` | RECORD | 三布局并行（~1.5h）：**xip 2,458.2M / sdram-heap 2,134.6M / sdram 1,916.7M cycles**（IPC 0.0271/0.0312/0.0348），全 PASS+等式 OK；`.text` 搬 SDRAM 净收益 −10.2%；**长跑 sdram、短跑 sdram-heap** | ✅ |
+
+**P-H 教学项（#12/#13/#19）**
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B3_STAGE8_PH_PROMPT.md` | PROMPT | P-H 任务入口（#12/#13/#19 做法/验收/坑） | 📦 |
+| `B3_STAGE8_PH_PLAN.md` | PLAN | P-H 计划（H1→H2→H3、独立目录、样本与参数；用户已确认） | ✅（计划） |
+| `B3_STAGE8_PH.md` | RECORD | P-H 结果：**H1** `trace_locality.py`（F 1.73M 访问仅 286 行/18KB、R 85%=UART LSR 单地址、W 68KB≫4KB dcache；§H1.5 F−retire=bubble+2 对账）；**H2** `trace_compress.py`（dseg 6.41×、**dseg+xz 716.7×**）；**H3** `am-kernels/tests/locality/` 三例（**每元素缺失 0.109/0.484/0.965**、cycles 6.26M/24.73M/57.51M） | ✅ |
+
+附件（P-H）：
+- H1：`B3_STAGE8_PH_H1_locality_all.png`、`B3_STAGE8_PH_H1_summary_all.md`、`B3_STAGE8_PH_H1_locality_cacheable.png`、`B3_STAGE8_PH_H1_summary_cacheable.md`
+- H2：`B3_STAGE8_PH_H2_compress_summary.md`
+- H3：`B3_STAGE8_PH_H3_loc_array-sum.md`、`B3_STAGE8_PH_H3_loc_array-sum.png`、`B3_STAGE8_PH_H3_loc_list-alloc.md`、`B3_STAGE8_PH_H3_loc_list-alloc.png`、`B3_STAGE8_PH_H3_loc_list-chase.md`、`B3_STAGE8_PH_H3_loc_list-chase.png`
+
+## 4. ONScripter 移植（PA4.5 选做）✅
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `ONSCRIPTER_PROMPT_V2.md` | PROMPT | 任务入口（目标/已固化事实/约束/执行顺序） | 📦 |
+| `ONSCRIPTER_FIX_PLAN.md` | PLAN | 显示修复整体计划：阶段 A–D（误判修正→双侧对照→根因定性→官方化修复） | ✅ |
+| `ONSCRIPTER_NAVY_NATIVE_DEBUG.md` | RECORD | navy-native 透明窗口调试**结案**：根因=native.cpp 上屏偏离官方框架；§8 调试技巧、§9 定位方法/逻辑锁 | ✅ |
+| `ONSCRIPTER_RISCV_NEMU_PORT.md` | RECORD | riscv64(NEMU) 移植（验证通过）：navy 编译打通、内核三修复、syncconfig 坑、NPC 内嵌 ramdisk | ✅ |
+
+## 5. 环境与工具
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `YSYXSOC_REGEN_SETUP.md` | RECORD | ysyxSoC Chisel 重生成链：mill 0.11.12/firtool 1.51.0/JDK17、学号 BlackBox 定制点、apb_delayer 固化；重生成后 PERF 与基线逐位一致（P-D 前置） | ✅ |
+
+## 6. 附件清单（数据表/图）
+
+| 附件 | 归属 | 说明 |
 |---|---|---|
-| `STAGE1_CACHE_REWORK.md` | 缓存重构 + SoC 访存接口适配 | cache AX/X 耦合点 C1–C8、dcache 写分配掩码、fence.i/cacheline 写回 bug、验证体系（末尾含"阶段2"草稿，与 STAGE2 重叠） |
-| `STAGE2_MEM_IF.md` | 阶段2 访存接口重构设计基线 | CPU↔cache 接口、AXI burst/MMIO 生成、slave_crossbar、SoC 地址映射、S0–S5 实施计划 |
-| `STAGE3_PSRAM_READDBG.md` | 阶段3 PSRAM 读回错位调试 | flash 数据通路修复、PSRAM 读回逐级定位、根因=dcache 写分配掩码 |
+| `B3_CTR_TRACE.png` / `B3_CTR_TRACE_summary.md` | `B3_CTR_TRACE.md` | 计数器 trace 四联图 / 区间表 |
+| `B3_STAGE8_PH_H1_*.png` / `*_summary_*.md`（2+2） | `B3_STAGE8_PH.md` §H1 | 局部性四联图 + 汇总表（全量 / 仅可缓存区） |
+| `B3_STAGE8_PH_H2_compress_summary.md` | `B3_STAGE8_PH.md` §H2 | 15 行压缩对比全表 |
+| `B3_STAGE8_PH_H3_loc_array-sum.md`、`B3_STAGE8_PH_H3_loc_array-sum.png`、`B3_STAGE8_PH_H3_loc_list-alloc.md`、`B3_STAGE8_PH_H3_loc_list-alloc.png`、`B3_STAGE8_PH_H3_loc_list-chase.md`、`B3_STAGE8_PH_H3_loc_list-chase.png` | `B3_STAGE8_PH.md` §H3 | 三例局部性工具输出与曲线 |
 
-## RT-Thread / SDRAM / 外设（阶段 F–K）
+## 7. 权威 / 快照 / 被取代
 
-| 文件 | 主题 | 要点 |
-|---|---|---|
-| `STAGE_F_RTTHREAD_PROMPT.md` | 阶段 F 任务提示词 | RT-Thread 在 PSRAM 执行的原始任务说明（结论见 DEBUG_WORKFLOW 阶段 F 记录） |
-| `STAGE_H_ONWARDS_TASKS.md` | 阶段 H–K 任务定义与实现路径 | SDRAM/字扩展/外设 J1–J5/ChipLink 的任务分解+完成记录 |
-| `STAGE_I_SDRAM_EXT_PROMPT.md` | 阶段 I 任务提示词 | SDRAM 位扩展(2颗粒→32bit)+字扩展(4颗粒)——新对话续作提示词 |
-| `STAGE_I_SDRAM_EXT.md` | 阶段 I 实施记录 | 位扩展(64MB)+字扩展(128MB)的相位推导/改动/坑/验证数据 |
-| `STAGE_J0_NVBOARD.md` | J0 NVBoard 接入 | NVBoard 接入 soctest + GPIO 7 段译码；坑与验证 |
-| `STAGE_J1_GPIO.md` | J1 GPIO | GPIO 控制器 RTL + 寄存器/引脚验证（difftest ON + 波形） |
-| `STAGE_J2_UART.md` | J2 UART | AM_UART_RX + 除数随 NVBoard 条件化 + RT-Thread 键入 + am-tests hello 验证 |
-| `STAGE_J3_PS2.md` | J3 PS/2 键盘 | RTL 解码+FIFO + AM 键盘 IOE 翻译表 + soctest 防误采 |
-| `STAGE_J4_VGA.md` | J4 VGA/timer/video | vga_top_apb + AM GPU IOE + mtime；坑=NVBoard UART 除数、.bss 搬运 |
-| `STAGE_J5_RTTHREAD_AM.md` | J5 rt-am 合并 + am-apps 集成 | make update 集成 hello/microbench/snake → msh am_<app>；附录含 RT-Thread 带 NVBoard 的 make 链路 |
-| `STAGE_J_ONWARDS_PROMPT.md` | 阶段 J 后续任务提示词 | J1–J5 现状/目标/实现路径——新对话续作提示词 |
-
-## B3 性能优化（阶段 1–5）
-
-| 文件 | 主题 | 要点 |
-|---|---|---|
-| `B3_STAGE5_PERF.md` | B3 阶段5：访存延迟校准 + `make perf` IPC 对比 | E1c/E1d 结论：`apb_delayer` r=3.5；IPC 无校准 0.196 → 有校准 0.074；XIP/PSRAM 状态机重触发根因（mr_rd 洪水）+ commit 清单 |
-| `B3_STAGE6_ICACHE_BMC.md` | B3 阶段6：icache 数据透明性 BMC（btormc PASS） | 规模数据（状态≈1500 位；depth 20/30/35 PASS、depth 40 超时=可判定上限≈35；`mode cover` 证实 O_cpu_rvalid step10 可达非空泛）；断言加 `!I_rst&&qv` 门控排除初始态伪反例 |
-| `B3_STAGE7_PROMPT.md` | B3 阶段7 续作提示词（复制即用） | 新会话任务："校准后重新寻找瓶颈 + 主频优化是否值得"；含工程背景/本阶段目标/可用工具数据/执行方法/交付验收/约束停点/下一步（阶段8） |
-| `B3_STAGE7_RECALIB_PERF.md` | B3 阶段7：校准后瓶颈重定位 + 主频优化取舍（**结案**） | r=3.5 校准后 IPC=0.0738；**store 写路径升 #1（41.0% T，=写缺失 3,307×2,244cyc，Amdahl 极限 1.69×）**，load 29.5%、UART 轮询 12.4%、ifu 供给仅 4.4% 非瓶颈；**主频：p_mem=0.70 下提频天花板 +42%、α=2 已拿 90%（+28.5%）而 IPC -36% → 推荐先降 p_mem 再提频**；§2.1 retire 时变归因（UART LSR 轮询差 ×3=指令差，跨配置比 IPC 有效、比指令数无效） |
-| `B3_STAGE8_AREA_N45.md` | B3 阶段8（一）：**nangate45 各模块面积报告** + 大面积定位 | **工艺库更正：E1b 的 16.4 万是 icsprout55，与讲义 25000 约束不可比**；nangate45 复测：**面积 120,383.62μm²（4.8× 上限）、f_max≈411MHz（关键路径仍=icache FSM）**；层级面积表（dcachectrl 36.3K/icachectrl 25.9K/gpr 18.0K = 67%）+ 根因（cache 元数据**逐行译码写** generate 模式、FF 寄存器堆 2 读口 mux 树）+ 改法与预估；dcache 理想收益 3.38×/性价比快答（讲义 #15/#31） |
-| `B3_STAGE8_PA_A1.md` | B3 阶段8（二）：P-A/A1 面积优化实施（**面积 −1.3%、f_max +3.7% 双改善；"编码冗余"假设被实验否定**） | **V1 索引写反而 +7.2K（memory 推断把全表复位换进数据端、DFF 换贵单元 SDFFCE_PN0P，已回退）**；保留改动=tag 读口共享（way1/fencei 互斥复用）+mmio_flag 前缀化+alloc_lane 复用；最终平坦 **118,805.71μm²（−1,578）/ f_max≈426MHz（−0.348ns，关键路径仍 icache FSM）**；功能零变化（微测试 16/16 + PERF 逐位一致）；教训：带全表复位的阵列勿写变量索引、ABC 已自动共享重复逻辑；后续杠杆=几何降配（归 P-E） |
-| `B3_STAGE8_PC_PD_PLAN.md` | B3 阶段8（三）：P-C+P-D 执行计划 | 架构核实：npc bus 直连路径 SDRAM 请求本就 64bit 突发直传（绕过 axiburst2xxx 天然成立）；SoC xbar 全域 64bit 而 `sdram_top_axi` verilog 32bit → AXI4SDRAM Impl 内插 delayer+64→32 burst 保形转换（不改第三方 core）；程序上 SDRAM 复用 `BOOT_MODE=sdram/sdram-heap`；delayer 仿 APB B 方案（握手上升沿/单脉冲坑规避、逐拍等式） |
-| `B3_STAGE8_PC_AMAT.md` | B3 阶段8（四）：P-C 数据分析平台 + 基线（**关闭讲义 #17**） | `icache_stats.sv`（缺失代价=rd_miss→rvalid 有边界计时）+ `amat_report.py`（日志→AMAT/TMT）；基线 icache AMAT=3.02（1+0.05%×4285 flash XIP）；**新洞察：icache flash refill 816 次×4,285≈3.49M≈19%T 被阶段7"残差"掩盖（ifu_miss 计数低估），归因更新：store 41%>load 29.5%>icache flash 19%；.text 搬出 XIP 为高价值优化（P-D/P-F 协同）** |
-| `B3_STAGE8_PC_AMAT_LAYOUT.md` | B3 阶段8（七）：P-C 平台复跑 —— 三配置 AMAT/TMT + SDRAM 布局/.text 收益量化 | A(xip)/B(sdram-heap)/C(全 SDRAM) 同条件（PERF=1 r=3.5）对比：**堆放 SDRAM 写缺失代价 2244→1422、端到端 18.32M→15.33M（B 最优）**；**.text 进 SDRAM 使 icache AMAT 3.02→1.58、纯 kernel Scored −31%**，但 bootloader 搬 30KB 一次性多耗 ~5.5M cyc → 端到端反 +24.8%（优化加载路径归 P-F）；**§6 追加 r=4.25 复跑：SDRAM 代价超线性（~2×）→ 布局排序翻转为 A<B<C**；含复现命令与口径备注（PERF cycles 含 boot ≠ benchmark 窗口） |
-| `B3_STAGE8_PE_CACHESIM_DIFF.md` | B3 阶段8（十一）：P-E/E1 —— cachesim↔RTL 对账 + 成本模型校准 | **E1 通过**：trace F 钩子改取指握手后 F=1,732,607 与 ICACHE 精确一致、R/W 各区一致；替换策略对齐 RTL 后 **结构 0 偏差**（I 815/816、D 4,397=rd1,090/wr3,307 逐区精确）；成本校准（新增 base_w：psram 1676/2244、flash 4285/4529、sdram 1346/1370/1422、MMIO 18/7）→ **缺失 TMT 精确一致**（icache −0.01%、dcache 0%）；**校准后扫描：16B 块成最优（8KB 内 −13.2% TMT）**，推翻旧模型"+3.5%"结论 |
-| `B3_STAGE8_PH_PROMPT.md` | B3 阶段8 **P-H 续作提示词（复制即用，新对话入口）** | 现状（阶段8 主体完成 P-A~P-G，仅剩 P-H）+ P-H 三小项（#12 局部性绘图/#13 数组vs链表/#19 压缩 trace）做法与验收 + 工作流约束（先计划/一次一项/停点）+ 关键命令与资产 + 7 条已知坑（pkill -f 自杀、setsid、mainargs 编译期、探针输出插行、基线逐位、布局判据、文档约定） |
-| `B3_STAGE8_PH_PLAN.md` | B3 阶段8（十六）：**P-H 教学项计划（用户已确认）** | H1 #12 局部性工具（`trace_locality.py`：工作集/相邻距离/重用间隔/区域，4 图+表）→ H2 #19 压缩 trace（6 编码×3 压缩器）→ H3 #13 数组vs链表（三例：array/list-chase/list-alloc，均 malloc 到 SDRAM 堆才可比）；**已拍板**：独立目录 `am-kernels/tests/locality/`、仅复用 `/tmp/mb_pe.trace`、加连续链表对照例；每小项停点 |
-| `B3_STAGE8_PH.md` | B3 阶段8（十七）：P-H 教学项执行记录（**P-H 全部完成：H1 ✅ / H2 ✅ / H3 ✅**；阶段8 收尾） | **H1 #12**：`verif/perf/trace_locality.py`（`--cacheable-only` 剔除 RTL 非缓存 SRAM/MMIO）对 `/tmp/mb_pe2.trace`：**F 1.73M 访问仅 286 行/18KB、gap p50=1/99.5%≤64**；与 retire 口径对照 F 1.35M、同线 95.3%（差 380,591 = bubble 380,589 + 2 边界，RTL 机制=`IF_ID_reg` 把分支后 fall-through 取指换成 nop，见 §H1.5 对账）；**R 85%=UART LSR 单地址 324,820 次**；**W 1067 行≈68KB ≫ 4KB dcache**。**H2 #19**：`verif/perf/trace_compress.py`：纯编码 **dseg 6.41×**（1.72B/记录）、**dseg+xz 716.7×（23.7MB→33.1KB）**，差分/段合并与 xz 互补。**H3 #13**：独立目录 `am-kernels/tests/locality/` 三例（array-sum/list-alloc/list-chase，均 malloc 到 SDRAM 堆、N=4096×K=8、difftest 全 PASS 同校验和）→ **每元素缺失 0.109/0.484/0.965（≈1:4.4:8.8）**、cycles 6.26M/24.73M/57.51M、IPC 0.0371/0.0098/0.0060；相位拆解证明 chase vs alloc 唯一差别=空间局部性（去重行访问 16,384→32,760、Δ行距 p50 1→599 行） |
-| `B3_STAGE8_PG_TRAIN.md` | B3 阶段8（十五）：P-G train 规模性能记录 + .text 搬 SDRAM 收益确认 | 三布局并行（r=3.5/PERF=1，~1.5h）：**A xip 2,458.2M / B sdram-heap 2,134.6M / C sdram 1,916.7M cycles（IPC 0.0271/0.0312/0.0348），全 PASS+等式 OK**；**用户假设确认**：train 下 icache 缺失 99,421 次×（4286→1341）= TMT −290M，一次性搬运 +5.5M → **C 端到端 −10.2%（−217.9M）**；结论：长跑用 `BOOT_MODE=sdram`，短跑仍 sdram-heap（break-even≈50M cyc 实测验证） |
-| `B3_STAGE8_PE_E4_SAMPLE.md` | B3 阶段8（十四）：P-E/E4.1+E4.2 —— 参数化 + 目标几何综合采样（**停点：面积模型偏差 >15%**） | E4.1 `dcachectrl` 行宽/几何参数化（`WAY_W/WAY_LANES/LANE_W`+generate 泛化），**默认零回归**（make perf 逐位一致 + mem-test PASS）；E4.2 同流程采样：dcache 4KB/32B/2w→8KB/64B/2w 逻辑面积 **+5,464（+13.9%）**（模型预测 −2.2%，偏差 ≈16pp，**行路径位宽成本未建模**）、f_max +2.4%；修正 A 全芯片面积 ≈+5%（非持平）；**用户裁决：暂停 E4，P-E 结案**（dcachectrl/icachectrl 均已参数化；way 数仍 2 路硬编码；资产保留可复用） |
-| `B3_STAGE8_PE_E4_PLAN.md` | B3 阶段8（十三）：P-E/E4 实施计划 —— A 方案（icache 2KB/32B/1w + dcache 8KB/64B/2w）（**待确认**） | 现状硬编码点清单（参数/行路径/8bit cen 拼接/8 颗 SRAM/axiburst 只支持 32B burst）；子阶段 E4.1 参数化（默认零回归硬门槛）→ E4.2 目标几何综合采样校准面积模型 → E4.3 **PSRAM 64B 通路决策**（最大风险：axiburst2xxx 只实现 32B）→ E4.4 落地+全回归+评估；预计 2–3 轮，可回退 |
-| `B3_STAGE8_PE_DSE.md` | B3 阶段8（十二）：P-E/E2+E3 —— 16B/32B 块对比 + 面积约束 DSE | 面积模型（逻辑=元数据线性外推+固定控制；SRAM=fakeram45 4.11μm²/B）基线全芯片估算 152.5K；**E2：校准后 16B 块 TMT 最优（−13.2%）但 8KB 内需 5 路 dcache（元数据 +59%）→ 面积不增约束下无 16B 方案**；**E3 Pareto：推荐"icache 2KB/32B/1w + dcache 8KB/64B/2w"（TMT −6.5%、面积持平）；省面积方案（各 2KB/1w）−21% 面积/IPC −9%；激进（D8SR+16B）−14.6%/+20% 面积**；E4 待拍板 |
-| `B3_STAGE8_PE_PLAN.md` | B3 阶段8（十）：P-E 阶段计划 —— cachesim 闭环 + 面积约束 DSE（**待确认**） | E1 cachesim↔RTL 对账（校准 RegionCost，命中差≤0.5%/TMT 差≤10%）；E2 16B/32B 块对比成文；E3 面积约束 DSE（面积模型=元数据实测插值+SRAM 宏单列；≥12 点扫描；Pareto；r 双口径）；E4 终选落地+全回归；人工决策点=面积口径/候选范围/终选；风险=SRAM blackbox、模型近似、收益天花板 ≈+3.5% |
-| `B3_STAGE8_PF_LOADER.md` | B3 阶段8（九）：P-F 加载路径量化与优化（`BOOT_MODE=sdram` 搬运） | `BOOT_TO_T0` 插桩实测：校准 r=3.5 下搬运 ~30KB = **5.58M cyc（≈186cyc/B，77% 是 ~953 个 flash 行填充×4.5K）**；`boot_sram.c` 拷贝改 **8B 批量**（−0.21M 直通 / −0.15M 校准 / 端到端 −0.14M，sram/psram/sdram 通用）；**break-even ≈ 50M cycles → 默认维持 B(sdram-heap)，全 SDRAM 仅长跑场景**；**§6 尾部收尾（P-F ✅ 结案）**：填充/对齐（align 8/64/128）全负收益（icache 缺失 +4~29%、cycles +0.5~1.2%）→ 默认布局最优；`.rodata` 留 flash 否决（train 下 flash rodata 读缺失 64.5M ≫ 省下搬运 1.8M） |
-| `B3_STAGE8_PB_FMAX.md` | B3 阶段8（八）：P-B 部件级 f_max 评估（#6，**结案：决策 C 已落地**） | 探针平台 `verif/sta/probe/probe_run.sh`（nangate45）：**gpr 14,214μm²/0.490ns/2,041MHz；64bit 加减法器 2,111μm²/1.435ns/697MHz**；全芯片 A1 后 426MHz（关键路径仍=icache FSM）→ 数据通路非瓶颈、提频杠杆在 FSM；**§6 用户拍板 C：`PERF_R426=1` 参数化 r（默认 3.5 不变），r=4.25 复跑 EQUATION OK + 三配置数据（SDRAM 代价超线性，布局排序翻转）** |
-| `B3_STAGE8_PD_DEBUG.md` | B3 阶段8（五）：P-D SDRAM AXI 突发链（**结案：A/B 双根因+修复+全绿**） | 前序：改动清单（scala 仅学号+AXI 挂载，**突发参数不许改**；npc SDRAM→bus 直连绕过 axiburst2xxx；新 `axi4_delayer/axi64to32`）；**§7 收尾**：先更正"从端 4160 写拍 vs 986"是探针日志窗口口径假象（写通道无重复）；**根因 A = 自制 `sdram.v` 读输出"预取+保持"不支持背靠背读**（突发读偶拍恒 0 → 可缓存 refill/64bit MMIO ld 受害）→ **CAS 流水线 RD_DELAY=2**；**根因 B = `axi64to32` 宽拆保留 FIXED**（`ld/sd` 单拍拆两拍落同地址、高半字覆盖低半字）→ **宽拆强制 INCR**；验证：定向 TB 7 case PASS + 配置 X/Z microbench 全 kernel PASS + mem-test PASS + AXIDLY/APBDLY EQUATION OK + `make perf` 逐位一致 |
-| `B3_STAGE8_PD_HANDOFF.md` | B3 阶段8（六）：P-D 调试交接（**A/B 已在 PD_DEBUG §7 收尾，本文留作过程快照**） | 基线逐位一致；`axi64to32` 道感知修复→零 strb 归零、mem-test PASS；AW-without-W 假设被证伪；从端存储自洽+突发形态正确；当时未解 A（"写拍重复"疑点——后证伪为窗口口径）、B（单拍下 15pz 丢指针）；调试设施清单+复现命令 |
-| `B3_STAGE8_PD_PROMPT.md` | B3 阶段8 P-D **续作提示词（复制即用）** | 新会话任务：完成 P-D 两个遗留 bug（A/B）直至全绿；含当前状态/证据/约束（不改 TransferSizes/未清 bug 不提交）/执行方法（波形逐周期计数、扩窗日志）/回归链/交付验收/下一步 |
-
-## ONScripter 移植（PA4.5 选做，2026-09-03 ~ 09-04）
-
-| 文件 | 主题 | 要点 |
-|---|---|---|
-| `ONSCRIPTER_PROMPT_V2.md` | 续作提示词 | 任务目标/已固化事实/工作流约束/建议执行顺序 |
-| `ONSCRIPTER_NAVY_NATIVE_DEBUG.md` | navy-native 透明窗口调试（**结案**） | 根因=native.cpp 上屏偏离官方框架；含 §2 劫持误判修正、§8 调试技巧、§9 结案（定位方法/逻辑锁） |
-| `ONSCRIPTER_FIX_PLAN.md` | 显示修复整体计划与执行 | 阶段 A–D：误判修正→双侧对照→根因定性→官方化修复 |
-| `ONSCRIPTER_RISCV_NEMU_PORT.md` | riscv64(NEMU) 移植（**验证通过**） | navy 编译打通；内核三修复（fs_open/sys_execve·exit/max_brk）；syncconfig 坑；运行命令；NPC 内嵌 ramdisk 休眠机制 |
+| 主题 | 权威文档 | 快照/被取代 | 说明 |
+|---|---|---|---|
+| P-D SDRAM AXI 调试 | `B3_STAGE8_PD_DEBUG.md` | `B3_STAGE8_PD_HANDOFF.md` 📦 | HANDOFF §3-A"写拍重复"已被 §7.1 证伪；调试设施/复现命令仍可参考 |
+| P-E 对账与 DSE | `B3_STAGE8_PE_CACHESIM_DIFF.md`、`B3_STAGE8_PE_DSE.md`、`B3_STAGE8_PE_E4_SAMPLE.md` | `B3_STAGE8_PE_PLAN.md`、`B3_STAGE8_PE_E4_PLAN.md`（计划类） | E4 按用户裁决暂停（E4.1 参数化已入库） |
+| P-C | `B3_STAGE8_PC_AMAT.md` + `B3_STAGE8_PC_AMAT_LAYOUT.md` | `B3_STAGE8_PC_PD_PLAN.md`（计划） | PC_AMAT_LAYOUT §6 r=4.25 与 `B3_STAGE8_PB_FMAX.md` §6 同源 |
+| P-H | `B3_STAGE8_PH.md` | `B3_STAGE8_PH_PROMPT.md`、`B3_STAGE8_PH_PLAN.md` | 计划中样本（mb_pe）与编码方案已被结果（mb_pe2/dseg）取代，结果为准 |
+| 任务入口 PROMPT（阶段7/PD/PH、STAGE_F/I/J） | 各自的结果记录 / `DEBUG_WORKFLOW.md` | 对应 PROMPT 📦 | PROMPT 仅供任务背景，状态看结果 |
+| 阶段8 面积/频率数据 | `B3_STAGE8_AREA_N45.md` / `B3_STAGE8_PA_A1.md` / `B3_STAGE8_PB_FMAX.md` | `../knowledge/SYNTHESIS_STA_NPC.md`（入门+速查） | 速查数字以过程记录为准（A1 后 118,805.71μm²/426MHz） |
+| 阶段2/3 性能结论 | `B3_STAGE7_RECALIB_PERF.md`、`B3_STAGE8_PE_CACHESIM_DIFF.md` | `../knowledge/B3_STAGE2_PERF_ANALYSIS.md` ⚠️、`../knowledge/B3_CACHESIM_ANALYSIS.md` ⚠️ | 旧数字/旧成本模型已被校准口径取代；计数器手册与工具说明仍有效 |

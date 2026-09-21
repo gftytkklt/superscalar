@@ -1,40 +1,42 @@
 # npc/verif/records —— 归档区（历史调试过程与经验记录）
 
-> **归档说明（2026-09-04 重组）**：本目录为纯归档区，按文档性质分两类存放：
+> **归档说明（2026-09-04 重组；2026-09-21 结构化重构）**：本目录为纯归档区，按文档性质分两类存放：
 >
 > | 子目录 | 性质 | 内容 |
 > |---|---|---|
-> | [`process/`](./process/) | **日志型** | 阶段实施记录、调试过程时间线、任务提示词（续作 PROMPT）、修复计划——按时间顺序叙述"当时做了什么" |
-> | [`knowledge/`](./knowledge/) | **经验性** | 案例复盘、方法论沉淀、性能分析——可复用的"怎么做/为什么"，独立于具体时间线 |
+> | [`process/`](./process/) | **日志型** | 阶段实施记录、调试过程时间线、任务提示词（续作 PROMPT）、计划——**按项目推进顺序组织**（访存体系→外设→B3 阶段1–8→ONScripter→环境），重复/取代关系见其 §7 |
+> | [`knowledge/`](./knowledge/) | **经验性** | 案例复盘、方法论沉淀、性能分析——按「B3 性能链 / 工具入门 / 工程方法 / 跨平台旧案」分组，含按阶段排序的经验地图 |
 >
-> **当前活跃文档**（入口/工作流/运行速查/测试体系/当前阶段 B3）在上级目录 `npc/verif/`，
+> **当前活跃文档**（入口/工作流/运行速查/测试体系/当前阶段）在上级目录 `npc/verif/`，
 > 总入口见 `../docs/PROJECT_OVERVIEW.md`（含"现状与目标"：NEMU+NPC 双端启动 Linux、NPC 持续性能优化）。
 > 新阶段的产出按 `../docs/WORKFLOW_POLICY.md` §4 落档：过程记录入 `process/`，提炼的经验入 `knowledge/`，
 > 并同步更新对应 README 索引。
 
 ## 索引
 
-- **日志型归档索引**：[`process/README.md`](./process/README.md) —— STAGE1~3 / STAGE_F / STAGE_I / STAGE_J0–J5 /
-  STAGE_H_ONWARDS / ONScripter 全系列（含 PROMPT 与计划）
-- **经验性归档索引**：[`knowledge/README.md`](./knowledge/README.md) —— RT-Thread 栈溢水案例复盘、
-  访存流水线性能分析、跨文档经验地图（指向各过程文档中的方法论章节）
+- **日志型归档索引**：[`process/README.md`](./process/README.md) —— 访存体系（STAGE1–3）/
+  RT-Thread·SDRAM·外设（STAGE_F–K、J0–J5）/ **B3 性能优化阶段1–8（含 P-A~P-H 计划→结果→附件）** /
+  ONScripter / 环境（含附件清单与权威/快照/被取代表）
+- **经验性归档索引**：[`knowledge/README.md`](./knowledge/README.md) —— B3 性能链（含被取代标注）、
+  形式化/综合 STA 入门、长仿真进程管理、跨平台旧案 + 按阶段排序的经验地图
 
-> 历史注记：本目录前身为"分阶段调试过程记录（归档）"，2026-08-31 集中归档于 verif/ 根目录，
-> 2026-09-04 拆分为 process/knowledge 两区并将 B3 活跃文档上移至 `npc/verif/` 顶层。
+> **重构记录（2026-09-21）**：本轮按"项目推进顺序"重排两张索引、补全缺失条目（附件、
+> `YSYXSOC_REGEN_SETUP`、`B3_CTR_TRACE`）、标注重复/取代关系；计划与范围见
+> [`RECORDS_RESTRUCTURE_PLAN.md`](./RECORDS_RESTRUCTURE_PLAN.md)（含讲义复核结论）。
 
-## 待办 —— 未安装工具（阻塞 E1 / 时序分析）
-> 记录未安装/待补的工具依赖，避免遗漏。相关 B3 分析见 `knowledge/B3_CACHESIM_ANALYSIS.md`、`B3_STAGE2_PERF_ANALYSIS.md`。
+## 工具链状态（B3/E1 相关，全部就绪）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| ~~yosos‑sta（`ysyx-workbench/yosys-sta/`）~~ | ✅ **已安装（2026-09-08）** | oss-cad-suite (Yosys 0.68) + `make init` 拉的 iEDA/icsprout55 均就绪，GCD 样例与 npc 均跑通 |
-| **ysyxSoC Chisel 重生成链** | ✅ **已打通（2026-09-09，P-D 前置）** | rocket-chip 浅克隆+cde/hardfloat 嵌套子模块、mill 0.11.12/firtool 1.51.0（aliyun 镜像）、JDK 17（21 不兼容 scala 2.13.10）；**学号定制点=`soc/CPU.scala` BlackBox 类名**；apb_delayer 拼接已固化进重生成链。**重生成后 PERF 与基线逐位一致**。详见 `process/YSYXSOC_REGEN_SETUP.md` |
-| ~~oss‑cad‑suite / 新版 Yosys~~ | ✅ 已装（`~/oss-cad-suite`，Yosys 0.68） | btormc/sby/boolector 同步可用（Stage6 解锁） |
-| ~~OpenSTA~~ | — 不需要 | yosys‑sta 用 iEDA/iSTA |
-| **npc 可综合化适配** | ✅ **已完成（E1a）** | `npc/verif/sta/gen_synth_rtl.py`：去 17 处 DPI + blackbox `sram_behav`；`ysyx_22040750_synth.v` 可综合 |
-| **E1b：STA 出频率算 `r`** | ✅ **已完成** | 500MHz 目标/DELAY-4：**f_max≈349.7MHz**（worst path=icache FSM 2.832ns；次=PC dnpc），面积 163689.68（SRAM blackbox→频率偏乐观）。**`r ≈ 3.5`**。产物在 `npc/verif/sta/result/ysyx_22040750-500MHz/`。⚠️ **该结果为 icsprout55 库**；**nangate45 复测（2026-09-09，讲义 25000 约束口径）：面积 120,383.62μm²、f_max≈411MHz**，见 `process/B3_STAGE8_AREA_N45.md` |
-| **E1c：APB 延迟校准模块** | ✅ **已完成（2026-09-08）** | `apb_delayer.v`（B 方案：请求直通+响应整拍延迟 `t1'=t0+floor(r·k)`），`` `PERF_DELAY` `` 宏门控（默认直通，`make perf` 才启）；并修复 SPI XIP / PSRAM 控制器"持续电平重触发"缺陷（见 `knowledge/APB_PSRAM_HANDSHAKE_DEBUG.md`） |
-| **E1d：延迟等式校验 + 校准后 IPC** | ✅ **已完成（2026-09-08）** | `verif/perf/apbdly_check.sv` 校验 `(t1-t0)*r == t1'-t0`（PERF_DELAY 下 EQUATION OK，microbench test 全过）；IPC：无校准 0.196 → 有校准 0.074（`process/B3_STAGE5_PERF.md`） |
+| **yosys-sta** | ✅ 已安装（2026-09-08） | oss-cad-suite (Yosys 0.68) + iEDA/icsprout55；GCD 样例与 npc 均跑通 |
+| **ysyxSoC Chisel 重生成链** | ✅ 已打通（2026-09-09，P-D 前置） | mill 0.11.12/firtool 1.51.0/JDK17；学号定制点=`soc/CPU.scala` BlackBox 类名；apb_delayer 固化；**重生成后 PERF 与基线逐位一致**。详见 `process/YSYXSOC_REGEN_SETUP.md` |
+| **oss-cad-suite / btormc** | ✅ 已装（`~/oss-cad-suite`） | sby/boolector 可用（阶段6 解锁；`records/knowledge/FORMAL_VERIFICATION_NPC.md`） |
+| **OpenSTA** | — 不需要 | yosys-sta 用 iEDA/iSTA |
+| **npc 可综合化适配（E1a）** | ✅ 已完成 | `verif/sta/gen_synth_rtl.py`：去 DPI + blackbox `sram_behav` |
+| **E1b：STA 出频率算 `r`** | ✅ 已完成 | icsprout55 f_max≈349.7MHz→`r≈3.5`；nangate45 复测 120,383.62μm²/411MHz（`process/B3_STAGE8_AREA_N45.md`）；A1 后 118,805.71μm²/426MHz |
+| **E1c/E1d：APB 延迟校准 + 等式校验** | ✅ 已完成（2026-09-08） | `apb_delayer.v`（B 方案，`PERF_DELAY` 门控）；`(t1−t0)·r == t1'−t0` EQUATION OK；IPC 0.196→0.074（`process/B3_STAGE5_PERF.md`） |
+| **B3 阶段1–8 全部任务** | ✅ 完成（E4 用户裁决暂停） | 讲义 34 项清单与状态见 `../docs/STAGE_B3_CACHE_PERF.md` §1；推进历史见 `process/README.md` |
 
-> E1c/E1d 已完成。下一步回到全局目标：**① NEMU+NPC 双端启动 Linux；② 持续性能优化**（依据
-> `PROJECT_OVERVIEW.md` 未来目标 + `knowledge/MEM_PIPELINE_OPT.md`/`B3_CACHESIM_ANALYSIS.md` 的瓶颈结论）。
+> 下一步回到全局目标：**① NEMU+NPC 双端启动 Linux；② 持续性能优化**
+> （依据 `PROJECT_OVERVIEW.md` 未来目标 + `knowledge/MEM_PIPELINE_OPT.md` 的方法底座 +
+> `process/B3_STAGE8_PE_DSE.md` 的 Pareto 备选方案，如需重启 E4）。
