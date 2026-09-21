@@ -100,8 +100,8 @@ static void slave_comb(Vysyx_22040750 *d) {
   d->io_master_rresp   = 0;
 
   d->io_master_awready = aw_hs ? 0 : 1;
-  // 兼容两种从端语义：允许 W 与 AW 同拍接受（标准 AXI 独立通道；axiburst2xxx 的 s_aw_hs 要求同拍）
-  d->io_master_wready  = ((aw_hs || d->io_master_awvalid) && !wd_hs) ? 1 : 0;
+  // 严格标准从端：AW 先被接受，之后才收 W（RTL 修复后 axiburst 应能独立处理两通道）
+  d->io_master_wready  = (aw_hs && !wd_hs) ? 1 : 0;
   d->io_master_bvalid  = (aw_hs && wd_hs_d) ? 1 : 0;
   d->io_master_bid     = 0;
   d->io_master_bresp   = 0;

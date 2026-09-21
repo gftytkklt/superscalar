@@ -4550,13 +4550,17 @@ module ysyx_22040750_axiburst2xxx(
     reg [2:0]  wmbeats;       // master 写拍数 (awlen+1)
     reg [1:0]  wbeat;         // 收 W 拍计数
     reg [3:0]  wslot;         // slave 写槽 (0..2*wmbeats-1)
+    // OPT-19：每槽 AW/W 独立完成标志（解耦后各自保持 valid 直到本通道 ready）
+    reg        aw_sent, w_sent;
 
     // ---- 握手 ----
     wire m_ar_hs = I_m_arvalid && O_m_arready;
     wire m_aw_hs = I_m_awvalid && O_m_awready;
     wire s_ar_hs = O_s_arvalid && I_s_arready;
     wire s_r_hs  = I_s_rvalid && O_s_rready;
-    wire s_aw_hs = O_s_awvalid && I_s_awready && O_s_wvalid && I_s_wready;
+    // OPT-19：AW/W 独立握手（与 dcache 的 AW/WB 双 FSM、axi64to32 解耦一致）
+    wire s_aw_hs = O_s_awvalid && I_s_awready;
+    wire s_w_hs  = O_s_wvalid && I_s_wready;
     wire s_b_hs  = I_s_bvalid && O_s_bready;
 
     // ================= 协议违例拦截（只拦截不修复，2026-08-31） =================
@@ -4617,8 +4621,8 @@ module ysyx_22040750_axiburst2xxx(
     wire [1:0] slot_beat = wslot[2:1];                 // wslot>>1 (0..3)
     wire       slot_half = wslot[0];
     wire       slot_active = slot_half ? (|wstrb_buf[slot_beat][7:4]) : (|wstrb_buf[slot_beat][3:0]);
-    assign O_s_awvalid = (state == S_W_ISSUE) && slot_active;
-    assign O_s_wvalid  = (state == S_W_ISSUE) && slot_active;
+    assign O_s_awvalid = (state == S_W_ISSUE) && slot_active && !aw_sent;
+    assign O_s_wvalid  = (state == S_W_ISSUE) && slot_active && !w_sent;
     assign O_s_awaddr  = ((waddr[31:3] + slot_beat) << 3) + (slot_half ? 32'd4 : 32'd0);
     assign O_s_awsize  = 3'd2;
     assign O_s_wdata   = slot_half ? {wbuf[slot_beat][63:32], 32'b0} : {32'b0, wbuf[slot_beat][31:0]};
@@ -4654,7 +4658,8 @@ module ysyx_22040750_axiburst2xxx(
                 if (!slot_active) begin
                     if (wslot == {wmbeats, 1'b0} - 4'd1) next_state = S_W_RESP; // 全部槽走完
                     else                                next_state = S_W_ISSUE;
-                end else if (s_aw_hs)                 next_state = S_W_WAITB;
+                end else if ((aw_sent || s_aw_hs) && (w_sent || s_w_hs))
+                    next_state = S_W_WAITB;                                     // AW/W 各自完成（可不同拍）
             end
             S_W_WAITB: if (s_b_hs) begin
                 if (wslot == {wmbeats, 1'b0} - 4'd1) next_state = S_W_RESP;
@@ -4697,23 +4702,32 @@ module ysyx_22040750_axiburst2xxx(
     always @(posedge I_clk)
         if (I_rst) begin
             waddr <= 0; wsize <= 0; wmbeats <= 0; wbeat <= 0; wslot <= 0;
+            aw_sent <= 1'b0; w_sent <= 1'b0;
         end else begin
             if (m_aw_hs) begin
                 waddr   <= I_m_awaddr;
                 wsize   <= I_m_awsize;
                 wmbeats <= I_m_awlen[2:0] + 3'd1;
                 wbeat   <= 0;
+                aw_sent <= 1'b0; w_sent <= 1'b0;
             end
             if (state == S_W_CAPW && I_m_wvalid && O_m_wready) begin
                 wbuf[wbeat]      <= I_m_wdata;
                 wstrb_buf[wbeat] <= I_m_wstrb;
                 wbeat <= wbeat + 2'd1;
             end
-            if (state == S_W_CAPW && I_m_wvalid && O_m_wready && I_m_wlast)
-                wslot <= 0;
-            if ((state == S_W_ISSUE && !slot_active && wslot != {wmbeats,1'b0} - 4'd1) ||
-                (state == S_W_WAITB && s_b_hs && wslot != {wmbeats,1'b0} - 4'd1))
-                wslot <= wslot + 4'd1;
+            if (state == S_W_CAPW && I_m_wvalid && O_m_wready && I_m_wlast) begin
+                wslot <= 0; aw_sent <= 1'b0; w_sent <= 1'b0;
+            end
+            // OPT-19：AW/W 各自完成判定
+            if (state == S_W_ISSUE && !aw_sent && s_aw_hs) aw_sent <= 1'b1;
+            if (state == S_W_ISSUE && !w_sent  && s_w_hs ) w_sent  <= 1'b1;
+            if (state == S_W_ISSUE && !slot_active && wslot != {wmbeats,1'b0} - 4'd1)
+                wslot <= wslot + 4'd1;                       // 跳过空槽
+            if (state == S_W_WAITB && s_b_hs) begin
+                if (wslot != {wmbeats,1'b0} - 4'd1) wslot <= wslot + 4'd1;
+                aw_sent <= 1'b0; w_sent <= 1'b0;
+            end
         end
 endmodule
 module ysyx_22040750(
