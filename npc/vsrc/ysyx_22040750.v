@@ -1605,7 +1605,11 @@ module ysyx_22040750_dcachectrl #(
     parameter BLOCK_NUM = CACHE_SIZE / BLOCK_SIZE,//128
     parameter OFFT_LEN = $clog2(BLOCK_SIZE),//5
     parameter INDEX_LEN = $clog2(BLOCK_NUM/GROUP_NUM),//6
-    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN//21
+    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN,//21
+    // P-E/E4.1：行宽/几何参数化（默认值=原 32B/2路，行为逐位不变）
+    parameter WAY_W = BLOCK_SIZE*8,             // 单路行位宽（256bit@32B）
+    parameter WAY_LANES = BLOCK_SIZE/8,         // 行内 64bit 拍数（4@32B）
+    parameter LANE_W = $clog2(WAY_LANES)        // 拍序号位宽（2@32B）
 )(
     input I_clk,
     input I_rst,
@@ -1620,16 +1624,16 @@ module ysyx_22040750_dcachectrl #(
     input I_cpu_fencei,
     output O_dcache_clean,
     // cache rd addr & req, low level valid en
-    input [255:0] I_way0_rdata,
-    input [255:0] I_way1_rdata,
+    input [WAY_W-1:0] I_way0_rdata,
+    input [WAY_W-1:0] I_way1_rdata,
     output [5:0] O_sram_addr,
     // msb-lsb: bram 7-4
     // wen=0 -> wr, wen=1 -> rd
     // wmask[i]=0 -> wvalid[i]
     output [3:0] O_sram_cen,
     output [3:0] O_sram_wen,
-    output [255:0] O_sram_wdata,
-    output [255:0] O_sram_wmask,
+    output [WAY_W-1:0] O_sram_wdata,
+    output [WAY_W-1:0] O_sram_wmask,
     // mem data, rd addr & req
     input [63:0] I_mem_rdata,
     input I_mem_arready,
@@ -1677,13 +1681,13 @@ module ysyx_22040750_dcachectrl #(
     reg [31:0] mem_addr;
     // cacheline & cpu_wb reg
     wire [7:0] sram_wmask;// cpu wmask;
-    reg [31:0] sram_wmaskB;// Bytewise wmask
+    wire [WAY_W/8-1:0] sram_wmaskB;// Bytewise wmask
     reg [1:0] hit_flag;// rd_only, 01 for way0 hit, 10 for way1 hit;
     // final data rd src
-    wire [255:0] mem_rdata;
+    wire [WAY_W-1:0] mem_rdata;
     // cache hit data source
-    wire [255:0] hit_rdata;
-    reg [255:0] cacheline_reg;
+    wire [WAY_W-1:0] hit_rdata;
+    reg [WAY_W-1:0] cacheline_reg;
     reg [63:0] cpu_reg;
     reg [7:0] cpu_mask_reg;
     reg [7:0] mmio_mask_reg;
@@ -1719,8 +1723,8 @@ module ysyx_22040750_dcachectrl #(
     // axi interface handshake && wdata cnt
     wire mem_ar_req, mem_aw_req;
     wire aw_handshake, wr_handshake;// awaddr/wdata handshake
-    reg [1:0] wdata_cnt;
-    wire [255:0] wdata;
+    reg [LANE_W-1:0] wdata_cnt;
+    wire [WAY_W-1:0] wdata;
     wire [63:0] cache_wdata, cache_rdata;
     wire [31:0] cache_awaddr;
     //wire cache_wvalid;
@@ -1799,7 +1803,7 @@ module ysyx_22040750_dcachectrl #(
             // A1：复用下方 alloc_lane（同一 merge 表达式，原处重复展开了一份 64bit 电路）
             cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= alloc_lane;
         else if(rd_x_active && I_mem_rvalid && ~mmio_process)
-            cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
+            cacheline_reg <= {I_mem_rdata, cacheline_reg[WAY_W-1:64]};
         else
             cacheline_reg <= cacheline_reg;
     always @(posedge I_clk)
@@ -1828,7 +1832,7 @@ module ysyx_22040750_dcachectrl #(
             hit_flag <= way0_hit ? 2'b01 : 2'b10;
         else
             hit_flag <= 2'b00;
-    assign hit_rdata = (I_way0_rdata & {256{hit_flag[0]}}) | (I_way1_rdata & {256{hit_flag[1]}});
+    assign hit_rdata = (I_way0_rdata & {WAY_W{hit_flag[0]}}) | (I_way1_rdata & {WAY_W{hit_flag[1]}});
     assign mem_rdata = (current_state == RD_HIT) ? hit_rdata : cacheline_reg;
     assign cache_rdata = mem_rdata[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64];
     // always @(*) begin // select useful data in raw I_mem_rdata
@@ -1864,10 +1868,10 @@ module ysyx_22040750_dcachectrl #(
             default: mmio_axsize = 0;
         endcase
     assign wdata = ((isway0_op & ~fencei_process) | (fencei_process & ~fencei_group)) ? I_way0_rdata : I_way1_rdata;
-    assign O_mem_wlast = O_mem_wvalid && (wdata_cnt == O_mem_awlen[1:0]);
+    assign O_mem_wlast = O_mem_wvalid && (wdata_cnt == O_mem_awlen[LANE_W-1:0]);
     assign O_mem_arvalid = rd_ax_busy;
     assign O_mem_rready = 1;
-    assign O_mem_arlen = mmio_process ? 0 : 3;// 32/8 - 1
+    assign O_mem_arlen = mmio_process ? 0 : WAY_LANES-1;// BLOCK_SIZE/8 - 1
     assign O_mem_arsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_arburst = mmio_process ? 2'b00 : 2'b01;
     assign O_mem_araddr = rd_ax_busy ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;// 32B alignment
@@ -1875,7 +1879,7 @@ module ysyx_22040750_dcachectrl #(
     assign cache_awaddr = ({32{fencei_process}} & fencei_addr) | ({32{~fencei_process}} & {lookup_table[{mem_index, ~isway0_op}],mem_index,{OFFT_LEN{1'b0}}});
     assign mmio_awaddr = mem_addr;
     assign O_mem_awaddr = mem_aw_req ? ((cache_awaddr & {32{~mmio_process}}) | (mmio_awaddr & {32{mmio_process}})) : 0;
-    assign O_mem_awlen = mmio_process ? 0 : 3;// 32/8 - 1
+    assign O_mem_awlen = mmio_process ? 0 : WAY_LANES-1;// BLOCK_SIZE/8 - 1
     assign O_mem_awsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_awburst = mmio_process ? 2'b00 : 2'b01;
     assign O_mem_awvalid = mem_aw_req ? 1 : 0;
@@ -1892,36 +1896,31 @@ module ysyx_22040750_dcachectrl #(
     assign sram_wmask = ~cpu_mask_reg;// cpu wmask is high level valid
     assign sram_wflag = (current_state == WR_HIT) || rd_allocate || wr_allocate;
     assign sram_rflag = (I_mem_rlast && !mmio_process) || rd_wb || wr_wb;
-    always @(*)
-        if(current_state == WR_HIT)
-            case(mem_offset[OFFT_LEN-1:3])
-                2'b11: sram_wmaskB = {sram_wmask, 24'hffffff};
-                2'b10: sram_wmaskB = {8'hff, sram_wmask, 16'hffff};
-                2'b01: sram_wmaskB = {16'hffff, sram_wmask, 8'hff};
-                2'b00: sram_wmaskB = {24'hffffff, sram_wmask};
-            endcase
-        else
-            sram_wmaskB = (rd_allocate || wr_allocate) ? 0 : {32{1'b1}};
+    genvar gw;
+    generate for(gw=0; gw<WAY_LANES; gw=gw+1) begin: gen_wmaskb
+        assign sram_wmaskB[8*gw +: 8] =
+            (current_state == WR_HIT) ? ((mem_offset[OFFT_LEN-1:3] == gw[OFFT_LEN-4:0]) ? sram_wmask : 8'hff)
+            : ((rd_allocate || wr_allocate) ? 8'h00 : 8'hff);
+    end endgenerate
     // cpu 数据与 cacheline 的组合替换：wr_allocate(写分配) 时把 cpu 数据按
     // mem_offset 对齐进 cacheline，sram 在此拍写入的就是 merge 后的整行。
-    wire [255:0] alloc_wdata;
+    wire [WAY_W-1:0] alloc_wdata;
     // WR_ALLOCATE 整行写 SRAM(wmask=0, 全字节写): 写入内存的 ∶=填充行+store 掩码合并,
     // 只允许 store 的字节覆盖填充数据, 其余字节保留填充值, 符合访存指令宽度语义。
     wire [63:0] alloc_lane =
         (cpu_reg & lane_wmask) |
         (cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~lane_wmask);
-    assign alloc_wdata =
-        (mem_offset[OFFT_LEN-1:3]==2'd0) ? {cacheline_reg[255:64], alloc_lane} :
-        (mem_offset[OFFT_LEN-1:3]==2'd1) ? {cacheline_reg[255:128], alloc_lane, cacheline_reg[63:0]} :
-        (mem_offset[OFFT_LEN-1:3]==2'd2) ? {cacheline_reg[255:192], alloc_lane, cacheline_reg[127:0]} :
-                                           {alloc_lane, cacheline_reg[191:0]};
+    generate for(gw=0; gw<WAY_LANES; gw=gw+1) begin: gen_alloc
+        assign alloc_wdata[64*gw +: 64] =
+            (mem_offset[OFFT_LEN-1:3] == gw[OFFT_LEN-4:0]) ? alloc_lane : cacheline_reg[64*gw +: 64];
+    end endgenerate
     assign O_sram_wdata = wr_allocate ? alloc_wdata : cacheline_reg;
     // assign O_sram_wdata = cacheline_reg; // Consecutive WR_ALLOCATE to WR_HIT gurantee correctness
     // only rd_hit case sram_op happen at IDLE
     assign O_sram_addr = fencei_process ? fencei_sram_addr : rd_hit ? index : mem_index;
     assign O_sram_cen = fencei_process ? fencei_sram_cen : cen_dcache;
     assign O_sram_wen = wen_dcache;
-    for(i=0;i<32;i=i+1)
+    for(i=0;i<WAY_W/8;i=i+1)
         assign O_sram_wmask[8*i +: 8] = {8{sram_wmaskB[i]}};
     // sram wen
     always @(*)
