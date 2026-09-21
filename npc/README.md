@@ -255,6 +255,8 @@ CPU 类同步设计的 UVM 化要点：
 | `verif/docs/RUN_GUIDE.md` | **运行速查**：cpu-tests/am-tests/microbench/rt(PSRAM+SDRAM)/test_prog/npc sim/verif 的编译运行命令 + 参数 + 常见坑 | ✅ 现行 |
 | `verif/docs/DEBUG_WORKFLOW.md` | 权威验证链路、数据逐级定位法、波形/编译开关管理（DIFF/WAVE/WITH_TRACE/WITH_SDL）、LDS/BOOT_S 链接启动、程序启动流程、硬件经验 | 现行，持续更新 |
 | `verif/docs/VERIF_TESTS.md` | 测试体系（verif 微测试/断言/形式化；运行命令见 RUN_GUIDE） | 现行 |
+| `verif/docs/B3_PLAN.md` | **当前阶段 B3**：分阶段计划与完成状态（阶段 1–7 ✅；阶段 8 主体完成：P-A A1/P-B/P-C/P-D/P-E(E4 暂停)/P-F/P-G ✅，剩余 **P-H 教学项**） | 现行，持续更新 |
+| `verif/docs/STAGE_B3_CACHE_PERF.md` | B3 讲义必做题全清单 → 现状映射（34 项）+ P-A~P-H 任务计划表 | 现行，持续更新 |
 |  `verif/records/process/STAGE_H_ONWARDS_TASKS.md` | C5.5 讲义阶段 H–K 的任务定义与实现路径 + 完成记录 | H–J5 ✅；K 🔶（ChipLink 结构保证） |
 |  `verif/records/knowledge/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（架构分析/瓶颈/验证策略/优化方向/浪费点清单） | 审计完成，优化未实施 |
 | `verif/README.md` | verif 目录结构与文件功能总索引（验证环境代码 + 文档区入口） | ✅ 现行 |

@@ -1605,7 +1605,11 @@ module ysyx_22040750_dcachectrl #(
     parameter BLOCK_NUM = CACHE_SIZE / BLOCK_SIZE,//128
     parameter OFFT_LEN = $clog2(BLOCK_SIZE),//5
     parameter INDEX_LEN = $clog2(BLOCK_NUM/GROUP_NUM),//6
-    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN//21
+    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN,//21
+    // P-E/E4.1：行宽/几何参数化（默认值=原 32B/2路，行为逐位不变）
+    parameter WAY_W = BLOCK_SIZE*8,             // 单路行位宽（256bit@32B）
+    parameter WAY_LANES = BLOCK_SIZE/8,         // 行内 64bit 拍数（4@32B）
+    parameter LANE_W = $clog2(WAY_LANES)        // 拍序号位宽（2@32B）
 )(
     input I_clk,
     input I_rst,
@@ -1620,16 +1624,16 @@ module ysyx_22040750_dcachectrl #(
     input I_cpu_fencei,
     output O_dcache_clean,
     // cache rd addr & req, low level valid en
-    input [255:0] I_way0_rdata,
-    input [255:0] I_way1_rdata,
+    input [WAY_W-1:0] I_way0_rdata,
+    input [WAY_W-1:0] I_way1_rdata,
     output [5:0] O_sram_addr,
     // msb-lsb: bram 7-4
     // wen=0 -> wr, wen=1 -> rd
     // wmask[i]=0 -> wvalid[i]
     output [3:0] O_sram_cen,
     output [3:0] O_sram_wen,
-    output [255:0] O_sram_wdata,
-    output [255:0] O_sram_wmask,
+    output [WAY_W-1:0] O_sram_wdata,
+    output [WAY_W-1:0] O_sram_wmask,
     // mem data, rd addr & req
     input [63:0] I_mem_rdata,
     input I_mem_arready,
@@ -1677,13 +1681,13 @@ module ysyx_22040750_dcachectrl #(
     reg [31:0] mem_addr;
     // cacheline & cpu_wb reg
     wire [7:0] sram_wmask;// cpu wmask;
-    reg [31:0] sram_wmaskB;// Bytewise wmask
+    wire [WAY_W/8-1:0] sram_wmaskB;// Bytewise wmask
     reg [1:0] hit_flag;// rd_only, 01 for way0 hit, 10 for way1 hit;
     // final data rd src
-    wire [255:0] mem_rdata;
+    wire [WAY_W-1:0] mem_rdata;
     // cache hit data source
-    wire [255:0] hit_rdata;
-    reg [255:0] cacheline_reg;
+    wire [WAY_W-1:0] hit_rdata;
+    reg [WAY_W-1:0] cacheline_reg;
     reg [63:0] cpu_reg;
     reg [7:0] cpu_mask_reg;
     reg [7:0] mmio_mask_reg;
@@ -1694,8 +1698,12 @@ module ysyx_22040750_dcachectrl #(
     genvar i;
     reg [TAG_LEN-1:0] lookup_table [BLOCK_NUM-1:0];
     reg [BLOCK_NUM-1:0] valid_table, dirty_table;
-    wire [BLOCK_NUM-1:0] lookup_table_index;
-    wire [BLOCK_NUM-1:0] dirty_table_hit_index, dirty_table_miss_index, dirty_table_fencei_index;
+    // A1 面积改造（V2，保留逐行结构防 memory 推断换贵单元）：原 4 组逐行比较器中
+    // alloc 与 miss 两组表达式完全相同 (i == {mem_index, ~isway0_op})，合并为一组共享，
+    // 128 份 × ~13 cell 的重复译码由此消除。
+    wire [BLOCK_NUM-1:0] cmp_alloc_line;  // (i == {mem_index, ~isway0_op})
+    wire [BLOCK_NUM-1:0] cmp_hit_line;    // (i == {index, way1_hit})
+    wire [BLOCK_NUM-1:0] cmp_fencei_line; // (i == fencei_index)
     // signals below compare hit & miss(use in IDLE state)
     wire [TAG_LEN-1:0] way0_tag, way1_tag;
     wire way0_valid, way1_valid;
@@ -1715,8 +1723,8 @@ module ysyx_22040750_dcachectrl #(
     // axi interface handshake && wdata cnt
     wire mem_ar_req, mem_aw_req;
     wire aw_handshake, wr_handshake;// awaddr/wdata handshake
-    reg [1:0] wdata_cnt;
-    wire [255:0] wdata;
+    reg [LANE_W-1:0] wdata_cnt;
+    wire [WAY_W-1:0] wdata;
     wire [63:0] cache_wdata, cache_rdata;
     wire [31:0] cache_awaddr;
     //wire cache_wvalid;
@@ -1747,7 +1755,8 @@ module ysyx_22040750_dcachectrl #(
     assign fencei_sram_addr = fencei_index[INDEX_LEN:1];
     assign fencei_group = fencei_index[0];
     assign fencei_process = (current_state == FENCEI);
-    assign fencei_addr = {lookup_table[fencei_index], fencei_index[INDEX_LEN:1], {OFFT_LEN{1'b0}}};
+    // A1: fencei 回写地址的 tag 读改用下方 way1/fencei 共享读口（tag_rd2）
+    assign fencei_addr = {tag_rd2, fencei_index[INDEX_LEN:1], {OFFT_LEN{1'b0}}};
     assign fencei_sram_cen = fencei_group ? 4'b0011 : 4'b1100;
     always @(posedge I_clk)
         if(I_rst)
@@ -1791,10 +1800,10 @@ module ysyx_22040750_dcachectrl #(
             cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <=
                 (I_cpu_data & i_wmask64) | (cacheline_reg[{offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~i_wmask64);
         else if(wr_allocate)
-            cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <=
-                (cpu_reg & lane_wmask) | (cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~lane_wmask);
+            // A1：复用下方 alloc_lane（同一 merge 表达式，原处重复展开了一份 64bit 电路）
+            cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] <= alloc_lane;
         else if(rd_x_active && I_mem_rvalid && ~mmio_process)
-            cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
+            cacheline_reg <= {I_mem_rdata, cacheline_reg[WAY_W-1:64]};
         else
             cacheline_reg <= cacheline_reg;
     always @(posedge I_clk)
@@ -1823,7 +1832,7 @@ module ysyx_22040750_dcachectrl #(
             hit_flag <= way0_hit ? 2'b01 : 2'b10;
         else
             hit_flag <= 2'b00;
-    assign hit_rdata = (I_way0_rdata & {256{hit_flag[0]}}) | (I_way1_rdata & {256{hit_flag[1]}});
+    assign hit_rdata = (I_way0_rdata & {WAY_W{hit_flag[0]}}) | (I_way1_rdata & {WAY_W{hit_flag[1]}});
     assign mem_rdata = (current_state == RD_HIT) ? hit_rdata : cacheline_reg;
     assign cache_rdata = mem_rdata[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64];
     // always @(*) begin // select useful data in raw I_mem_rdata
@@ -1859,10 +1868,10 @@ module ysyx_22040750_dcachectrl #(
             default: mmio_axsize = 0;
         endcase
     assign wdata = ((isway0_op & ~fencei_process) | (fencei_process & ~fencei_group)) ? I_way0_rdata : I_way1_rdata;
-    assign O_mem_wlast = O_mem_wvalid && (wdata_cnt == O_mem_awlen[1:0]);
+    assign O_mem_wlast = O_mem_wvalid && (wdata_cnt == O_mem_awlen[LANE_W-1:0]);
     assign O_mem_arvalid = rd_ax_busy;
     assign O_mem_rready = 1;
-    assign O_mem_arlen = mmio_process ? 0 : 3;// 32/8 - 1
+    assign O_mem_arlen = mmio_process ? 0 : WAY_LANES-1;// BLOCK_SIZE/8 - 1
     assign O_mem_arsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_arburst = mmio_process ? 2'b00 : 2'b01;
     assign O_mem_araddr = rd_ax_busy ? {mem_addr[31:OFFT_LEN],{{OFFT_LEN{mmio_process}} & mem_offset}} : 0;// 32B alignment
@@ -1870,7 +1879,7 @@ module ysyx_22040750_dcachectrl #(
     assign cache_awaddr = ({32{fencei_process}} & fencei_addr) | ({32{~fencei_process}} & {lookup_table[{mem_index, ~isway0_op}],mem_index,{OFFT_LEN{1'b0}}});
     assign mmio_awaddr = mem_addr;
     assign O_mem_awaddr = mem_aw_req ? ((cache_awaddr & {32{~mmio_process}}) | (mmio_awaddr & {32{mmio_process}})) : 0;
-    assign O_mem_awlen = mmio_process ? 0 : 3;// 32/8 - 1
+    assign O_mem_awlen = mmio_process ? 0 : WAY_LANES-1;// BLOCK_SIZE/8 - 1
     assign O_mem_awsize = mmio_process ? mmio_axsize : 3'b011;// 8B
     assign O_mem_awburst = mmio_process ? 2'b00 : 2'b01;
     assign O_mem_awvalid = mem_aw_req ? 1 : 0;
@@ -1887,36 +1896,31 @@ module ysyx_22040750_dcachectrl #(
     assign sram_wmask = ~cpu_mask_reg;// cpu wmask is high level valid
     assign sram_wflag = (current_state == WR_HIT) || rd_allocate || wr_allocate;
     assign sram_rflag = (I_mem_rlast && !mmio_process) || rd_wb || wr_wb;
-    always @(*)
-        if(current_state == WR_HIT)
-            case(mem_offset[OFFT_LEN-1:3])
-                2'b11: sram_wmaskB = {sram_wmask, 24'hffffff};
-                2'b10: sram_wmaskB = {8'hff, sram_wmask, 16'hffff};
-                2'b01: sram_wmaskB = {16'hffff, sram_wmask, 8'hff};
-                2'b00: sram_wmaskB = {24'hffffff, sram_wmask};
-            endcase
-        else
-            sram_wmaskB = (rd_allocate || wr_allocate) ? 0 : {32{1'b1}};
+    genvar gw;
+    generate for(gw=0; gw<WAY_LANES; gw=gw+1) begin: gen_wmaskb
+        assign sram_wmaskB[8*gw +: 8] =
+            (current_state == WR_HIT) ? ((mem_offset[OFFT_LEN-1:3] == gw[OFFT_LEN-4:0]) ? sram_wmask : 8'hff)
+            : ((rd_allocate || wr_allocate) ? 8'h00 : 8'hff);
+    end endgenerate
     // cpu 数据与 cacheline 的组合替换：wr_allocate(写分配) 时把 cpu 数据按
     // mem_offset 对齐进 cacheline，sram 在此拍写入的就是 merge 后的整行。
-    wire [255:0] alloc_wdata;
+    wire [WAY_W-1:0] alloc_wdata;
     // WR_ALLOCATE 整行写 SRAM(wmask=0, 全字节写): 写入内存的 ∶=填充行+store 掩码合并,
     // 只允许 store 的字节覆盖填充数据, 其余字节保留填充值, 符合访存指令宽度语义。
     wire [63:0] alloc_lane =
         (cpu_reg & lane_wmask) |
         (cacheline_reg[{mem_offset[OFFT_LEN-1:3],3'b0,3'b0} +: 64] & ~lane_wmask);
-    assign alloc_wdata =
-        (mem_offset[OFFT_LEN-1:3]==2'd0) ? {cacheline_reg[255:64], alloc_lane} :
-        (mem_offset[OFFT_LEN-1:3]==2'd1) ? {cacheline_reg[255:128], alloc_lane, cacheline_reg[63:0]} :
-        (mem_offset[OFFT_LEN-1:3]==2'd2) ? {cacheline_reg[255:192], alloc_lane, cacheline_reg[127:0]} :
-                                           {alloc_lane, cacheline_reg[191:0]};
+    generate for(gw=0; gw<WAY_LANES; gw=gw+1) begin: gen_alloc
+        assign alloc_wdata[64*gw +: 64] =
+            (mem_offset[OFFT_LEN-1:3] == gw[OFFT_LEN-4:0]) ? alloc_lane : cacheline_reg[64*gw +: 64];
+    end endgenerate
     assign O_sram_wdata = wr_allocate ? alloc_wdata : cacheline_reg;
     // assign O_sram_wdata = cacheline_reg; // Consecutive WR_ALLOCATE to WR_HIT gurantee correctness
     // only rd_hit case sram_op happen at IDLE
     assign O_sram_addr = fencei_process ? fencei_sram_addr : rd_hit ? index : mem_index;
     assign O_sram_cen = fencei_process ? fencei_sram_cen : cen_dcache;
     assign O_sram_wen = wen_dcache;
-    for(i=0;i<32;i=i+1)
+    for(i=0;i<WAY_W/8;i=i+1)
         assign O_sram_wmask[8*i +: 8] = {8{sram_wmaskB[i]}};
     // sram wen
     always @(*)
@@ -1934,7 +1938,11 @@ module ysyx_22040750_dcachectrl #(
             cen_dcache = 4'b1111;
     // fsm ctrl signal impl
     assign way0_tag = lookup_table[{index,1'b0}];
-    assign way1_tag = lookup_table[{index,1'b1}];
+    // A1: way1/fencei 共享 tag 读口 —— FENCEI 态与命中路径互斥（FENCEI 期间 mem_ready=0、
+    // CPU 无请求，way1_tag 不被引用），省去 64:1×21 的第三读口译码 mux
+    wire [INDEX_LEN:0] tag_rd2_idx = fencei_process ? fencei_index : {index, 1'b1};
+    wire [TAG_LEN-1:0] tag_rd2     = lookup_table[tag_rd2_idx];
+    assign way1_tag = tag_rd2;
     assign way0_valid = valid_table[{index,1'b0}];
     assign way1_valid = valid_table[{index,1'b1}];
     assign way0_hit = (tag == way0_tag) && way0_valid;
@@ -1968,22 +1976,17 @@ module ysyx_22040750_dcachectrl #(
     assign replace_dirty = (way0_dirty && isway0_op) || (way1_dirty && ~isway0_op);
     // lookup table impl
     generate for(i=0;i<BLOCK_NUM;i=i+1) begin
-        assign lookup_table_index[i] = (i == {mem_index, ~isway0_op}) ? 1 : 0;
-        assign dirty_table_hit_index[i] = (i == {index, way1_hit}) ? 1 : 0;
-        assign dirty_table_miss_index[i] = (i == {mem_index, ~isway0_op}) ? 1 : 0;
-        assign dirty_table_fencei_index[i] = (i == fencei_index) ? 1 : 0;
+        assign cmp_alloc_line[i]  = (i == {mem_index, ~isway0_op});
+        assign cmp_hit_line[i]    = (i == {index, way1_hit});
+        assign cmp_fencei_line[i] = (i == fencei_index);
         always @(posedge I_clk)
             if(I_rst) begin
                 lookup_table[i] <= 0;
                 valid_table[i] <= 0;
             end
-            // else if(rd_allocate || wr_allocate) begin
-            //     lookup_table[{mem_index, ~isway0_op}] <= mem_tag;
-            //     valid_table[{mem_index, ~isway0_op}] <= 1;
-            // end
-            else if((rd_allocate || wr_allocate) && lookup_table_index[i]) begin
+            else if((rd_allocate || wr_allocate) && cmp_alloc_line[i]) begin
                 lookup_table[i] <= mem_tag;
-                valid_table[i] <= 1;
+                valid_table[i] <= 1'b1;
             end
             else begin
                 lookup_table[i] <= lookup_table[i];
@@ -1991,24 +1994,16 @@ module ysyx_22040750_dcachectrl #(
             end
         always @(posedge I_clk)
             if(I_rst) begin
-                dirty_table[i] <= 0;
+                dirty_table[i] <= 1'b0;
             end
-            // else if(wr_hit)
-            //     dirty_table[{index, way1_hit}] <= 1;
-            // else if(rd_wb && I_mem_bvalid)
-            //     dirty_table[{mem_index, ~isway0_op}] <= 0;
-            // else if(wr_allocate)
-            //     dirty_table[{mem_index, ~isway0_op}] <= 1;
-            // else if(fencei_process & I_mem_bvalid)
-            //     dirty_table[fencei_index] <= 0;
-            else if(wr_hit && dirty_table_hit_index[i])
-                dirty_table[i] <= 1;
-            else if(rd_wb && I_mem_bvalid && dirty_table_miss_index[i])
-                dirty_table[i] <= 0;
-            else if(wr_allocate && dirty_table_miss_index[i])
-                dirty_table[i] <= 1;
-            else if(fencei_process && I_mem_bvalid && dirty_table_fencei_index[i])
-                dirty_table[i] <= 0;
+            else if(wr_hit && cmp_hit_line[i])
+                dirty_table[i] <= 1'b1;
+            else if(rd_wb && I_mem_bvalid && cmp_alloc_line[i])
+                dirty_table[i] <= 1'b0;
+            else if(wr_allocate && cmp_alloc_line[i])
+                dirty_table[i] <= 1'b1;
+            else if(fencei_process && I_mem_bvalid && cmp_fencei_line[i])
+                dirty_table[i] <= 1'b0;
             else begin
                 dirty_table[i] <= dirty_table[i];
             end
@@ -2068,16 +2063,30 @@ module ysyx_22040750_dcachectrl #(
     // host 侧 AXI4ToAPB 的 len/size 断言拦截（见 ysyxSoC/soc/AXI4ToAPB.scala）。
     // 此修改使 C 程序访问 flash 数据（如 .rodata 里的 8B 常量 `ld`）也走 32B burst，
     // 避免 8B 单拍直连 AXI4ToAPB 触发 size>4 断言。
+    // A1 面积改写：三段区间均 2^k 对齐，>=/< 比较链 → 前缀相等（逻辑严格等价、门数更少）
     assign mmio_flag = (I_cpu_rd_req || I_cpu_wr_req) &&
-                       ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
-                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
-                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha8000000)) );
+                       ~( (I_cpu_addr[31:22] == 10'h200) ||  // PSRAM [0x80000000, 0x80400000)
+                          (I_cpu_addr[31:28] == 4'h3)    ||  // flash  [0x30000000, 0x40000000)
+                          (I_cpu_addr[31:27] == 5'h14) );    // SDRAM  [0xa0000000, 0xa8000000)
     assign O_cpu_mem_ready = (current_state == IDLE) || (current_state == RD_HIT) || (current_state == WR_HIT);
     always @(posedge I_clk)
         if(I_rst)
             current_state <= IDLE;
         else
             current_state <= next_state;
+
+`ifdef DEBUG_AXIDLY
+  // P-D 调试：打印发往 SDRAM 区(0xa0..)的非宽(awsize/arsize!=3)AXI请求，定位单拍来源
+  always @(posedge I_clk) begin
+    if (!I_rst) begin
+      if (O_mem_awvalid && (O_mem_awaddr[31:24] == 8'ha0))
+        $display("DC AW-SDRAM addr=%h len=%0d size=%0d mmio=%b state=%h awst=%h", O_mem_awaddr, O_mem_awlen, O_mem_awsize, mmio_process, current_state, aw_state);
+      if (rd_ax_busy && I_mem_arready && (mem_addr[31:24] == 8'ha0) && (O_mem_arsize != 3'b011))
+        $display("DC AR-SDRAM-NONWIDE addr=%h len=%0d size=%0d mmio=%b state=%h", mem_addr, O_mem_arlen, O_mem_arsize, mmio_process, current_state);
+    end
+  end
+`endif
+
     always @(*) begin
         next_state = IDLE;
         case(current_state)
@@ -3061,7 +3070,11 @@ module ysyx_22040750_icachectrl #(
     parameter BLOCK_NUM = CACHE_SIZE / BLOCK_SIZE,
     parameter OFFT_LEN = $clog2(BLOCK_SIZE),
     parameter INDEX_LEN = $clog2(BLOCK_NUM/GROUP_NUM),
-    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN
+    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN,
+    // P-E/E4.x：行宽/几何参数化（与 dcachectrl 对称；默认 32B 行为逐位不变）
+    parameter WAY_W = BLOCK_SIZE*8,             // 单路行位宽（256bit@32B）
+    parameter WAY_LANES = BLOCK_SIZE/8,         // 行内 64bit 拍数（4@32B）
+    parameter LANE_W = $clog2(WAY_LANES)
 )(
     input I_clk,
     input I_rst,
@@ -3073,16 +3086,16 @@ module ysyx_22040750_icachectrl #(
     input I_cpu_fencei,// from cpu, fencei begin, disable pc_ready
     input I_dcache_clean,// from dcache, fencei end, enable pc_ready
     // cache rd addr & req, low level valid en
-    input [255:0] I_way0_rdata,
-    input [255:0] I_way1_rdata,
+    input [WAY_W-1:0] I_way0_rdata,
+    input [WAY_W-1:0] I_way1_rdata,
     output [5:0] O_sram_addr,
     // msb-lsb: bram 3-0
     // wen=0 -> wr, wen=1 -> rd
     // wmask[i]=0 -> wvalid[i]
     output [3:0] O_sram_cen,
     output [3:0] O_sram_wen,
-    output [255:0] O_sram_wdata,
-    output [255:0] O_sram_wmask,
+    output [WAY_W-1:0] O_sram_wdata,
+    output [WAY_W-1:0] O_sram_wmask,
     // mem data, rd addr & req
     input [63:0] I_mem_rdata,
     input I_mem_arready,
@@ -3123,11 +3136,11 @@ module ysyx_22040750_icachectrl #(
     wire way0_replace, way1_replace;
     reg [1:0] hit_flag;// 01 for way0 hit, 10 for way1 hit;
     // final data rd src
-    wire [255:0] mem_rdata;
+    wire [WAY_W-1:0] mem_rdata;
     // cache hit data source
-    wire [255:0] hit_rdata;
+    wire [WAY_W-1:0] hit_rdata;
     // mem wb reg
-    reg [255:0] cacheline_reg;
+    reg [WAY_W-1:0] cacheline_reg;
     // ctrl signal
     wire rd_hit, rd_miss, rd_handshake, rd_reload, rd_allocate, pc_handshake;
     wire mmio_flag;
@@ -3173,7 +3186,7 @@ module ysyx_22040750_icachectrl #(
     // axi constant
     assign O_mem_rready = 1;// always enable rdata
     //assign O_mem_bready = 0;// always disable wresp
-    assign O_mem_arlen = mmio_process ? 0 : 3;// 32/8 - 1
+    assign O_mem_arlen = mmio_process ? 0 : WAY_LANES-1;// BLOCK_SIZE/8 - 1
     assign O_mem_arsize = mmio_process ? 3'b010 : 3'b011;// 8B
     assign O_mem_arburst = mmio_process ? 2'b00 : 2'b01;
     // cache addr/en logic
@@ -3191,10 +3204,6 @@ module ysyx_22040750_icachectrl #(
                 lookup_table[i] <= 0;
                 valid_table[i] <= 0;
             end
-            // else if(rd_allocate) begin
-            //     lookup_table[{mem_index, way1_replace}] <= mem_tag;
-            //     valid_table[{mem_index, way1_replace}] <= 1;
-            // end
             else if(rd_allocate && lookup_table_index[i]) begin
                 lookup_table[i] <= mem_tag;
                 valid_table[i] <= 1;
@@ -3256,7 +3265,7 @@ module ysyx_22040750_icachectrl #(
         //else if(rd_hit)
         //    cacheline_reg <= way0_hit ? I_way0_rdata : I_way1_rdata;
         else if(rd_x_active && I_mem_rvalid && ~mmio_process)
-            cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
+            cacheline_reg <= {I_mem_rdata, cacheline_reg[WAY_W-1:64]};
         else
             cacheline_reg <= cacheline_reg;
     // rd allocate signal
@@ -3271,7 +3280,7 @@ module ysyx_22040750_icachectrl #(
         else
             hit_flag <= 2'b00;
     //assign hit_rdata = way0_hit ? I_way0_rdata : I_way1_rdata;
-    assign hit_rdata = (I_way0_rdata & {256{hit_flag[0]}}) | (I_way1_rdata & {256{hit_flag[1]}});
+    assign hit_rdata = (I_way0_rdata & {WAY_W{hit_flag[0]}}) | (I_way1_rdata & {WAY_W{hit_flag[1]}});
     assign mem_rdata = (current_state == RD_HIT) ? hit_rdata : cacheline_reg;
     assign cache_inst = mem_rdata[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     assign mmio_inst = mem_addr[2] ? I_mem_rdata[63:32] : I_mem_rdata[31:0];
@@ -3279,7 +3288,7 @@ module ysyx_22040750_icachectrl #(
     // assign O_cpu_inst = mem_rdata[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     //assign O_cpu_inst = cacheline_reg[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     assign O_sram_wen = rd_allocate ? 4'b0 : 4'hf;
-    assign O_sram_wmask = rd_allocate ? 0 : {256{1'b1}};
+    assign O_sram_wmask = rd_allocate ? {WAY_W{1'b0}} : {WAY_W{1'b1}};
     assign O_sram_wdata = cacheline_reg;
     assign way0_replace = rd_allocate && ~way1_replace;
     assign way1_replace = rd_allocate && (valid_table[{mem_index,1'b0}]) && ~(valid_table[{mem_index,1'b1}]);
@@ -3293,9 +3302,9 @@ module ysyx_22040750_icachectrl #(
     // 可缓存区(icache) = PSRAM [0x80000000,0x80400000) + flash [0x30000000,0x40000000)
     // 两者均为 APB 单拍(无 AXI burst)：icache 发 32B burst，经 slave_crossbar 内
     // axiburst2xxx 统一转 8×32bit 单拍（flash 取指加速，复用 PSRAM 转换 IP）。
-    assign mmio_flag = I_cpu_rd_req && ~( ((I_cpu_addr >= 32'h80000000) && (I_cpu_addr < 32'h80400000)) ||
-                                          ((I_cpu_addr >= 32'h30000000) && (I_cpu_addr < 32'h40000000)) ||
-                                          ((I_cpu_addr >= 32'ha0000000) && (I_cpu_addr < 32'ha8000000)) );
+    assign mmio_flag = I_cpu_rd_req && ~( (I_cpu_addr[31:22] == 10'h200) ||  // PSRAM [0x80000000,0x80400000)
+                                         (I_cpu_addr[31:28] == 4'h3)    ||  // flash  [0x30000000,0x40000000)
+                                         (I_cpu_addr[31:27] == 5'h14) );    // SDRAM  [0xa0000000,0xa8000000)
     always @(posedge I_clk)
         if(I_rst)
             mmio_process <= 0;
@@ -4144,11 +4153,11 @@ module ysyx_22040750_slave_crossbar(
     // ⚠️ 重要：flash 只有" burst 请求"(icache 取指, arlen!=0) 才需要 axiburst 转单拍；
     //         dcache 对 flash 的"单拍 MMIO 数据读"(如 loader 搬 .data 的 lbu, arlen=0)
     //         必须走 bus 直连(如 SRAM)，否则经 axiburst 重组会丢数据(实测读回 0)。
+    // P-D：SDRAM 已挂 AXI（原生突发），走 bus 直连把 64bit 32B burst 直传 io_master
+    //       —— 不再经 axiburst2xxx 拆单拍（当年 SDRAM 在 APB 从端时才需要）。
     assign psram_ar_flag = ((I_cache_araddr >= PSRAM_START) && (I_cache_araddr < PSRAM_END)) ||
-                           ((I_cache_araddr >= SDRAM_START) && (I_cache_araddr < SDRAM_END)) ||
                            (((I_cache_araddr >= FLASH_START) && (I_cache_araddr < FLASH_END)) && (I_cache_arlen != 8'd0));
-    assign psram_aw_flag = ((I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END)) ||
-                           ((I_cache_awaddr >= SDRAM_START) && (I_cache_awaddr < SDRAM_END));
+    assign psram_aw_flag = ((I_cache_awaddr >= PSRAM_START) && (I_cache_awaddr < PSRAM_END));
     assign bus_ar_flag = ~clint_ar_flag & ~psram_ar_flag;
     assign bus_aw_flag = ~clint_aw_flag & ~psram_aw_flag;
     assign clint_ar_handshake = I_clint_arready && O_clint_arvalid;
@@ -4599,6 +4608,10 @@ module ysyx_22040750_axiburst2xxx(
     assign O_m_rlast  = (rsize == 3'd3) ? (r_sbeat == (rsbeats - 4'd1)) : 1'b1;
 
     // slave 写请求 (wslot -> 哪一拍/半字; 单拍 32-bit)
+    // ⚠️ 约定（标准 64bit AXI 道语义）：32bit 窄拍的数据/字节使能落在"地址对应的半字"
+    //    —— addr[2]=0 → [31:0]/[3:0]，addr[2]=1 → [63:32]/[7:4]。
+    //    下游若是 32bit 从端，必须由宽转换器（axi64to32）按道取回；直接取 [31:0] 会得到 0。
+    //    （本模块自身正确：全 0 strb 的槽会被 slot_active 跳过，wslot 照常推进。）
     /* verilator lint_off WIDTHEXPAND */
     /* verilator lint_off WIDTHTRUNC */
     wire [1:0] slot_beat = wslot[2:1];                 // wslot>>1 (0..3)

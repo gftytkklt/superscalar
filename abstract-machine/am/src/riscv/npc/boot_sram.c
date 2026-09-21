@@ -13,8 +13,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// P-F：对齐时用 8B（ld/sd）批量搬，减少访存次数与循环开销；首尾字节补齐。
+// 仍保持纯 C/自包含（驻留 flash，不依赖 klib）。
 __attribute__((section(".bootloader")))
 static void copy_bytes(char *dst, const char *src, size_t n) {
+  while (n && (((uintptr_t)dst | (uintptr_t)src) & 7)) { *dst++ = *src++; n--; }
+  uint64_t *d8 = (uint64_t *)dst;
+  const uint64_t *s8 = (const uint64_t *)src;
+  while (n >= 8) { *d8++ = *s8++; n -= 8; }
+  dst = (char *)d8; src = (const char *)s8;
   while (n--) *dst++ = *src++;
 }
 

@@ -151,9 +151,10 @@ module icache_transparency (
   end
 
   // ---------------- 断言 ----------------
-  // [t1] 透明性：返回的指令 == 直接从存储器译出的指令
+  // [t1] 透明性：复位结束后、本次取指真正入队并被服务时，返回的指令 == 直接从存储器译出。
+  //   （复位期间 DUT 状态任意/未服务，故用 !I_rst 排除 B 域 init 的伪反例）
   always @* begin
-    if (O_cpu_rvalid)
+    if (!I_rst && O_cpu_rvalid && qv)
       assert (O_cpu_inst === mw(qa));
   end
 
