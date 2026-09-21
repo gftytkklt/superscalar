@@ -20,6 +20,12 @@ PROBE_PORTS = """
     ,output        PROBE_EX_MEM_mem_rd_en
     ,output        PROBE_EX_MEM_mem_wr_en
     ,output [31:0] PROBE_EX_MEM_mem_addr
+    ,output [31:0] PROBE_O_pc
+    ,output [31:0] PROBE_IF_ID_pc
+    ,output [31:0] PROBE_current_pc
+    ,output [63:0] PROBE_rs1_data
+    ,output [63:0] PROBE_rs1_fwd
+    ,output [63:0] PROBE_ID_EX_rs1
 """
 
 PROBE_BODY = """
@@ -33,6 +39,12 @@ PROBE_BODY = """
     assign PROBE_EX_MEM_mem_rd_en = EX_MEM_mem_rd_en;
     assign PROBE_EX_MEM_mem_wr_en = EX_MEM_mem_wr_en;
     assign PROBE_EX_MEM_mem_addr  = EX_MEM_mem_addr;
+    assign PROBE_O_pc             = O_pc;
+    assign PROBE_IF_ID_pc         = IF_ID_pc;
+    assign PROBE_current_pc       = current_pc;
+    assign PROBE_rs1_data         = rs1_data;
+    assign PROBE_rs1_fwd          = rs1_forward_data;
+    assign PROBE_ID_EX_rs1        = ID_EX_rs1;
 """
 
 

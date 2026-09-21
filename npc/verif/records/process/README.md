@@ -142,6 +142,7 @@
 | `B4_Q5_FORMAL.md` | RECORD | B4-Q5 流水线形式化：`formal/pipeline.sby`+`props_pipeline.sv`（REF=受限子集单周期执行器，探针注入避开 yosys 层次引用限制）**BMC PASS @ depth 16（~3s）**，`make formal` 四件全 PASS；过程修复 4 个 REF/harness 保真度问题（层次引用/复位取指/非法编码放行/SRA 退化）；depth 20+ 反例待归因 | ✅（主体） |
 | `B4_Q6_OPT19_AXIBURST.md` | RECORD | B4-Q6/OPT-19：`axiburst2xxx` 写握手 **AW/W 解耦修复**（与 dcache 双 FSM/`axi64to32` 范式一致）；harness 恢复严格从端后 **11/11 微测试 + assert 11/11 + formal 四件 + `make perf` 逐位 + sdram-heap 15,329,912 全绿** | ✅ |
 | `B4_Q6_OPT05_STORE.md` | RECORD | B4-Q6/OPT-05 采样：Python dcache 模型与 RTL **逐项一致**（rd 32,894/1,090、wr 18,075/3,307）；**97.1% 写缺失驱逐前写满整行（3,212/3,307）**；免填充上界 **≈4.2M（23%T）→ ≈1.30×**（推荐 write-validate）；含候选 A/B/C 与前置拆分实验 | ✅ 采样 |
+| `B4_Q6_JALR_LSB.md` | RECORD | B4-Q6 depth≥20 形式化反例调试：修复 2 类 harness 假反例（`difftest_valid` 电平误当脉冲；`O_pc=dnpc` 索引错位）+ **真实 RTL 缺陷：`dnpc_reg` 未清 JALR 目标 bit0（含寄存器路径）**；JALR fix 后 12/12 微测试 + `make perf` 逐位；剩余值反例定向实测未复现，继续定位 | 🔶 进行中 |
 
 附件：`B4_QUANT_RAW.md`、`B4_Q3_RAW.md`、`B4_Q6_OPT05_store_analysis.md`
 

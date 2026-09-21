@@ -3830,7 +3830,7 @@ module ysyx_22040750_npc(
         if(I_rst)
             dnpc_reg <= 0;
         else if(store_dnpc)
-            dnpc_reg <= dnpc;
+            dnpc_reg <= {dnpc[31:1], dnpc[0] & (~I_dnpc_sel[1])}; // B4-Q6: JALR 目标须清 bit0（含寄存器路径）
         else
             dnpc_reg <= dnpc_reg;
     always @(posedge I_clk)

@@ -16,8 +16,7 @@
 //   状态空间控制：不含 cache/外设；存储器为组合函数 + 固定 1 拍响应（无数组状态）。
 // ============================================================================
 module pipeline_equiv (
-    input clk,
-    input [31:0] xin          // 自由指令输入（每一次取指消费一份）
+    input clk
 );
   // ---------------- 复位 ----------------
   reg [3:0] rstst;
@@ -45,14 +44,21 @@ module pipeline_equiv (
   wire        rd_vld  = rd_pend;
 
   // formal-only probe 输出（由 trim_rtl.py 注入 cpu_core）
-  wire [31:0] p_wb_pc, p_wb_inst, p_mem_addr;
+  wire [31:0] p_wb_pc, p_wb_inst, p_mem_addr, p_opc, p_ifid_pc, p_current_pc;
   wire        p_wb_v, p_wb_wen, p_rd_en, p_wr_en;
   wire [4:0]  p_wb_rd;
-  wire [63:0] p_wr_data;
+  wire [63:0] p_wr_data, p_rs1, p_rs1f, p_idex_rs1;
+
+  // ---------------- 指令供给模型（按 PC 索引的指令存储） ----------------
+  // 64 项自由初始化指令存储：**按 IF 当前取指 PC（cpu_core 内部 current_pc = pc_e.O_pc）
+  // 索引**，不能用 cpu_core 输出端口 O_pc——该端口是 `assign O_pc = dnpc;`（下一条 PC），
+  // 用它索引会把"下一条指令"喂给当前取指（PC/指令错位一拍的假反例）。
+  reg [31:0] imem [0:63];
+  wire [31:0] fetch_inst = imem[p_current_pc[7:2]];
 
   ysyx_22040750_cpu_core dut (
     .I_sys_clk(clk), .I_rst(rst), .I_mtip(1'b0),
-    .I_inst(xin), .I_inst_valid(~rst), .I_pc_ready(1'b1), .I_mem_ready(1'b1),
+    .I_inst(fetch_inst), .I_inst_valid(~rst), .I_pc_ready(1'b1), .I_mem_ready(1'b1),
     .O_pc(O_pc), .O_pc_valid(O_pc_valid),
     .O_mem_addr(O_mem_addr), .O_mem_rd_en(O_mem_rd_en), .O_mem_wen(O_mem_wen),
     .I_mem_rd_data(rd_data), .I_mem_rd_data_valid(rd_vld), .I_mem_wr_data_valid(wr_pend),
@@ -63,7 +69,9 @@ module pipeline_equiv (
     .PROBE_difftest_valid(p_wb_v), .PROBE_MEM_WB_reg_wen(p_wb_wen),
     .PROBE_MEM_WB_rd_addr(p_wb_rd), .PROBE_wr_data(p_wr_data),
     .PROBE_EX_MEM_mem_rd_en(p_rd_en), .PROBE_EX_MEM_mem_wr_en(p_wr_en),
-    .PROBE_EX_MEM_mem_addr(p_mem_addr)
+    .PROBE_EX_MEM_mem_addr(p_mem_addr),
+    .PROBE_O_pc(p_opc), .PROBE_IF_ID_pc(p_ifid_pc), .PROBE_current_pc(p_current_pc),
+    .PROBE_rs1_data(p_rs1), .PROBE_rs1_fwd(p_rs1f), .PROBE_ID_EX_rs1(p_idex_rs1)
   );
 
   wire        wb_v   = p_wb_v;
@@ -215,27 +223,40 @@ module pipeline_equiv (
   // ---------------- 假设 ----------------
   always @* begin
     if (!rst) begin
-      assume (is_legal(xin));
+      assume (is_legal(fetch_inst));
       assume (!p_rd_en || (p_mem_addr[2:0] == 3'b000));
       assume (!p_wr_en || (p_mem_addr[2:0] == 3'b000));
     end
   end
 
   // ---------------- 断言与 REF 推进 ----------------
+  // 注意：difftest_valid 是**保持电平**（MEM_WB 无输出握手，停顿时保持），
+  // 不是每拍脉冲；必须按"退休指令变化"沿触发，否则同一指令会被重复执行。
+  reg [31:0] prev_pc, prev_ins;
+  reg        prev_v;
+  wire wb_new = wb_v && (!prev_v || wb_pc != prev_pc || wb_ins != prev_ins);
   always @(posedge clk) begin
     if (rst) begin
       for (k = 0; k < 32; k = k + 1) ref_regs[k] <= 64'd0;
       ref_pc <= 32'h2FFFFFFC;
       ref_valid <= 1'b0;
-    end else if (wb_v) begin
-      if (ref_valid) begin
-        assert (ref_pc == wb_pc);
-        assert (wb_wen == ref_wen);
-        if (ref_wen) assert (wb_res == ref_res);
+      prev_v <= 1'b0;
+      prev_pc <= 32'd0;
+      prev_ins <= 32'd0;
+    end else begin
+      prev_v <= wb_v;
+      prev_pc <= wb_pc;
+      prev_ins <= wb_ins;
+      if (wb_new) begin
+        if (ref_valid) begin
+          assert (ref_pc == wb_pc);
+          assert (wb_wen == ref_wen);
+          if (ref_wen) assert (wb_res == ref_res);
+        end
+        ref_valid <= 1'b1;
+        ref_pc    <= ref_next;
+        if (ref_wen) ref_regs[rd] <= ref_res;
       end
-      ref_valid <= 1'b1;
-      ref_pc    <= ref_next;
-      if (ref_wen) ref_regs[rd] <= ref_res;
     end
   end
 
@@ -243,7 +264,7 @@ module pipeline_equiv (
   reg [4:0] cov_cnt;
   always @(posedge clk) begin
     if (rst) cov_cnt <= 5'd0;
-    else if (wb_v && cov_cnt != 5'd31) cov_cnt <= cov_cnt + 5'd1;
+    else if (wb_new && cov_cnt != 5'd31) cov_cnt <= cov_cnt + 5'd1;
   end
   always @(posedge clk) if (cov_cnt == 5'd20) cover (1'b1);
 endmodule
