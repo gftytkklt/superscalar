@@ -1,0 +1,15 @@
+[options]
+mode bmc
+depth 12
+
+[engines]
+smtbmc boolector
+
+[script]
+read_verilog -formal -sv vsrc_fm.v
+read_verilog -formal -sv props_pipeline.sv
+prep -top pipeline_equiv
+
+[files]
+../build/vsrc_fm.v
+props_pipeline.sv
