@@ -34,6 +34,9 @@ CACHESIM_TRACE=/tmp/mb.trace make ARCH=riscv64-npc HEAP_SIZE=0x400000 WITH_TRACE
 ./cachesim /tmp/mb.trace --i ... --d ... --cal  # 单配置 + 校准成本（RTL 对账用；打印按区缺失）
 ```
 - `--i/--d <cfg>`：单配置模式，打印完整统计（access/hit/miss/refill/wb/mmio + 按区读/写缺失）。
+- `--total T`：SRAM 总颗数（1KB/颗，默认 8）→ 扫描 `ni+nd=T` 的全部合法几何（放宽总量用）。
+- `--tsv`：机器可读输出（`TSV total ni nd iblk iways dblk dways I_hit D_hit TMT`），
+  配合 `dse_area.py` 生成面积模型 + Pareto 前沿（E3，见 `../records/process/B3_STAGE8_PE_DSE.md`）。
 - `--cal`：校准成本集（RTL 实测 r=3.5）：icache flash 4285/sdram 1346；dcache psram 读 1676
   /写 2244、flash 读 4529、sdram 读 1370/写 1422；MMIO sram 18/其它 7；hit 1/2。
   校准后与 RTL 缺失计数/缺失 TMT **逐项一致**（见 `../records/process/B3_STAGE8_PE_CACHESIM_DIFF.md`）。

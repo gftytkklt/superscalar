@@ -76,10 +76,13 @@ int main(int argc,char**argv){
   // 单配置模式：--i <cfg> --d <cfg>（用于 RTL 对账：打印完整统计含按区缺失）
   // --cal：使用 2026-09-21 校准成本集（r=3.5 实测缺失代价，口径见 PE_CACHESIM_DIFF 记录）
   const char* ci_s = nullptr; const char* cd_s = nullptr; bool cal = false;
+  int total = 8; bool tsv = false;          // --total T：SRAM 总颗数（1KB/颗）；--tsv：机器可读输出
   for (int k=2;k<argc;k++) {
     if (!strcmp(argv[k],"--i") && k+1<argc) ci_s = argv[++k];
     else if (!strcmp(argv[k],"--d") && k+1<argc) cd_s = argv[++k];
     else if (!strcmp(argv[k],"--cal")) cal = true;
+    else if (!strcmp(argv[k],"--total") && k+1<argc) total = atoi(argv[++k]);
+    else if (!strcmp(argv[k],"--tsv")) tsv = true;
   }
   // 校准成本集（RTL 实测，r=3.5）：icache flash 4285 / sdram 1346；dcache psram 读 1676、
   // flash 读 4529、sdram 读 1370；wb psram 927 / sdram 63；MMIO sram 18 / 其它 7。
@@ -107,8 +110,8 @@ int main(int argc,char**argv){
 
   // 枚举合法配置
   std::vector<Result> results;
-  for (int ni=1; ni<=7; ++ni) {
-    int nd = 8-ni;
+  for (int ni=1; ni<=total-1; ++ni) {
+    int nd = total-ni;
     // icache block/ways 组合: ways*block==16*ni, block>=16 且 ni*16%block==0
     for (uint64_t blk=16; blk<=16*ni; blk+=16) if ((16ull*ni)%blk==0) {
       uint32_t ways = (uint32_t)(16ull*ni/blk);
@@ -139,8 +142,17 @@ int main(int argc,char**argv){
   if (!base) { base=&results[0]; base_tot=base->tot; }
   double p_mem = 0.5947; // 基线内存相关占时（未校准，microbench 实测约 59.5%）
 
-  printf("=== cachesim sweep (trace=%zu: I=%zu D=%zu) baseline I=4SRAM/32B/2W D=4SRAM/32B/2W  TMT=%llu ===\n",
-         tr.size(),t_i.size(),t_d.size(),(unsigned long long)base_tot);
+  if (tsv) {
+    // 机器可读：total ni nd iblk iways dblk dways I_hit D_hit TMT
+    for (auto&r:results)
+      printf("TSV\t%d\t%d\t%d\t%llu\t%u\t%llu\t%u\t%.4f\t%.4f\t%llu\n",
+        total,r.ni,r.nd,(unsigned long long)r.pi.block_bytes,r.pi.ways,
+        (unsigned long long)r.pd.block_bytes,r.pd.ways,
+        r.rate_i*100.0,r.rate_d*100.0,(unsigned long long)r.tot);
+    return 0;
+  }
+  printf("=== cachesim sweep (trace=%zu: I=%zu D=%zu, total=%d SRAM) baseline I=4SRAM/32B/2W D=4SRAM/32B/2W  TMT=%llu ===\n",
+         tr.size(),t_i.size(),t_d.size(),total,(unsigned long long)base_tot);
   printf("%-16s %-18s %-18s %8s %8s %8s %10s\n","cfg I/D","icache(blk/w)","dcache(blk/w)","I_hit","D_hit","TMT","vs_base");
   for (auto&r:results) {
     double s = base_tot? (double)base_tot/(double)r.tot : 1.0;
