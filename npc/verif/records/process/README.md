@@ -131,13 +131,14 @@
 > 总计划（活跃区）：`../../docs/B4_PLAN.md`（讲义 36 项 → 现状/待做/分阶段计划）；
 > **架构优化台账（活跃区）**：`../../docs/ARCH_OPT_BACKLOG.md` + `../../docs/arch_opt/*`
 > （所有优化候选/收益/状态/决策的统一入口，落地前须数据采样）。
-> 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim** / Q4 fence.i 反例 / Q5 形式化 / Q6 条件落地。
+> 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim / Q4 ✅ fence.i 反例** / Q5 形式化 / Q6 条件落地。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
 | `B4_QUANT_EVAL.md` | RECORD | B4-Q1 量化：**fetch/retire 双指针对齐**精确重建动态序列（bubble=380,591、类别与 PERF 逐位一致；澄清 `other`=未跳转分支）+ 四项理想收益：理想流水线 **1.285×**、转发 **1.069×**、控制冒险 **1.021×**、jal/jalr **1.0011×**、icache 流水化 ≈1.00×（上界 1.236×） | ✅ |
 | `B4_Q2_COUNTERS.md` | RECORD | B4-Q2 计数器：新增 `lduse_cyc/ev`、`mdu_ev`、分支细分（taken/ntaken/jal/jalr，与 Q1 逐位一致）；**修正 `mul_cyc` 旧口径恒 0（漏计 M/D）→ 87,405 cyc/0.48%T**；div/mul-longlong 定向验证（≈64/32 拍每条）；基线逐位一致 | ✅ |
 | `B4_Q3_BRANCHSIM.md` | RECORD | B4-Q3 branchsim：条件 382,591（taken 359,844/not 22,747）+ jal 8,687 + jalr 12,058；**方向预测上限 1.0200×，BTFN 1.0193×（96.6%）、2-bit PHT 1.0197×**；落地须 BTB（IF 生效）→ 留档、不优先落地 | ✅ |
+| `B4_Q4_FENCEI.md` | RECORD | B4-Q4 fence.i 反例：新增 `tests/fencei_pipeline.S`（SMC 自修改；有 fence.i PASS 0x11/0x22/0x5A5A@683cyc；**禁用后 10× 超时 FAIL**）；**修复 harness "超时误报 PASS"**（暴露 4 个测试长期死锁）与 tb 写握手（AW/W 可同拍）；RTL 隐患 `axiburst2xxx` 写握手登记台账 OPT-19 | ✅ |
 
 附件：`B4_QUANT_RAW.md`（Q1 原始表）、`B4_Q3_RAW.md`（Q3 原始表）
 

@@ -100,7 +100,8 @@ static void slave_comb(Vysyx_22040750 *d) {
   d->io_master_rresp   = 0;
 
   d->io_master_awready = aw_hs ? 0 : 1;
-  d->io_master_wready  = (aw_hs && !wd_hs) ? 1 : 0;
+  // 兼容两种从端语义：允许 W 与 AW 同拍接受（标准 AXI 独立通道；axiburst2xxx 的 s_aw_hs 要求同拍）
+  d->io_master_wready  = ((aw_hs || d->io_master_awvalid) && !wd_hs) ? 1 : 0;
   d->io_master_bvalid  = (aw_hs && wd_hs_d) ? 1 : 0;
   d->io_master_bid     = 0;
   d->io_master_bresp   = 0;
@@ -208,7 +209,13 @@ int main(int argc, char **argv) {
   slave_comb(dut);   // 让从端在首个 posedge 之前已给出初始组合输出
 
   bool failed = false;
-  const uint64_t MAXT = dump ? 30000 : 400000;
+  // 超时上限：默认 400000 周期；可用 VTB_MAXT 覆盖（长时间/反例实验按正常运行时长的整数倍设置）
+  uint64_t maxt = dump ? 30000 : 400000;
+  if (const char *e = getenv("VTB_MAXT")) {
+    unsigned long long v = strtoull(e, nullptr, 0);
+    if (v) maxt = v;
+  }
+  const uint64_t MAXT = maxt;
   for (sim_time = 0; !finish && sim_time < MAXT; sim_time++) {
     if (sim_time > 40) dut->reset = 0;   // 同步复位：沿前撤销，posedge 采样为 0
 
@@ -221,6 +228,10 @@ int main(int argc, char **argv) {
     if (Verilated::gotError()) failed = true;   // 记录断言失败但不中止，收集全部
   }
   printf("sim ended at t=%llu finish=%d\n", (unsigned long long)sim_time, finish);
+  if (!finish) {
+    printf("[TIMEOUT] no ebreak within %llu cycles (VTB_MAXT) -> FAIL\n", (unsigned long long)MAXT);
+    failed = true;   // 卡死/死锁不再误判为 PASS
+  }
   if (tfp) tfp->close();
 
   // ---- dump SRAM results
