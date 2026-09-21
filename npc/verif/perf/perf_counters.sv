@@ -41,7 +41,14 @@ module perf_counters #(
   input [31:0] MEM_WB_inst,
   input MEM_WB_valid,
   input [31:0] MEM_WB_pc,          // 提交 PC（= 该指令取指 PC）
-  input difftest_valid
+  input difftest_valid,
+  // B4-Q2 停顿/分支细分计数器输入（均为 cpu_core 内部信号，只读）
+  input I_IF_ID_stall,                              // ID 停顿（load-use/M-D/intr 组合）
+  input [1:0] I_ID_EX_stall, I_EX_MEM_stall,        // 前递匹配（消费者等待）信号
+  input I_ID_EX_mem_rd_en, I_EX_MEM_mem_rd_en,      // 在途 load 标志
+  input I_ID_EX_input_valid,                        // ID_EX 寄存器 valid（M/D 忙碌判定）
+  input [3:0] I_ID_EX_alu_mlt,                      // ALU 多周期选择位 [13:10]
+  input [31:0] I_IF_ID_inst                         // ID 段指令（分支类型细分）
 );
   // cachesim trace 导出（仅当 C 侧 setenv CACHESIM_TRACE 时落盘，否则 no-op）
   import "DPI-C" function void csim_ifetch(input int pc);
@@ -59,6 +66,9 @@ module perf_counters #(
   reg [63:0] c_deliver, c_lsu, c_exu, c_ret, c_decode_total;
   reg [63:0] c_mem, c_csr, c_branch, c_compute, c_other, c_bubble;
   reg [63:0] c_cycles, c_ifu_miss, c_lsu_lat_total, c_mul_cycles, c_st_lat_total;
+  // B4-Q2 计数器
+  reg [63:0] c_lduse_cyc, c_lduse_ev, c_mdu_ev, c_br_taken, c_br_ntaken, c_jal, c_jalr;
+  reg lduse_pend, mdu_pend;
   reg [63:0] st_pend_len; reg st_pend;
   // 访存地址区域分类（在 load/store 请求拍采样 O_mem_addr）
   reg [63:0] rd_sram, rd_psram, rd_flash, rd_rdonly, st_sram, st_psram, st_mmio;
@@ -74,6 +84,12 @@ module perf_counters #(
   // EXU 完成计算 = 指令离开 EX 进入 MEM（每条真实指令 EX 段执行一次；排除 bubble，
   // 使 EXU 计数与动态指令数一致；单周期 ALU 的 alu_out_valid 恒为 1 不可用）。
   wire exu_ev = ID_EX_valid && EX_MEM_allowin && !ID_EX_bubble;
+  // B4-Q2：停顿归因（与 stall_unit 内部条件一致：前递寄存器匹配 × 在途 load/M-D）
+  wire lduse_stall = I_IF_ID_stall & ((|I_ID_EX_stall & I_ID_EX_mem_rd_en) |
+                                      (|I_EX_MEM_stall & I_EX_MEM_mem_rd_en));
+  wire mdu_stall   = I_IF_ID_stall & (|I_ID_EX_stall & ID_EX_alu_multicycle);
+  // M/D 忙碌 = ID_EX 中为多周期 ALU 指令（覆盖整个 EX 执行期，而非"接受脉冲"）
+  wire mdu_busy    = I_ID_EX_input_valid & (|I_ID_EX_alu_mlt);
 
   reg [63:0] ld_pend_len; reg ld_pend;      // 单 load 在途周期计数
   always @(posedge I_clk) begin
@@ -82,13 +98,16 @@ module perf_counters #(
       c_mem<=0; c_csr<=0; c_branch<=0; c_compute<=0; c_other<=0; c_bubble<=0;
       c_cycles<=0; c_ifu_miss<=0; c_lsu_lat_total<=0; c_mul_cycles<=0; c_st_lat_total<=0;
       ld_pend<=0; ld_pend_len<=0; st_pend<=0; st_pend_len<=0; snap_cyc<=0;
+      c_lduse_cyc<=0; c_lduse_ev<=0; c_mdu_ev<=0; c_br_taken<=0; c_br_ntaken<=0;
+      c_jal<=0; c_jalr<=0; lduse_pend<=0; mdu_pend<=0;
       rd_sram<=0; rd_psram<=0; rd_flash<=0; rd_rdonly<=0; st_sram<=0; st_psram<=0; st_mmio<=0;
     end else begin
       c_cycles <= c_cycles + 64'd1;
       if (I_inst_valid)        c_deliver <= c_deliver + 64'd1;
       if (I_mem_rd_data_valid) c_lsu     <= c_lsu     + 64'd1;
       if (O_pc_valid && !I_inst_valid) c_ifu_miss <= c_ifu_miss + 64'd1; // 取指在等 icache（供给缺口）
-      if (ID_EX_valid && ID_EX_alu_multicycle) c_mul_cycles <= c_mul_cycles + 64'd1; // 乘/除多周期占用 EX
+      // M/D 占用 EX 周期（修正：旧口径用 ID_EX_alu_multicycle 接受脉冲，恒 0，漏计 M/D）
+      if (mdu_busy) c_mul_cycles <= c_mul_cycles + 64'd1;
       if (exu_ev)              c_exu     <= c_exu     + 64'd1;
       if (difftest_valid)      c_ret     <= c_ret     + 64'd1;
       if (decode_bubble)       c_bubble  <= c_bubble  + 64'd1;
@@ -99,6 +118,25 @@ module perf_counters #(
         else if (!dnpc_sel[0])                   c_branch <= c_branch + 64'd1;
         else if (reg_wen)                        c_compute<= c_compute+ 64'd1;
         else                                     c_other  <= c_other  + 64'd1;
+      end
+      // B4-Q2：停顿归因计数 + 分支细分（decode_ev = 真实译码执行的指令）
+      if (lduse_stall) c_lduse_cyc <= c_lduse_cyc + 64'd1;
+      if (lduse_stall && !lduse_pend) begin
+        c_lduse_ev <= c_lduse_ev + 64'd1; lduse_pend <= 1'b1;
+      end else if (!lduse_stall) lduse_pend <= 1'b0;
+      if (mdu_stall && !mdu_pend) begin
+        c_mdu_ev <= c_mdu_ev + 64'd1; mdu_pend <= 1'b1;
+      end else if (!mdu_stall) mdu_pend <= 1'b0;
+      if (decode_ev) begin
+        case (I_IF_ID_inst[6:0])
+          7'h63: begin
+            if (dnpc_sel[0]) c_br_ntaken <= c_br_ntaken + 64'd1;
+            else             c_br_taken  <= c_br_taken  + 64'd1;
+          end
+          7'h6F: c_jal  <= c_jal  + 64'd1;
+          7'h67: c_jalr <= c_jalr + 64'd1;
+          default: ;
+        endcase
       end
       // LSU 平均访存延迟：从 load 请求发出(EX_MEM_mem_rd_en)到数据返回(I_mem_rd_data_valid)
       if (EX_MEM_mem_rd_en && !ld_pend) begin ld_pend <= 1; ld_pend_len <= 0; end
@@ -187,6 +225,8 @@ module perf_counters #(
     // 可保持多拍而**不可信**（真实 load/store 数与延迟见 dcache_stats.sv 的缺失代价/MMIO 延迟 + 区域分类）。
     $display("PERF[ebreak]  ifu_miss(fetch wait)=%0d  mul_multicycle=%0d  (注意: lsu/latency 已下放到 dcache_stats)",
       c_ifu_miss, c_mul_cycles);
+    $display("PERF[ebreak]  stalls: lduse(cyc=%0d ev=%0d) mdu_ev=%0d | branches: taken=%0d ntaken=%0d jal=%0d jalr=%0d",
+      c_lduse_cyc, c_lduse_ev, c_mdu_ev, c_br_taken, c_br_ntaken, c_jal, c_jalr);
     $display("PERF[ebreak]  rd_region: psram(heap,cache)=%0d flash(rodata)=%0d sram(.data/.bss+stack,MMIO)=%0d sdram=%0d | st_region: psram=%0d sram=%0d mmio=%0d",
       rd_psram, rd_flash, rd_sram, rd_rdonly, st_psram, st_sram, st_mmio);
   end
@@ -194,6 +234,8 @@ module perf_counters #(
   final begin
     $display("PERF[final]: cycles=%0d retire=%0d ifu_deliver=%0d lsu=%0d exu=%0d ifu_miss=%0d mul_cyc=%0d lsu_lat_total=%0d st_lat_total=%0d",
       c_cycles, c_ret, c_deliver, c_lsu, c_exu, c_ifu_miss, c_mul_cycles, c_lsu_lat_total, c_st_lat_total);
+    $display("PERF[final]  stalls: lduse_cyc=%0d lduse_ev=%0d mdu_ev=%0d | branches: taken=%0d ntaken=%0d jal=%0d jalr=%0d",
+      c_lduse_cyc, c_lduse_ev, c_mdu_ev, c_br_taken, c_br_ntaken, c_jal, c_jalr);
   end
 endmodule
 
@@ -216,5 +258,10 @@ bind ysyx_22040750_cpu_core perf_counters u_perf (
   .reg_wen(reg_wen),
   .MEM_WB_inst(MEM_WB_inst), .MEM_WB_valid(MEM_WB_valid),
   .MEM_WB_pc(MEM_WB_pc),
-  .difftest_valid(difftest_valid)
+  .difftest_valid(difftest_valid),
+  .I_IF_ID_stall(IF_ID_stall),
+  .I_ID_EX_stall(ID_EX_stall), .I_EX_MEM_stall(EX_MEM_stall),
+  .I_ID_EX_mem_rd_en(ID_EX_regin_sel[1]), .I_EX_MEM_mem_rd_en(EX_MEM_regin_sel[1]),
+  .I_ID_EX_input_valid(ID_EX_input_valid), .I_ID_EX_alu_mlt(ID_EX_alu_op_sel[13:10]),
+  .I_IF_ID_inst(IF_ID_inst)
 );

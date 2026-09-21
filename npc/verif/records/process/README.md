@@ -134,8 +134,9 @@
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
 | `B4_QUANT_EVAL.md` | RECORD | B4-Q1 量化：**fetch/retire 双指针对齐**精确重建动态序列（bubble=380,591、类别与 PERF 逐位一致；澄清 `other`=未跳转分支）+ 四项理想收益：理想流水线 **1.285×**、转发 **1.069×**、控制冒险 **1.021×**、jal/jalr **1.0011×**、icache 流水化 ≈1.00×（上界 1.236×） | ✅ |
+| `B4_Q2_COUNTERS.md` | RECORD | B4-Q2 计数器：新增 `lduse_cyc/ev`、`mdu_ev`、分支细分（taken/ntaken/jal/jalr，与 Q1 逐位一致）；**修正 `mul_cyc` 旧口径恒 0（漏计 M/D）→ 87,405 cyc/0.48%T**；div/mul-longlong 定向验证（≈64/32 拍每条）；基线逐位一致 | ✅ |
 
-附件：`B4_QUANT_RAW.md`（原始类别/分支/RAW 表）
+附件：`B4_QUANT_RAW.md`（Q1 原始类别/分支/RAW 表）
 
 ## 4. ONScripter 移植（PA4.5 选做）✅
 
