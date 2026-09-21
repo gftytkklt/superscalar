@@ -16,6 +16,7 @@ WITH_SDL ?= 0
 PERF ?= 0
 DEBUG_APBDLY ?= 0
 DEBUG_AXIDLY ?= 0
+PERF_R426 ?= 0
 DIFF_B := $(if $(filter 1 y yes Y YES,$(DIFF)),1,0)
 WAVE_B := $(if $(filter 1 y yes Y YES,$(WAVE)),1,0)
 WITH_TRACE_B := $(if $(filter 1 y yes Y YES,$(WITH_TRACE)),1,0)
@@ -23,6 +24,7 @@ WITH_SDL_B := $(if $(filter 1 y yes Y YES,$(WITH_SDL)),1,0)
 PERF_B := $(if $(filter 1 y yes Y YES,$(PERF)),1,0)
 DEBUG_APBDLY_B := $(if $(filter 1 y yes Y YES,$(DEBUG_APBDLY)),1,0)
 DEBUG_AXIDLY_B := $(if $(filter 1 y yes Y YES,$(DEBUG_AXIDLY)),1,0)
+PERF_R426_B := $(if $(filter 1 y yes Y YES,$(PERF_R426)),1,0)
 
 VSRC = $(shell find $(abspath ./vsrc) -name "*.v")
 VSRC += $(shell find $(abspath ./ysyxSoC/perip) -type f -name "*.v")
@@ -105,6 +107,12 @@ endif
 ifeq ($(DEBUG_AXIDLY_B), 1)
 VERILATOR_CFLAGS += +define+DEBUG_AXIDLY
 endif
+# PERF_R426: 校准频率比 r 口径切换（P-B 决策 C）。默认 r=7/2=3.5（icsprout55 口径，
+#   阶段4–8 数据可比）；=1 → r=17/4=4.25（nangate45+A1 f_max≈426MHz / 100MHz）。
+#   需与 PERF=1（PERF_DELAY）同用；delayer 与两个 checker 用同一宏。
+ifeq ($(PERF_R426_B), 1)
+VERILATOR_CFLAGS += +define+PERF_DELAY_R426
+endif
 
 
 default: $(BIN)
@@ -122,7 +130,7 @@ CFLAGS += -DTOP_NAME="\"V$(TOPNAME)\""
 BUILD_CFG = $(BUILD_DIR)/.build_cfg
 $(BUILD_CFG): FORCE
 	@mkdir -p $(BUILD_DIR)
-	@printf 'DIFF=%s\nWAVE=%s\nWITH_TRACE=%s\nWITH_SDL=%s\nPERF=%s\nDEBUG_APBDLY=%s\n' '$(DIFF_B)' '$(WAVE_B)' '$(WITH_TRACE_B)' '$(WITH_SDL_B)' '$(PERF_B)' '$(DEBUG_APBDLY_B)' > $@.tmp
+	@printf 'DIFF=%s\nWAVE=%s\nWITH_TRACE=%s\nWITH_SDL=%s\nPERF=%s\nDEBUG_APBDLY=%s\nPERF_R426=%s\n' '$(DIFF_B)' '$(WAVE_B)' '$(WITH_TRACE_B)' '$(WITH_SDL_B)' '$(PERF_B)' '$(DEBUG_APBDLY_B)' '$(PERF_R426_B)' > $@.tmp
 	@cmp -s $@ $@.tmp || cp $@.tmp $@
 	@rm -f $@.tmp
 FORCE:

@@ -15,7 +15,11 @@ module axidly_check (
   input        in_wvalid, out_wready, in_wlast,
   input        out_bvalid, in_bvalid, in_bready
 );
-  localparam int R_S = 7, S_SHIFT = 1;   // r = 3.5（与 axi4_delayer/apb_delayer 一致）
+`ifdef PERF_DELAY_R426
+  localparam int R_S = 17, S_SHIFT = 2;   // r = 4.25（与 delayer 同步）
+`else
+  localparam int R_S = 7, S_SHIFT = 1;    // r = 3.5
+`endif
   // 挂起看门狗阈值（同 apbdly_check，10 万周期）：读/写事务超时即判死锁 → 打印现场 + 结束仿真
   localparam int HANG_LIMIT = 100000;
 

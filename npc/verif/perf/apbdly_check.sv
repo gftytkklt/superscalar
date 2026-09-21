@@ -18,7 +18,11 @@ module apbdly_check (
   input out_pready, in_pready,
   input [31:0] in_prdata
 );
+`ifdef PERF_DELAY_R426
+  localparam int R_S = 17, S_SHIFT = 2;          // r = 4.25（与 apb_delayer 同步）
+`else
   localparam int R_S = 7, S_SHIFT = 1;           // r = 3.5
+`endif
   // 挂起看门狗阈值（周期）：最长合法等待 = flash XIP refill ≈4,529cyc（dcache 实测），
   // 经延迟桥呈现 ≤ 3.5×4,529 ≈ 15,852；refill+写回复合 ≤ ~3.2 万。取 10 万（≈3× 余量），
   // 超过即判死锁：打印现场并结束仿真，便于快速定位（详见面调试记录）。
