@@ -3836,10 +3836,13 @@ module ysyx_22040750_npc(
     always @(posedge I_clk)
         if(I_rst)
             dnpc_reg_valid <= 0;
-        else if(store_dnpc)
-            dnpc_reg_valid <= 1;
+        // B4-Q6: handshake 优先 —— 目标已被 cache 接受（消费）即清 pending；
+        // 否则 store_dnpc 会在同拍把它重新置位，下一拍交付数据时又发一笔同目标请求，
+        // 同一指令被取两次/执行两次（depth≥20 形式化反例：xori 自依赖被写两次）。
         else if(pc_handshake)
             dnpc_reg_valid <= 0;
+        else if(store_dnpc)
+            dnpc_reg_valid <= 1;
         else
             dnpc_reg_valid <= dnpc_reg_valid;
     assign O_dnpc = dnpc_reg_valid ? dnpc_reg : {dnpc[31:1], dnpc[0]&(~I_dnpc_sel[1])};

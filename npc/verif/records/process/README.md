@@ -131,7 +131,7 @@
 > 总计划（活跃区）：`../../docs/B4_PLAN.md`（讲义 36 项 → 现状/待做/分阶段计划）；
 > **架构优化台账（活跃区）**：`../../docs/ARCH_OPT_BACKLOG.md` + `../../docs/arch_opt/*`
 > （所有优化候选/收益/状态/决策的统一入口，落地前须数据采样）。
-> 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim / Q4 ✅ fence.i 反例 / Q5 ✅ 流水线形式化（depth≤16 PASS；20+ 待归因） / Q6 条件落地（OPT-19 ✅ 已修复）**。
+> 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim / Q4 ✅ fence.i 反例 / Q5 ✅ 流水线形式化（depth 20 PASS，~377s） / Q6 进行中（OPT-19 ✅、真实 RTL 缺陷×2 ✅：JALR LSB / `dnpc_reg_valid` 握手优先级；OPT-05 待拍板、OPT-11 排队）**。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
@@ -139,10 +139,12 @@
 | `B4_Q2_COUNTERS.md` | RECORD | B4-Q2 计数器：新增 `lduse_cyc/ev`、`mdu_ev`、分支细分（taken/ntaken/jal/jalr，与 Q1 逐位一致）；**修正 `mul_cyc` 旧口径恒 0（漏计 M/D）→ 87,405 cyc/0.48%T**；div/mul-longlong 定向验证（≈64/32 拍每条）；基线逐位一致 | ✅ |
 | `B4_Q3_BRANCHSIM.md` | RECORD | B4-Q3 branchsim：条件 382,591（taken 359,844/not 22,747）+ jal 8,687 + jalr 12,058；**方向预测上限 1.0200×，BTFN 1.0193×（96.6%）、2-bit PHT 1.0197×**；落地须 BTB（IF 生效）→ 留档、不优先落地 | ✅ |
 | `B4_Q4_FENCEI.md` | RECORD | B4-Q4 fence.i 反例：新增 `tests/fencei_pipeline.S`（SMC 自修改；有 fence.i PASS 0x11/0x22/0x5A5A@683cyc；**禁用后 10× 超时 FAIL**）；**修复 harness "超时误报 PASS"**（暴露 4 个测试长期死锁）与 tb 写握手（AW/W 可同拍）；RTL 隐患 `axiburst2xxx` 写握手登记台账 OPT-19 | ✅ |
-| `B4_Q5_FORMAL.md` | RECORD | B4-Q5 流水线形式化：`formal/pipeline.sby`+`props_pipeline.sv`（REF=受限子集单周期执行器，探针注入避开 yosys 层次引用限制）**BMC PASS @ depth 16（~3s）**，`make formal` 四件全 PASS；过程修复 4 个 REF/harness 保真度问题（层次引用/复位取指/非法编码放行/SRA 退化）；depth 20+ 反例待归因 | ✅（主体） |
+| `B4_Q5_FORMAL.md` | RECORD | B4-Q5 流水线形式化：`formal/pipeline.sby`+`props_pipeline.sv`（REF=受限子集单周期执行器，探针注入避开 yosys 层次引用限制）**BMC depth 20 PASS（~377s，结档见 Q6 记录）**，`make formal` 四件全 PASS；过程修复 4 个 REF/harness 保真度问题（层次引用/复位取指/非法编码放行/SRA 退化） | ✅ |
 | `B4_Q6_OPT19_AXIBURST.md` | RECORD | B4-Q6/OPT-19：`axiburst2xxx` 写握手 **AW/W 解耦修复**（与 dcache 双 FSM/`axi64to32` 范式一致）；harness 恢复严格从端后 **11/11 微测试 + assert 11/11 + formal 四件 + `make perf` 逐位 + sdram-heap 15,329,912 全绿** | ✅ |
 | `B4_Q6_OPT05_STORE.md` | RECORD | B4-Q6/OPT-05 采样：Python dcache 模型与 RTL **逐项一致**（rd 32,894/1,090、wr 18,075/3,307）；**97.1% 写缺失驱逐前写满整行（3,212/3,307）**；免填充上界 **≈4.2M（23%T）→ ≈1.30×**（推荐 write-validate）；含候选 A/B/C 与前置拆分实验 | ✅ 采样 |
-| `B4_Q6_JALR_LSB.md` | RECORD | B4-Q6 depth≥20 形式化反例调试：修复 2 类 harness 假反例（`difftest_valid` 电平误当脉冲；`O_pc=dnpc` 索引错位）+ **真实 RTL 缺陷：`dnpc_reg` 未清 JALR 目标 bit0（含寄存器路径）**；JALR fix 后 12/12 微测试 + `make perf` 逐位；剩余值反例定向实测未复现，继续定位 | 🔶 进行中 |
+| `B4_Q6_JALR_LSB.md` | RECORD | B4-Q6 形式化反例调试**结档**：修复 4 处 harness 假反例（电平 valid/`O_pc=dnpc` 索引/逐拍自由指令/请求地址供给）+ **2 个真实 RTL 缺陷**：① `dnpc_reg` 未清 JALR 目标 bit0；② `dnpc_reg_valid` 握手优先级（跳转目标重复取指→同一指令执行两次，depth≥20 反例根因）；**depth 20 PASS（~377s）**；全回归逐位（微测试/assert 12/12、formal 四件、`make perf` 18,318,000/1,352,016、sdram-heap 15,329,912），零性能损失 | ✅ |
+| `B4_Q6_PROMPT.md` | PROMPT | B4-Q6 续作任务入口（历史，已完成：depth≥20 反例定位与修复） | 📦 |
+| `B4_Q7_PROMPT.md` | PROMPT | **B4-Q7 续作任务入口（活跃）**：OPT-05 决策落地 / OPT-11 / 形式化 depth 24+ 限时深探 / B4 结档（含基线、命令、坑与口径、时间预算） | 🔶 |
 
 附件：`B4_QUANT_RAW.md`、`B4_Q3_RAW.md`、`B4_Q6_OPT05_store_analysis.md`
 

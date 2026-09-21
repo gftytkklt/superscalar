@@ -26,6 +26,41 @@ PROBE_PORTS = """
     ,output [63:0] PROBE_rs1_data
     ,output [63:0] PROBE_rs1_fwd
     ,output [63:0] PROBE_ID_EX_rs1
+    ,output [1:0]  PROBE_MEM_WB_regin_sel
+    ,output [63:0] PROBE_MEM_WB_alu_out
+    ,output [63:0] PROBE_mem_in
+    ,output        PROBE_EX_MEM_valid
+    ,output        PROBE_EX_MEM_allowin
+    ,output [63:0] PROBE_EX_MEM_alu_out
+    ,output [1:0]  PROBE_EX_MEM_regin_sel
+    ,output [31:0] PROBE_EX_MEM_pc
+    ,output [31:0] PROBE_EX_MEM_inst
+    ,output        PROBE_ID_EX_valid
+    ,output        PROBE_ID_EX_allowin
+    ,output [31:0] PROBE_ID_EX_pc
+    ,output [31:0] PROBE_ID_EX_inst
+    ,output        PROBE_ID_EX_alu_multicycle
+    ,output        PROBE_IF_valid
+    ,output        PROBE_IF_ID_valid
+    ,output        PROBE_IF_ID_allowin
+    ,output        PROBE_IF_ID_input_valid
+    ,output        PROBE_IF_ID_bubble
+    ,output [1:0]  PROBE_IF_ID_stall
+    ,output        PROBE_ID_EX_input_valid
+    ,output        PROBE_ID_EX_bubble
+    ,output [1:0]  PROBE_ID_EX_stall
+    ,output        PROBE_EX_MEM_input_valid
+    ,output        PROBE_EX_MEM_bubble
+    ,output [1:0]  PROBE_EX_MEM_stall
+    ,output        PROBE_MEM_WB_valid
+    ,output        PROBE_MEM_WB_allowin
+    ,output        PROBE_MEM_WB_input_valid
+    ,output        PROBE_MEM_WB_bubble
+    ,output [1:0]  PROBE_MEM_WB_stall
+    ,output [31:0] PROBE_dnpc
+    ,output [3:0]  PROBE_dnpc_sel
+    ,output [31:0] PROBE_snpc
+    ,output        PROBE_O_pc_valid
 """
 
 PROBE_BODY = """
@@ -45,6 +80,41 @@ PROBE_BODY = """
     assign PROBE_rs1_data         = rs1_data;
     assign PROBE_rs1_fwd          = rs1_forward_data;
     assign PROBE_ID_EX_rs1        = ID_EX_rs1;
+    assign PROBE_MEM_WB_regin_sel = MEM_WB_regin_sel;
+    assign PROBE_MEM_WB_alu_out   = MEM_WB_alu_out;
+    assign PROBE_mem_in           = mem_in;
+    assign PROBE_EX_MEM_valid     = EX_MEM_valid;
+    assign PROBE_EX_MEM_allowin   = EX_MEM_allowin;
+    assign PROBE_EX_MEM_alu_out   = EX_MEM_alu_out;
+    assign PROBE_EX_MEM_regin_sel = EX_MEM_regin_sel;
+    assign PROBE_EX_MEM_pc        = EX_MEM_pc;
+    assign PROBE_EX_MEM_inst      = EX_MEM_inst;
+    assign PROBE_ID_EX_valid      = ID_EX_valid;
+    assign PROBE_ID_EX_allowin    = ID_EX_allowin;
+    assign PROBE_ID_EX_pc         = ID_EX_pc;
+    assign PROBE_ID_EX_inst       = ID_EX_inst;
+    assign PROBE_ID_EX_alu_multicycle = ID_EX_alu_multicycle;
+    assign PROBE_IF_valid         = IF_valid;
+    assign PROBE_IF_ID_valid      = IF_ID_valid;
+    assign PROBE_IF_ID_allowin    = IF_ID_allowin;
+    assign PROBE_IF_ID_input_valid = IF_ID_input_valid;
+    assign PROBE_IF_ID_bubble     = IF_ID_bubble;
+    assign PROBE_IF_ID_stall      = IF_ID_stall;
+    assign PROBE_ID_EX_input_valid = ID_EX_input_valid;
+    assign PROBE_ID_EX_bubble     = ID_EX_bubble;
+    assign PROBE_ID_EX_stall      = ID_EX_stall;
+    assign PROBE_EX_MEM_input_valid = EX_MEM_input_valid;
+    assign PROBE_EX_MEM_bubble    = EX_MEM_bubble;
+    assign PROBE_EX_MEM_stall     = EX_MEM_stall;
+    assign PROBE_MEM_WB_valid     = MEM_WB_valid;
+    assign PROBE_MEM_WB_allowin   = MEM_WB_allowin;
+    assign PROBE_MEM_WB_input_valid = MEM_WB_input_valid;
+    assign PROBE_MEM_WB_bubble    = MEM_WB_bubble;
+    assign PROBE_MEM_WB_stall     = MEM_WB_stall;
+    assign PROBE_dnpc             = dnpc;
+    assign PROBE_dnpc_sel         = dnpc_sel;
+    assign PROBE_snpc             = snpc;
+    assign PROBE_O_pc_valid       = O_pc_valid;
 """
 
 
