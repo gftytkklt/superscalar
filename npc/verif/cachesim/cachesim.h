@@ -30,8 +30,9 @@ enum OpType { OP_IFETCH=0, OP_READ, OP_WRITE };
 
 // 每区域成本（单位：周期；块大小按 32B 基准；block>32 时按比例放大，block<32 时按比例缩小）
 struct RegionCost {
-  uint64_t base[5];     // 读 refill / 写 refill 基准（32B 时），按区域
-  uint64_t wb[5];       // 脏块写回基准（32B 时），按区域
+  uint64_t base[5];     // 读 refill 基准（32B 时），按区域
+  uint64_t base_w[5];   // 写 refill 基准（32B 时）；0 表示回退到 base（RTL 实测写缺失含脏回写）
+  uint64_t wb[5];       // 脏块写回基准（32B 时；当 base_w 已含回写时保持 0）
   uint64_t mmio[5];     // 非缓存区直达延迟，按区域
   uint64_t hit;         // 命中延迟
   // 默认初值来自当前 npc sim（microbench test）实测，可被配置覆盖
@@ -70,6 +71,8 @@ class Cache {
   // 统计
   uint64_t hits() const { return hits_; }
   uint64_t misses() const { return misses_; }
+  uint64_t miss_read(Region r) const { return miss_r_[r]; }   // 按区域/读写拆分（对账 RTL rd_region）
+  uint64_t miss_write(Region r) const { return miss_w_[r]; }
   uint64_t mandatory_, capacity_, conflict_;   // 3C 近似统计
   uint64_t refill_cycles() const { return refill_cycles_; }
   uint64_t wb_cycles() const { return wb_cycles_; }
@@ -88,8 +91,10 @@ class Cache {
   std::vector<std::vector<Line> > cache_;   // [set][way]
   uint32_t set_mask_, tag_shift_;
   uint64_t hits_, misses_, refill_cycles_, wb_cycles_, mmio_cycles_, direct_cycles_;
+  uint64_t miss_r_[R_NUM], miss_w_[R_NUM];   // 缺失按 区域×读/写
+  uint32_t rr_ptr_;                           // 多路替换指针（ways>2 时轮转；2 路用 RTL 精确策略）
   Region region_of(uint32_t addr) const;
-  uint64_t refill_cost(uint32_t addr) const;  // 读 refill 周期
+  uint64_t refill_cost(uint32_t addr, OpType op) const;  // refill 周期（区分读/写基准）
   uint64_t writeback_cost(uint32_t addr) const;
   uint64_t mmio_cost(uint32_t addr) const;
 };

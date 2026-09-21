@@ -27,6 +27,8 @@ module perf_counters #(
   input O_mem_wen,                 // store 请求发送到 dcache 拍（cpu_core 端口）
   input [31:0] O_mem_addr,         // 访存地址（cpu_core 输出端口，=EX_MEM_mem_addr）
   input O_pc_valid,                // cpu 向 icache 发出取指请求（cpu_core 输出端口）
+  input I_pc_ready,                // icache 接受取指（cpu_core 输入端口）
+  input [31:0] O_pc,               // 取指 PC（=dnpc，cpu_core 输出端口）
   input EX_MEM_mem_rd_en,          // load 请求发送到 dcache 拍（cpu_core 内部）
   input ID_EX_alu_multicycle,      // 乘/除多周期标志（cpu_core 内部）
   input IF_ID_valid, ID_EX_allowin, IF_ID_bubble,
@@ -103,8 +105,9 @@ module perf_counters #(
         c_st_lat_total <= c_st_lat_total + st_pend_len + 64'd1;
         st_pend <= 0;
       end
-      // cachesim trace：每条真实指令取指 1 次、每条 load/store 访问 1 次
-      if (difftest_valid) csim_ifetch(MEM_WB_pc);
+      // cachesim trace：取指按"icache 接受请求"逐次记录（与 ICACHE_STAT 口径一致；含被冲刷
+      // 的 bubble 取指），load/store 各记录 1 次（与 rd/st_region 口径一致）
+      if (O_pc_valid && I_pc_ready) csim_ifetch(O_pc);
       if (EX_MEM_mem_rd_en) csim_dread(O_mem_addr);
       if (O_mem_wen) csim_dwrite(O_mem_addr);
       // 区域分类（load 请求 / store 请求拍）
@@ -187,6 +190,8 @@ bind ysyx_22040750_cpu_core perf_counters u_perf (
   .O_mem_wen(O_mem_wen),
   .O_mem_addr(O_mem_addr),
   .O_pc_valid(O_pc_valid),
+  .I_pc_ready(I_pc_ready),
+  .O_pc(O_pc),
   .EX_MEM_mem_rd_en(EX_MEM_mem_rd_en),
   .ID_EX_alu_multicycle(ID_EX_alu_multicycle),
   .IF_ID_valid(IF_ID_valid), .ID_EX_allowin(ID_EX_allowin), .IF_ID_bubble(IF_ID_bubble),

@@ -73,6 +73,38 @@ int main(int argc,char**argv){
   std::vector<Access> t_i, t_d;
   for (auto&a:tr) { if (a.op==OP_IFETCH) t_i.push_back(a); else t_d.push_back(a); }
 
+  // 单配置模式：--i <cfg> --d <cfg>（用于 RTL 对账：打印完整统计含按区缺失）
+  // --cal：使用 2026-09-21 校准成本集（r=3.5 实测缺失代价，口径见 PE_CACHESIM_DIFF 记录）
+  const char* ci_s = nullptr; const char* cd_s = nullptr; bool cal = false;
+  for (int k=2;k<argc;k++) {
+    if (!strcmp(argv[k],"--i") && k+1<argc) ci_s = argv[++k];
+    else if (!strcmp(argv[k],"--d") && k+1<argc) cd_s = argv[++k];
+    else if (!strcmp(argv[k],"--cal")) cal = true;
+  }
+  // 校准成本集（RTL 实测，r=3.5）：icache flash 4285 / sdram 1346；dcache psram 读 1676、
+  // flash 读 4529、sdram 读 1370；wb psram 927 / sdram 63；MMIO sram 18 / 其它 7。
+  auto apply_cal = [](CacheParams& p, bool ic) {
+    RegionCost c;
+    if (ic) { c.base[R_FLASH]=4285; c.base[R_PSRAM]=1676; c.base[R_SDRAM]=1346; c.hit=1; }
+    else    { c.base[R_PSRAM]=1676; c.base[R_FLASH]=4529; c.base[R_SDRAM]=1370;
+              c.base_w[R_PSRAM]=2244; c.base_w[R_SDRAM]=1422;   // 写缺失均含脏回写
+              c.wb[R_PSRAM]=0; c.wb[R_SDRAM]=0; c.wb[R_FLASH]=0; c.hit=2; }
+    c.mmio[R_SRAM]=18; c.mmio[R_MMIO]=7;
+    p.cost=c;
+  };
+  if (ci_s && cd_s) {
+    CacheParams pi, pd; pi.cost=RegionCost(); pd.cost=RegionCost();
+    if (!parse_cfg(ci_s,true,&pi) || !parse_cfg(cd_s,false,&pd)) return 1;
+    if (cal) { apply_cal(pi,true); apply_cal(pd,false); }
+    Cache ci(pi), cd(pd);
+    replay(ci,t_i); replay(cd,t_d);
+    ci.print(stdout,"I"); cd.print(stdout,"D");
+    printf("single-config: I_hit=%.3f%% D_hit=%.3f%%  TMT(refill+wb+mmio)=%llu\n",
+      ci.hit_rate()*100.0, cd.hit_rate()*100.0,
+      (unsigned long long)(ci.stall_cycles()+cd.stall_cycles()));
+    return 0;
+  }
+
   // 枚举合法配置
   std::vector<Result> results;
   for (int ni=1; ni<=7; ++ni) {
@@ -81,10 +113,12 @@ int main(int argc,char**argv){
     for (uint64_t blk=16; blk<=16*ni; blk+=16) if ((16ull*ni)%blk==0) {
       uint32_t ways = (uint32_t)(16ull*ni/blk);
       CacheParams pi; std::string e; pi.cost=RegionCost();
+      if (cal) apply_cal(pi,true);
       if (!make_cache_from_srams(ni,true,blk,ways,&pi,&e)) continue;
       for (uint64_t bd=16; bd<=16*nd; bd+=16) if ((16ull*nd)%bd==0) {
         uint32_t wd=(uint32_t)(16ull*nd/bd);
         CacheParams pd; pd.cost=RegionCost();
+        if (cal) apply_cal(pd,false);
         if (!make_cache_from_srams(nd,false,bd,wd,&pd,&e)) continue;
         Cache ci(pi), cd(pd);
         replay(ci,t_i); replay(cd,t_d);

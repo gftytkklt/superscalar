@@ -8,7 +8,7 @@ RegionCost::RegionCost() {
   // 初值：来自当前 npc sim（microbench test）实测，可被配置覆盖（见 load_params）。
   // 已测：PSRAM 读refill 490 / 写refill 657(含脏回写) ；flash 读refill 1309；
   //      SRAM MMIO 直达 ≈8；其它 MMIO ≈4；SDRAM 无样本(暂取≈PSRAM)。
-  for (int i=0;i<R_NUM;i++){ base[i]=0; wb[i]=0; mmio[i]=0; }
+  for (int i=0;i<R_NUM;i++){ base[i]=0; base_w[i]=0; wb[i]=0; mmio[i]=0; }
   base[R_PSRAM] = 490;  base[R_FLASH] = 1309; base[R_SDRAM] = 490;
   base[R_SRAM]  = 0;    base[R_MMIO]  = 0;
   wb[R_PSRAM]   = 167;  wb[R_FLASH]  = 1000; wb[R_SDRAM] = 167;
@@ -44,7 +44,8 @@ Cache::Cache(const CacheParams& p) : p_(p) {
   set_mask_ = (1u<<set_bits)-1;
   tag_shift_ = off_bits + set_bits;
   hits_=misses_=refill_cycles_=wb_cycles_=mmio_cycles_=direct_cycles_=0;
-  mandatory_=capacity_=conflict_=0;
+  mandatory_=capacity_=conflict_=0; rr_ptr_=0;
+  for (int i=0;i<R_NUM;i++){ miss_r_[i]=miss_w_[i]=0; }
 }
 
 Region Cache::region_of(uint32_t a) const {
@@ -55,10 +56,11 @@ Region Cache::region_of(uint32_t a) const {
   return R_MMIO;
 }
 
-uint64_t Cache::refill_cost(uint32_t addr) const {
+uint64_t Cache::refill_cost(uint32_t addr, OpType op) const {
   Region r = region_of(addr);
   double scale = (double)p_.block_bytes / 32.0;   // refill 长度按块大小比例
-  return (uint64_t)((double)p_.cost.base[r] * scale);
+  uint64_t b = (op==OP_WRITE && p_.cost.base_w[r]) ? p_.cost.base_w[r] : p_.cost.base[r];
+  return (uint64_t)((double)b * scale);
 }
 uint64_t Cache::writeback_cost(uint32_t addr) const {
   Region r = region_of(addr);
@@ -88,6 +90,7 @@ uint64_t Cache::access(OpType op, uint32_t addr) {
   }
   // 缺失
   misses_++;
+  if (op==OP_WRITE) miss_w_[r]++; else miss_r_[r]++;
   bool filled=false;
   int evict_way=0; bool evict_dirty=false; uint64_t evict_tag=0; bool evict_valid=false;
   int empty_way=-1;
@@ -96,11 +99,11 @@ uint64_t Cache::access(OpType op, uint32_t addr) {
     mandatory_++; s[empty_way].tag=tag; s[empty_way].valid=true; s[empty_way].dirty=false;
     filled=true;
   } else {
-    // 替换：选一个 way（此处用最简单的"命中时已更新时间戳"的伪 LRU：取第一个，即方式序）
-    for (int w=0;w<(int)p_.ways;w++) { evict_way=w; }
+    // 替换：与 RTL 对齐（2 路：way0 有效且 way1 无效→填 way1（上面已覆盖），否则换 way0）；
+    // ways>2 为 DSE 假设配置，用轮转近似 LRU。
+    evict_way = (p_.ways==2) ? 0 : (int)(rr_ptr_++ % p_.ways);
     evict_dirty = s[evict_way].dirty; evict_tag=s[evict_way].tag; evict_valid=s[evict_way].valid;
-    // 3C：全部 valid 且发生替换 → 容量或冲突。此处区分：若该 set 本来可多路放更多不同 tag 但被替换=conflict；
-    // 简化：只要替换就计入 capacity（冲突判定见 explain）。
+    // 3C 近似：替换即计 capacity（冲突/容量不再细分）
     capacity_++;
     if (evict_dirty && !p_.is_icache) { wb_cycles_ += writeback_cost(addr); }  // 脏块写回
     s[evict_way].tag=tag; s[evict_way].valid=true; s[evict_way].dirty=false;
@@ -110,7 +113,7 @@ uint64_t Cache::access(OpType op, uint32_t addr) {
   if (!p_.is_icache && op==OP_WRITE) {
     for (int w=0;w<(int)p_.ways;w++) if (s[w].valid && s[w].tag==tag) { s[w].dirty=true; break; }
   }
-  uint64_t rc = refill_cost(addr);
+  uint64_t rc = refill_cost(addr, op);
   refill_cycles_ += rc;
   return rc;
 }
@@ -130,6 +133,14 @@ void Cache::print(FILE* f, const char* tag) const {
     (unsigned long long)refill_cycles_,(unsigned long long)wb_cycles_,
     (unsigned long long)mmio_cycles_,(unsigned long long)direct_cycles_,
     (unsigned long long)(refill_cycles_+wb_cycles_+mmio_cycles_+direct_cycles_));
+  fprintf(f, "[%s] miss_r: sram=%llu psram=%llu flash=%llu sdram=%llu mmio=%llu | "
+             "miss_w: psram=%llu flash=%llu sdram=%llu\n",
+    tag,
+    (unsigned long long)miss_r_[R_SRAM],(unsigned long long)miss_r_[R_PSRAM],
+    (unsigned long long)miss_r_[R_FLASH],(unsigned long long)miss_r_[R_SDRAM],
+    (unsigned long long)miss_r_[R_MMIO],
+    (unsigned long long)miss_w_[R_PSRAM],(unsigned long long)miss_w_[R_FLASH],
+    (unsigned long long)miss_w_[R_SDRAM]);
 }
 
 } // namespace ysyx
