@@ -26,3 +26,6 @@ sta/*_synth.v
 *.log
 # SDRAM 定向回归 TB：显式放行 run.sh（npc/.gitignore 白名单未含 *.sh）
 !sdram/run.sh
+
+# P-B 部件级频率探针：放行 probe_run.sh（npc/.gitignore 白名单未含 *.sh）
+!sta/probe/probe_run.sh
