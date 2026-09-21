@@ -30,6 +30,7 @@
 | Kconfig 修改静默失效 | 同上 §3 | 直接 sed `.config` 不触发 `autoconf.h` 重生成，须 `tools/kconfig/build/conf --syncconfig Kconfig` |
 | 差分调试锁定"被替换层" | `../process/ONSCRIPTER_FIX_PLAN.md`（用户裁决） | 两世界唯一差异层=被替换层（miniSDL/NDL），应优先锁定；复用层测出问题既不可修也解释不了参考侧正常 |
 | 动态指令数不是跨配置不变量（时变轮询归因法） | `../process/B3_STAGE7_RECALIB_PERF.md` §2.1 | 外设轮询（UART LSR）次数随 CPU/外设相对速度变化：retire 差 = 每轮询迭代指令数 × 轮询次数差（×3 精确吻合）；跨配置只比 IPC/cycles，不比指令数；"固定 MMIO 成本"要按频率比修正 |
+| 跨配置比较必须声明时间口径（PERF 总周期 ≠ 程序窗口） | `../process/B3_STAGE8_PC_AMAT_LAYOUT.md` §1/§5 | `PERF[final] cycles` 含 boot/启动（受 bootloader 搬运影响）；microbench `Total/Scored time` 由程序自身计时、不含 boot。.text 搬 SDRAM 场景：纯 kernel −31% 而端到端 +24.8%（一次性搬运 ~5.5M cyc）——结论必须两口径并列，优化目标决定看哪个 |
 | 提频收益 vs 访存等待的 Amdahl 饱和模型 | `../process/B3_STAGE7_RECALIB_PERF.md` §4 | r=f_CPU/f_APB 下访存等待 ∝r：T(α)=U/α+M·α，吞吐天花板=1/(1−p_mem)；判据是吞吐 f×IPC 而非 IPC；p_mem>0.5 时先降访存占比再提频（α*=sqrt((1−p)/p)） |
 | 「逐行译码写」generate 模式的面积陷阱 | `../process/B3_STAGE8_AREA_N45.md` §4.1 | `generate for(i=0;i<N;i++) assign hit[i]=(i==idx)` 让工具复制 N 份比较器且无法共享（dcache 4×128 份）——应改直接索引写或共享 7→128 译码器；同族：FF 寄存器堆索引读=两棵 32:1×64b mux 树（18Kμm²），SRAM 宏化可省但不计面积 |
 | cache 掩码/时序/PSRAM/SRAM wmask 等硬件经验 | `../../docs/DEBUG_WORKFLOW.md` §3 | 活跃文档，硬件坑汇总（现行参考） |
