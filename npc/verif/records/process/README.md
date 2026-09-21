@@ -126,6 +126,17 @@
 - H2：`B3_STAGE8_PH_H2_compress_summary.md`
 - H3：`B3_STAGE8_PH_H3_loc_array-sum.md`、`B3_STAGE8_PH_H3_loc_array-sum.png`、`B3_STAGE8_PH_H3_loc_list-alloc.md`、`B3_STAGE8_PH_H3_loc_list-alloc.png`、`B3_STAGE8_PH_H3_loc_list-chase.md`、`B3_STAGE8_PH_H3_loc_list-chase.png`
 
+### 3.4 B4 流水线处理器（进行中）
+
+> 总计划（活跃区）：`../../docs/B4_PLAN.md`（讲义 36 项 → 现状/待做/分阶段计划）。
+> 进度：**Q1 ✅ 量化评估** / Q2 计数器 / Q3 branchsim / Q4 fence.i 反例 / Q5 形式化 / Q6 条件落地。
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `B4_QUANT_EVAL.md` | RECORD | B4-Q1 量化：**fetch/retire 双指针对齐**精确重建动态序列（bubble=380,591、类别与 PERF 逐位一致；澄清 `other`=未跳转分支）+ 四项理想收益：理想流水线 **1.285×**、转发 **1.069×**、控制冒险 **1.021×**、jal/jalr **1.0011×**、icache 流水化 ≈1.00×（上界 1.236×） | ✅ |
+
+附件：`B4_QUANT_RAW.md`（原始类别/分支/RAW 表）
+
 ## 4. ONScripter 移植（PA4.5 选做）✅
 
 | 文档 | 类型 | 主题/要点 | 状态 |
