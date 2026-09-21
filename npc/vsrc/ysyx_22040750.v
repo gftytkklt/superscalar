@@ -3070,7 +3070,11 @@ module ysyx_22040750_icachectrl #(
     parameter BLOCK_NUM = CACHE_SIZE / BLOCK_SIZE,
     parameter OFFT_LEN = $clog2(BLOCK_SIZE),
     parameter INDEX_LEN = $clog2(BLOCK_NUM/GROUP_NUM),
-    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN
+    parameter TAG_LEN = 32-OFFT_LEN-INDEX_LEN,
+    // P-E/E4.x：行宽/几何参数化（与 dcachectrl 对称；默认 32B 行为逐位不变）
+    parameter WAY_W = BLOCK_SIZE*8,             // 单路行位宽（256bit@32B）
+    parameter WAY_LANES = BLOCK_SIZE/8,         // 行内 64bit 拍数（4@32B）
+    parameter LANE_W = $clog2(WAY_LANES)
 )(
     input I_clk,
     input I_rst,
@@ -3082,16 +3086,16 @@ module ysyx_22040750_icachectrl #(
     input I_cpu_fencei,// from cpu, fencei begin, disable pc_ready
     input I_dcache_clean,// from dcache, fencei end, enable pc_ready
     // cache rd addr & req, low level valid en
-    input [255:0] I_way0_rdata,
-    input [255:0] I_way1_rdata,
+    input [WAY_W-1:0] I_way0_rdata,
+    input [WAY_W-1:0] I_way1_rdata,
     output [5:0] O_sram_addr,
     // msb-lsb: bram 3-0
     // wen=0 -> wr, wen=1 -> rd
     // wmask[i]=0 -> wvalid[i]
     output [3:0] O_sram_cen,
     output [3:0] O_sram_wen,
-    output [255:0] O_sram_wdata,
-    output [255:0] O_sram_wmask,
+    output [WAY_W-1:0] O_sram_wdata,
+    output [WAY_W-1:0] O_sram_wmask,
     // mem data, rd addr & req
     input [63:0] I_mem_rdata,
     input I_mem_arready,
@@ -3132,11 +3136,11 @@ module ysyx_22040750_icachectrl #(
     wire way0_replace, way1_replace;
     reg [1:0] hit_flag;// 01 for way0 hit, 10 for way1 hit;
     // final data rd src
-    wire [255:0] mem_rdata;
+    wire [WAY_W-1:0] mem_rdata;
     // cache hit data source
-    wire [255:0] hit_rdata;
+    wire [WAY_W-1:0] hit_rdata;
     // mem wb reg
-    reg [255:0] cacheline_reg;
+    reg [WAY_W-1:0] cacheline_reg;
     // ctrl signal
     wire rd_hit, rd_miss, rd_handshake, rd_reload, rd_allocate, pc_handshake;
     wire mmio_flag;
@@ -3182,7 +3186,7 @@ module ysyx_22040750_icachectrl #(
     // axi constant
     assign O_mem_rready = 1;// always enable rdata
     //assign O_mem_bready = 0;// always disable wresp
-    assign O_mem_arlen = mmio_process ? 0 : 3;// 32/8 - 1
+    assign O_mem_arlen = mmio_process ? 0 : WAY_LANES-1;// BLOCK_SIZE/8 - 1
     assign O_mem_arsize = mmio_process ? 3'b010 : 3'b011;// 8B
     assign O_mem_arburst = mmio_process ? 2'b00 : 2'b01;
     // cache addr/en logic
@@ -3261,7 +3265,7 @@ module ysyx_22040750_icachectrl #(
         //else if(rd_hit)
         //    cacheline_reg <= way0_hit ? I_way0_rdata : I_way1_rdata;
         else if(rd_x_active && I_mem_rvalid && ~mmio_process)
-            cacheline_reg <= {I_mem_rdata, cacheline_reg[255 -: 192]};
+            cacheline_reg <= {I_mem_rdata, cacheline_reg[WAY_W-1:64]};
         else
             cacheline_reg <= cacheline_reg;
     // rd allocate signal
@@ -3276,7 +3280,7 @@ module ysyx_22040750_icachectrl #(
         else
             hit_flag <= 2'b00;
     //assign hit_rdata = way0_hit ? I_way0_rdata : I_way1_rdata;
-    assign hit_rdata = (I_way0_rdata & {256{hit_flag[0]}}) | (I_way1_rdata & {256{hit_flag[1]}});
+    assign hit_rdata = (I_way0_rdata & {WAY_W{hit_flag[0]}}) | (I_way1_rdata & {WAY_W{hit_flag[1]}});
     assign mem_rdata = (current_state == RD_HIT) ? hit_rdata : cacheline_reg;
     assign cache_inst = mem_rdata[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     assign mmio_inst = mem_addr[2] ? I_mem_rdata[63:32] : I_mem_rdata[31:0];
@@ -3284,7 +3288,7 @@ module ysyx_22040750_icachectrl #(
     // assign O_cpu_inst = mem_rdata[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     //assign O_cpu_inst = cacheline_reg[{mem_offset[OFFT_LEN-1:2],2'b0,3'b0} +: 32];
     assign O_sram_wen = rd_allocate ? 4'b0 : 4'hf;
-    assign O_sram_wmask = rd_allocate ? 0 : {256{1'b1}};
+    assign O_sram_wmask = rd_allocate ? {WAY_W{1'b0}} : {WAY_W{1'b1}};
     assign O_sram_wdata = cacheline_reg;
     assign way0_replace = rd_allocate && ~way1_replace;
     assign way1_replace = rd_allocate && (valid_table[{mem_index,1'b0}]) && ~(valid_table[{mem_index,1'b1}]);
