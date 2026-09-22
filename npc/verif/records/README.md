@@ -4,11 +4,12 @@
 >
 > | 子目录 | 性质 | 内容 |
 > |---|---|---|
-> | [`process/`](./process/) | **日志型** | 阶段实施记录、调试过程时间线、任务提示词（续作 PROMPT）、计划——**按项目推进顺序组织**（访存体系→外设→B3 阶段1–8→ONScripter→环境），重复/取代关系见其 §7 |
+> | [`process/`](./process/) | **日志型** | 阶段实施记录、调试过程时间线、任务提示词（续作 PROMPT）、计划——**按项目推进顺序组织**（访存体系→外设→B3 阶段1–8→**B4 阶段 Q1–Q7 + riscv-tests R-1~R-5**→ONScripter→环境），重复/取代关系见其 §7 |
 > | [`knowledge/`](./knowledge/) | **经验性** | 案例复盘、方法论沉淀、性能分析——按「B3 性能链 / 工具入门 / 工程方法 / 跨平台旧案」分组，含按阶段排序的经验地图 |
 >
-> **当前活跃文档**（入口/工作流/运行速查/测试体系/当前阶段）在上级目录 `npc/verif/`，
-> 总入口见 `../docs/PROJECT_OVERVIEW.md`（含"现状与目标"：NEMU+NPC 双端启动 Linux、NPC 持续性能优化）。
+> **当前活跃文档**（入口/工作流/运行速查/测试体系/riscv-tests/优化台账）在上级目录 `npc/verif/`，
+> 总入口见 `../docs/PROJECT_OVERVIEW.md`（含"现状与目标"：NEMU+NPC 双端启动 Linux、NPC 持续性能优化），
+> 调试技术目录见 `../README.md` §3。
 > 新阶段的产出按 `../docs/WORKFLOW_POLICY.md` §4 落档：过程记录入 `process/`，提炼的经验入 `knowledge/`，
 > 并同步更新对应 README 索引。
 
@@ -16,7 +17,7 @@
 
 - **日志型归档索引**：[`process/README.md`](./process/README.md) —— 访存体系（STAGE1–3）/
   RT-Thread·SDRAM·外设（STAGE_F–K、J0–J5）/ **B3 性能优化阶段1–8（含 P-A~P-H 计划→结果→附件）** /
-  ONScripter / 环境（含附件清单与权威/快照/被取代表）
+  **B4 阶段 Q1–Q7 与 riscv-tests R-1~R-5（含结果表）** / ONScripter / 环境（含附件清单与权威/快照/被取代表）
 - **经验性归档索引**：[`knowledge/README.md`](./knowledge/README.md) —— B3 性能链（含被取代标注）、
   形式化/综合 STA 入门、长仿真进程管理、跨平台旧案 + 按阶段排序的经验地图
 
@@ -34,8 +35,11 @@
 | **OpenSTA** | — 不需要 | yosys-sta 用 iEDA/iSTA |
 | **npc 可综合化适配（E1a）** | ✅ 已完成 | `verif/sta/gen_synth_rtl.py`：去 DPI + blackbox `sram_behav` |
 | **E1b：STA 出频率算 `r`** | ✅ 已完成 | icsprout55 f_max≈349.7MHz→`r≈3.5`；nangate45 复测 120,383.62μm²/411MHz（`process/B3_STAGE8_AREA_N45.md`）；A1 后 118,805.71μm²/426MHz |
-| **E1c/E1d：APB 延迟校准 + 等式校验** | ✅ 已完成（2026-09-08） | `apb_delayer.v`（B 方案，`PERF_DELAY` 门控）；`(t1−t0)·r == t1'−t0` EQUATION OK；IPC 0.196→0.074（`process/B3_STAGE5_PERF.md`） |
+| **E1c/E1d：APB 延迟校准 + 等式校验** | ✅ 已完成（2026-09-08） | `apb_delayer.v`（B 方案，`PERF_DELAY` 门控）；`(t1−t0)·r == t1'−t0` EQUATION OK；IPC 0.196→0.0738（`process/B3_STAGE5_PERF.md`） |
 | **B3 阶段1–8 全部任务** | ✅ 完成（E4 用户裁决暂停） | 讲义 34 项清单与状态见 `../docs/STAGE_B3_CACHE_PERF.md` §1；推进历史见 `process/README.md` |
+| **B4 阶段（Q1–Q7）** | ✅ 结档（2026-09-22） | 量化/计数器/branchsim/fence.i 反例/流水线形式化 depth 20/2 个真实 RTL 缺陷；`../docs/B4_PLAN.md`、`process/README.md` §3.4、`process/B4_Q7_CLOSE.md` |
+| **riscv-tests 接入（R-1~R-5）** | ✅ 完成（2026-09-22） | NPC **66 PASS/0 FAIL/1 SKIP**；`process/RISCV_TESTS_R3.md`、`process/B4_R5_RISCV_FIXES.md`、结果表 `process/RISCV_TESTS_RESULT_{npc,nemu}.md` |
+| **NEMU REF 语义修复（N-1）** | ✅ 完成（2026-09-22） | `mulh/mulhsu/mulhu` + `div*/rem*` 修复 → NEMU **66/0/1/0**，mul/div 可 DIFF=1；`process/NEMU_REF_FIXES.md`（含 REF `.so` 构建要点） |
 
 > 下一步回到全局目标：**① NEMU+NPC 双端启动 Linux；② 持续性能优化**
 > （依据 `PROJECT_OVERVIEW.md` 未来目标 + `knowledge/MEM_PIPELINE_OPT.md` 的方法底座 +

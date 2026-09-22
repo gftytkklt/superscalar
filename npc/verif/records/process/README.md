@@ -139,10 +139,13 @@
 > Q7-D 形式化深探 **depth 24 限时 1h 未判定**（判定上限 depth 20 PASS）；Q7-E ✅ 结档）→ **B4 完成**。
 >
 > **B4 后扩展：riscv-tests 接入**（与 cpu-tests 同模式：nemu/npc 双目标链接 + `ebreak`+a0 结束约定）——
-> `RISCV_TESTS_R3.md` 首轮 NPC 63/3/1、NEMU 55/3/8/1（REF 自身限制）；
-> **R-5 修复**（`B4_R5_RISCV_FIXES.md`）：`divuw/remuw` ✅ 已修（W 型结果符号扩展 1 行）+ 全回归逐位；
-> `jalr rd=rs1` ⏸ 已定位（重定向后接收陈旧取指数据，SoC 波形实证）**待设计修复**；
-> 最新 NPC 全套 **65 PASS / 1 FAIL(jalr) / 1 SKIP**；脚本 `riscv_tests_{build,run}.sh`、`riscv_tests_patch_env.py`。
+> `RISCV_TESTS_R3.md` 首轮 NPC 63/3/1、NEMU 55/3/8/1；**N-1 修复 NEMU REF**（`NEMU_REF_FIXES.md`：
+> `mulh/mulhsu/mulhu` 高 64 位 + div/rem 全 8 条除零/溢出/W 符号扩展）→ NEMU 也 **66 PASS / 0 FAIL /
+> 1 SKIP / 0 UNDET**，mul/div 用例可 **DIFF=1** 交叉验证；
+> **R-5 修复完成**（`B4_R5_RISCV_FIXES.md`）：`divuw/remuw` ✅（`3ecba24`）+ `jalr rd=rs1` ✅（B4-R5b：
+> `npc_e` 握手拍保留"不同的新目标"——修重定向目标丢失→同地址重复请求；不触碰握手/气泡语义）；
+> 最新 NPC 全套 **66 PASS / 0 FAIL / 1 SKIP(ma_data)** + 全回归逐位（formal depth 20 PASS）；
+> 脚本 `riscv_tests_{build,run}.sh`、`riscv_tests_patch_env.py`。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
@@ -161,7 +164,12 @@
 | `B4_Q7_CLOSE.md` | RECORD | B4-Q7 收尾与 **B4 结档**：36 项最终状态（✅19/➖10/❌6/🔶1，无遗留必做）、结档回归证据（13/13、assert 13/13、formal 四件、perf 18,318,000/1,352,016、sdram-heap 15,329,912）、**形式化判定上限 depth 20 PASS / depth 24 限时 1h 未判定**、决策与遗留 | ✅ |
 | `B4_Q7_PROMPT.md` | PROMPT | B4-Q7 续作任务入口（历史，已完成）：OPT-05 决策落地 / OPT-11 / 形式化深探 / B4 结档；结果见 Q7 各 RECORD | 📦 |
 | `RISCV_TESTS_R3.md` | RECORD | riscv-tests 接入（R-1~R-3，与 cpu-tests 双目标模式一致）：双目标链接（NPC flash/SRAM vs NEMU 0x80000000）、env 适配（ebreak+a0 / CSR 子集 / M 模式 / 数据搬运）、死锁三层防护；**NPC 63 PASS/3 FAIL/1 SKIP**；NEMU REF 自身 mulh/div 缺陷留档 | ✅ 首轮 |
-| `B4_R5_RISCV_FIXES.md` | RECORD | R-5 修复：**divuw/remuw ✅**（`word_sext` 对 W 型无符号除余错误零扩展 → 一律符号扩展，1 行；定向 4 例 + 全回归逐位）；**jalr rd=rs1 ⏸** 定位到"重定向后接收陈旧取指数据"（SoC 波形证据链：气泡替换生效但陈旧 link 被当真实指令执行）；最新全套 **65 PASS/1 FAIL(jalr)/1 SKIP** | 🔶 进行中 |
+| `B4_R5_RISCV_FIXES.md` | RECORD | R-5 **完成**：**divuw/remuw ✅**（符号扩展 1 行，`3ecba24`）；**jalr rd=rs1 ✅**（B4-R5b：波形证据链修正为"Q6 握手优先在消费旧 pending 的同拍丢掉新跳转目标 → 同地址重复请求 → link 响应被二次消费"；修复 `npc_e` 为 pending 语义规范式 `valid' = load ∨ (valid ∧ ¬accept)`，load 只认"与被接受值不同的新目标"，兼容 Q6、不动握手/气泡语义）；riscv-tests **66 PASS/0 FAIL/1 SKIP**、微/assert 13/13、formal 四件 + depth 20 PASS（442s）、perf 18,318,000/1,352,016、sdram-heap 15,329,912 逐位；含远目标行边界定向控制实验（修前 BAD/修后 GOOD） | ✅ |
+| `B4_R5B_PROMPT.md` | PROMPT | R-5b 续作任务入口（历史，已完成：`npc_e` 新目标保留修复 + 全回归；结果见 `B4_R5_RISCV_FIXES.md` §2） | 📦 |
+| `NEMU_REF_FIX_PLAN.md` | PLAN | N-1 计划：NEMU REF 语义修复（N-1 mulh 三例 / N-2 div·rem 八例 / N-3 REF 变更后交叉验证 / N-4 留档；Spike 未启用） | 📦 |
+| `NEMU_REF_FIXES.md` | RECORD | **NEMU REF 语义修复结档**：根因（64 位乘后才拓宽、宿主除法除零/INT_MIN÷-1 SIGFPE）+ 修复（128 位显式提升 + 8 个除零/溢出 helper）；**NEMU 66/0/1/0**、DIFF=1 定向 11 例 0 mismatch、cpu-tests/sdram-heap 无回归；含 REF `.so` 构建配置要点（SHARE 配置、DEVICE 关闭、`-pie` 冲突） | ✅ |
+| `RISCV_TESTS_RESULT_npc.md` | RESULT | riscv-tests **NPC 自校验结果表**（runner 自动生成/覆盖）：**66 PASS / 0 FAIL / 1 SKIP(ma_data) / 0 TIMEOUT**（R-5b 后，含逐用例 cycles） | ✅ 最新 |
+| `RISCV_TESTS_RESULT_nemu.md` | RESULT | riscv-tests **NEMU 原生结果表**（runner 自动生成）：**66 PASS / 0 FAIL / 1 SKIP / 0 UNDET**（N-1 修复 REF 后）；历史 REF 缺陷见 `NEMU_REF_FIXES.md` | ✅ 最新 |
 
 附件：`B4_QUANT_RAW.md`、`B4_Q3_RAW.md`、`B4_Q6_OPT05_store_analysis.md`
 
@@ -200,3 +208,5 @@
 | 任务入口 PROMPT（阶段7/PD/PH、STAGE_F/I/J） | 各自的结果记录 / `DEBUG_WORKFLOW.md` | 对应 PROMPT 📦 | PROMPT 仅供任务背景，状态看结果 |
 | 阶段8 面积/频率数据 | `B3_STAGE8_AREA_N45.md` / `B3_STAGE8_PA_A1.md` / `B3_STAGE8_PB_FMAX.md` | `../knowledge/SYNTHESIS_STA_NPC.md`（入门+速查） | 速查数字以过程记录为准（A1 后 118,805.71μm²/426MHz） |
 | 阶段2/3 性能结论 | `B3_STAGE7_RECALIB_PERF.md`、`B3_STAGE8_PE_CACHESIM_DIFF.md` | `../knowledge/B3_STAGE2_PERF_ANALYSIS.md` ⚠️、`../knowledge/B3_CACHESIM_ANALYSIS.md` ⚠️ | 旧数字/旧成本模型已被校准口径取代；计数器手册与工具说明仍有效 |
+| riscv-tests 状态 | `B4_R5_RISCV_FIXES.md`（R-5 结论）+ `RISCV_TESTS_RESULT_npc.md`（最新结果表） | `RISCV_TESTS_R3.md`（首轮 63/3/1 快照）、`RISCV_TESTS_RESULT_nemu.md`（首轮含 REF 缺陷） | 结果表由 `riscv_tests_run.sh` 自动覆盖；首轮记录留档 |
+| NEMU REF 语义（mul/div） | `NEMU_REF_FIXES.md`（修复后，DIFF=1 可用） | `RISCV_TESTS_RESULT_nemu.md` 首轮（55/3/8/1） | 其余 REF 限制（6 CSR、无 `fence`、`ma_data`）仍有效 |

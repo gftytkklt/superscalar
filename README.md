@@ -49,6 +49,15 @@ bash init.sh subproject-name
 - 仿真侧：`npc` 经 Verilator 编译成 `ysyxSoCFull` 仿真模型，与 `nemu` 进行 difftest 逐指令对拍，保证 RTL 与参考模型行为一致；
 - 软件侧：`abstract-machine` 及以上运行于处理器之上，支撑整机程序与操作系统实验。
 
+### 验证/测试分层（工具用途与用法目录：`npc/verif/README.md` §3）
+
+| 层 | 对象 | 主要技术与入口 |
+| --- | --- | --- |
+| L1 裸核微验证 | CPU 核 + 自写 AXI 内存模型 | `npc/verif` 的 `make`/`run`/`fst`（13 例定向微测试）、`ptest`/`pfst`（主存模式）、`assert`/`assert-cache`（4 断言） |
+| L2 形式化 | 核/缓存/总线模块（裁剪 RTL + 46 个 `PROBE_*`） | `make formal` 四件（div/axiburst/icache/pipeline；`pipeline` 深探 depth 20） |
+| L3 全系统 + difftest | `ysyxSoCFull` + NEMU 参考模型 | `npc` 的 `make DIFF=1 WAVE=1 sim` + AM/cpu-tests/riscv-tests 套件（riscv-tests NPC 自校验 66 PASS/1 SKIP） |
+| L4 性能/面积 | SoC+总线延迟模型 / 综合网表 | 性能计数器与看门狗（`make perf`：18,318,000/1,352,016）、cachesim、`npc/verif/sta/` STA 与部件频率探针 |
+
 ## 现状与目标
 
 本工作区作为同时包含 **RISC-V 软件解释器（NEMU）、自研处理器 RTL（NPC）、简易操作系统
@@ -61,14 +70,26 @@ bash init.sh subproject-name
   阶段 1–7 结案；阶段 8（P-A~P-H）全部完成（E4 缓存几何落地按用户裁决暂停）；
   train 规模：xip 2.458B / sdram-heap 2.135B / **全 SDRAM 1.917B cycles**（长跑最优），
   见 `npc/verif/docs/B3_PLAN.md`、`npc/verif/docs/STAGE_B3_CACHE_PERF.md`；
+- ✅ **B4「流水线优化与验证深化」**：Q1–Q7 全部结档（量化/计数器/branchsim/fence.i 反例/流水线形式化
+  depth 20/2 个真实 RTL 缺陷修复/OPT-05 暂缓、OPT-11 否决），见
+  `npc/verif/docs/B4_PLAN.md`、`npc/verif/records/process/B4_Q7_CLOSE.md`；
+- ✅ **riscv-tests 接入与 R-5 修复**：官方 rv64ui+rv64um 67 例（NPC 自校验），修复 divuw/remuw 与
+  `jalr rd=rs1` 两个真实缺陷后 **66 PASS / 0 FAIL / 1 SKIP**（ma_data 对齐异常未实现）；
+  **NEMU REF 语义缺陷（mulh/div）已单独立项修复（N-1）**，NEMU 原生同为 66/0/1/0 且 mul/div 用例可 DIFF=1；
+  见 `npc/verif/docs/RISCV_TESTS_PLAN.md`、`npc/verif/records/process/{B4_R5_RISCV_FIXES,NEMU_REF_FIXES}.md`；
+- ✅ **验证体系**：13 例定向微测试、4 个仿真期断言、形式化四件（`pipeline.sby` depth 20）、
+  difftest 对拍、性能计数器/看门狗/cachesim/STA 等；**调试技术目录见
+  `npc/verif/README.md` §3**（每项含用途/用法/产物）；
 - 🎯 **未来目标**：
   1. 在 **NEMU 与 NPC 双端启动 Linux 操作系统**；
   2. **持续对 NPC 架构进行性能分析与优化**（方法底座见
-     `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`；DSE 备选方案见
-     `npc/verif/records/process/B3_STAGE8_PE_DSE.md`，如需重启 E4 落地）。
+     `npc/verif/records/knowledge/MEM_PIPELINE_OPT.md`；候选见 `npc/verif/docs/ARCH_OPT_BACKLOG.md`；
+     DSE 备选方案见 `npc/verif/records/process/B3_STAGE8_PE_DSE.md`，如需重启 E4 落地）。
 
 > **文档入口链**：根 `README.md`（本文件）→ `npc/README.md`（处理器/验证总览）→
-> `npc/verif/README.md`（验证环境与文档索引）→ `npc/verif/docs/PROJECT_OVERVIEW.md`（项目总览）。
+> `npc/verif/README.md`（验证环境、**调试技术目录 15 项**与文档索引）→
+> `npc/verif/docs/PROJECT_OVERVIEW.md`（项目总览）。专题：`ARCH_OPT_BACKLOG.md`（架构优化台账）、
+> `RISCV_TESTS_PLAN.md`（riscv-tests 接入与 R-5）、`B4_PLAN.md`/`B3_PLAN.md`（阶段计划）。
 > **历史归档**：`npc/verif/records/README.md`（`process/` 按项目推进顺序、`knowledge/` 经验复盘，
 > 含"权威/快照/被取代"关系表；2026-09-21 结构化重构）。
 

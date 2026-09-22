@@ -8,7 +8,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 - CPU 模块名 / 学号 ID：`ysyx_22040750`
 - 指令集：RV64IM（含乘法/除法，M 扩展为多周期实现）
-- 复位 PC：`0x2FFFFFFC`；启动后 `snpc = pc + 4` 首取 `0x30000000`（Flash 基址）
+- 复位 PC：Flash 模式 `0x2FFFFFFC`（首取 `0x30000000`）；主存模式（`NPC_PMEM_BOOT`）`0x7FFFFFFC`（首取 `0x80000000`）
 - 访存模型：AXI4（核内 64 位数据总线；cacheable 32B 突发 / MMIO 单拍）
 - 常用开关：`DIFF/WAVE/WITH_TRACE/WITH_SDL`；`PERF=1`（apb_delayer 校准，r=3.5）、
   `PERF_R426=1`（r=4.25 口径）、`BOOT_MODE/HEAP_SIZE`（见 `.npc_config`）；
@@ -25,24 +25,29 @@ npc/
 ├── verif/                   # 验证环境与文档（结构与功能见 verif/README.md）
 │   ├── README.md            # verif 目录结构/文件功能总索引（代码 + 文档区）
 │   ├── docs/                # 活跃文档：PROJECT_OVERVIEW(入口)/DEBUG_WORKFLOW/RUN_GUIDE/VERIF_TESTS/
-│   │                        #   WORKFLOW_POLICY + 当前阶段 B3_PLAN·STAGE_B3_CACHE_PERF
+│   │                        #   WORKFLOW_POLICY/RISCV_TESTS_PLAN/ARCH_OPT_BACKLOG(+arch_opt/)
+│   │                        #   + 历史阶段计划 B3_PLAN·STAGE_B3_CACHE_PERF·B4_PLAN·B4_Q7_PLAN
 │   ├── records/             # 归档区：process/(按推进顺序的过程日志) + knowledge/(经验复盘)，见其 README
 │   ├── Makefile             # 裸核微验证：make / run T=/fst T=/assert/assert-cache/formal/ptest/pboot/bins
 │   ├── tb_main.cpp          # 裸核 AXI4 内存模型 + 时钟/复位 harness（断言失败返回非 0）
 │   ├── tb_axiburst.cpp      # axiburst 专用 tb（配合 formal/axiburst.sby）
-│   ├── tests/               # 汇编微测试 10 例：bug2_csr/bug3_div/bug4_fencei/cache_data/cache_region/
-│   │                        #   fencei_cache/partial_store/pmem_stress/psram_burst/residual_mret
+│   ├── tests/               # 汇编微测试 13 例：bug2_csr/bug3_div/bug4_fencei/cache_data/cache_region/
+│   │                        #   fencei_cache/fencei_pipeline/lduse_fwd/partial_store/pmem_stress/
+│   │                        #   psram_burst/residual_mret/shift_fwd
 │   ├── assert/              # bind 注入仿真期断言：cache_bypass_check/csr_hazard_check/
 │   │                        #   div_zero_check/axi_protocol_check
-│   ├── formal/              # SymbiYosys 形式化：div.sby ✅ / axiburst.sby ✅ / icache.sby ✅(btormc)
+│   ├── formal/              # SymbiYosys 形式化四件：div.sby(z3,100)/axiburst.sby(z3,35)/
+│   │                        #   icache.sby(boolector,20)/pipeline.sby(boolector,12；深探 20)
 │   │                        #   + props_*.sv + trim_rtl.py（props_dcache.sv 为残留：dcache.sby 已移除）
-│   ├── perf/                # B3 性能资产（bind 探针 + 分析脚本）：perf_counters/dcache_stats/icache_stats/
-│   │                        #   apbdly_check/axidly_check + amat_report/trace_locality/trace_compress/ctr_trace_plot
+│   ├── perf/                # 性能/看门狗探针 10 个（perf_counters/dcache_stats/icache_stats/apbdly_check/
+│   │                        #   axidly_check/axiwatch/sdramprobe/sdramcore_probe/pmem_probe/dcache_axi_probe）
+│   │                        #   + 分析脚本 7 个（amat_report/trace_locality/trace_compress/ctr_trace_plot/
+│   │                        #   branchsim/b4_quant_eval/store_path_analysis）
 │   ├── cachesim/            # 参数化 cache 模拟器（C++，读 CACHESIM_TRACE 做 DSE 与 RTL 对账）
 │   ├── sdram/               # SDRAM AXI 控制器定向回归 TB（run.sh + tb_sdram_ctrl.sv，7 case）
 │   ├── sta/                 # 综合/STA：gen_synth_rtl.py + yosys-sta 结果（result*/）+ probe/ 部件探针
 │   └── boot/                # 裸机探针启动代码：boot.S / psram_memtest.S
-├── scripts/                 # linker-soc.ld / linker-sram.ld / menuconfig.py（生成 .npc_config）
+├── scripts/                 # menuconfig.py（生成 .npc_config）；linker-soc.ld/linker-sram.ld 为本地文件（未入库）
 ├── csrc/                    # C++ 仿真侧
 │   ├── soctest.cpp          # Verilator 主循环（波形/复位/时钟/difftest）
 │   ├── trace.cpp            # DPI 落点：CACHESIM_TRACE（访存 trace）/ PERF_CTR_TRACE（计数器 CSV）
@@ -101,8 +106,8 @@ ysyx_22040750 (vsrc/ysyx_22040750.v)
 ## 3. 历史缺陷与修复（均已解决，2026-09-02 复验）
 
 > 以下三项在早期被 `npc/verif` 定向微测试在 RTL 级复现（观察值来自仿真）。**当前均已修复**：
-> `make`（10 例）、`make assert`（10 例）、`make assert-cache`（10 例）全 PASS，
-> `formal/div.sby`、`formal/axiburst.sby` 证明级 PASS（见 §4/§5）。此处保留根因/证据/修复作历史参考。
+> `make`/`make assert`/`make assert-cache`（各 13 例）全 PASS，`make formal` 四件证明级 PASS
+> （见 §4/§5）。此处保留根因/证据/修复作历史参考。
 
 ### 3.1 【已修复】Level-I/D Cache 曾被完全旁路，恒走 MMIO 单拍
 - **根因**：`dcachectrl` 与 `icachectrl` 中 `mmio_flag` 曾被无条件置真（早期
@@ -185,7 +190,7 @@ rvalid、wdata 接收后延迟一拍再给 bvalid，全部握手驱动、无启�
 
 ```bash
 cd npc/verif
-make             # 编译模型并跑全部 tests/*.S（当前 10/10 全 PASS）
+make             # 编译模型并跑全部 tests/*.S（当前 13/13 全 PASS）
 make run  T=bug2_csr  # 只跑某个用例
 make fst  T=bug2_csr  # 跑并保留 build/bug2_csr.fst 波形
 make clean
@@ -193,9 +198,10 @@ make clean
 
 - 用例机制：映像放到 Flash `0x30000000`（复位 PC `0x2ffffffc` → `snpc=pc+4` 自然引导）；
   程序把结果写入 SRAM `0x0f000000` 后 `ebreak` 结束；harness 打印 SRAM 区与 AXI 事务日志。
-- 现有用例（10 个，见 `VERIF_TESTS.md` §1）：`bug2_csr`(CSR 冒险)、`bug3_div`(除零)、
+- 现有用例（13 个，见 `VERIF_TESTS.md` §1）：`bug2_csr`(CSR 冒险)、`bug3_div`(除零)、
   `bug4_fencei`(fence.i)、`cache_data`/`cache_region`/`fencei_cache`/`partial_store`/
-  `pmem_stress`(缓存路径)、`psram_burst`(PSRAM 32B burst)、`residual_mret`(mret)。
+  `pmem_stress`(缓存路径)、`psram_burst`(PSRAM 32B burst)、`residual_mret`(mret)、
+  `fencei_pipeline`(SMC+fence.i 反例)、`lduse_fwd`(load→use 前递)、`shift_fwd`(移位结果消费)。
 
 ### 4.3 调试辅助
 - 波形：`soc.gtkw`（全系统）、`verif/build/<用例>.fst`（微验证）；
@@ -208,11 +214,14 @@ make clean
 
 当前验证以定向微用例 + difftest 冒烟为主，覆盖率与通用性有限。建议按以下阶段推进：
 
-> **现状（2026-09-21）**：阶段 2 已落地且全 PASS（断言 4 件 + 形式化 div/axiburst/icache）；
-> 阶段 1/3/4 未推进。验证资产详见 `verif/README.md` 与 `verif/docs/VERIF_TESTS.md`。
+> **现状（2026-09-22）**：阶段 1 已落地（riscv-tests rv64ui+rv64um **66 PASS/0 FAIL/1 SKIP** +
+> 13 例定向微测试；R-5 修复 divuw/remuw 与 jalr rd=rs1）；阶段 2 已落地且全 PASS（断言 4 件 +
+> 形式化四件，`pipeline.sby` 深度深探 depth 20 PASS）；阶段 3/4 未推进。
+> 验证资产与调试技术目录详见 `verif/README.md`，测试体系见 `verif/docs/VERIF_TESTS.md`。
 
-### 阶段 1：测试载荷更完备（无环境改造，可立即推进）
-- 引入官方指令测试集：`riscv-tests/isa`、`riscv-arch-test`（RV64IM 定向/签名文件）；
+### 阶段 1：测试载荷更完备 —— ✅ 主体落地（riscv-tests 已接入）
+- 引入官方指令测试集：`riscv-tests`（rv64ui+rv64um `-p` 变体 67 例，已接入：**66 PASS/1 SKIP**，
+  见 `verif/docs/RISCV_TESTS_PLAN.md`）；`riscv-arch-test`（签名文件）未引入；
 - 自研/引入随机指令流生成器（约束 PC-跳转、寄存器依赖、访存对齐等），跑长随机回归；
 - 补齐边界用例：非对齐读写、乘除溢出（`INT64_MIN/-1`）、除零两种符号、CSR 组合与
   mret/ecall 连续、定时中断抢占、多周期指令后跟 load-use 等；
@@ -231,23 +240,22 @@ make clean
    - 运行：
      ```bash
      cd npc/verif
-     make assert        # 聚焦 bug2/bug3：当前 10/10 全 PASS
-     make assert-cache  # 连 bug1 一起：当前 10/10 全 PASS（cache 已不旁路）
+      make assert        # 聚焦 bug2/bug3：当前 13/13 全 PASS
+      make assert-cache  # 连 bug1 一起：当前 13/13 全 PASS（cache 已不旁路）
      ```
-2. **形式化（`npc/verif/formal/`）** ✅ 已实跑且证明级 PASS（yosys + z3/btormc + sby）
+2. **形式化（`npc/verif/formal/`）** ✅ 已实跑且证明级 PASS（yosys + z3/boolector + sby）
    - 工具链：`apt install yosys z3`；`sby` 需另装（非 PyPI 包）——从
      `github.com/YosysHQ/sby` 拉源码后 `make install PREFIX=~/.local`，并软链
-     `/usr/bin/yosys-smtbmc -> ~/.local/bin/smtbmc`；btormc 走 oss-cad-suite，然后 `make formal` 即可；
+     `/usr/bin/yosys-smtbmc -> ~/.local/bin/smtbmc`；`boolector` 走 oss-cad-suite，然后 `make formal` 即可；
    - 内容：`div.sby`(除零规范断言+驱动，bmc) / `axiburst.sby`(axiburst2xxx 读通道) /
-     `icache.sby`(REF-vs-DUT 数据透明性，btormc)；
+     `icache.sby`(REF-vs-DUT 数据透明性) / `pipeline.sby`(五级流水 vs REF 等价，
+     `trim_rtl.py` 注入 `PROBE_*` 探针)；
      RTL 经 `formal/trim_rtl.py` 抽出自包含块给 yosys（避开 DPI-C），并修正 0 位宽字面量；
-   - **当前结果（修复后）**：
-     - `div.sby`（bmc depth100）：**PASS**——除零规范（商 -1、余=被除数）证明达成；
-     - `axiburst.sby`（bmc depth35）：**PASS**——读通道 32bit 单拍 + burst 重组 + ARVALID 保持；
-     - `icache.sby`（btormc）：**PASS @ depth≤35**（128B 极小实例，状态≈1500 位；depth 40 超时=判定上限），
-       见 `verif/records/process/B3_STAGE6_ICACHE_BMC.md`；
-     - `dcache.sby` 因含 128-entry lookup_table + 256bit cacheline，BMC 状态空间不可判定，
-       已移除（改用仿真断言 + 定向微测试覆盖，见 VERIF_TESTS §4）。
+   - **当前结果（2026-09-22 复跑）**：`make formal` 四件全 PASS——
+     `div`(bmc 100, z3)、`axiburst`(bmc 35, z3)、`icache`(bmc 20, boolector)、
+     `pipeline`(bmc 12, boolector；**深度深探 depth 20 PASS**，约 6–8 分钟)；
+     历史 `dcache.sby` 因含 128-entry lookup_table + 256bit cacheline、BMC 状态空间不可判定，
+     已移除（改用仿真断言 + 定向微测试覆盖，见 VERIF_TESTS §4）。
 
 ### 阶段 3：接入 UVM 等验证流程
 CPU 类同步设计的 UVM 化要点：
@@ -291,13 +299,17 @@ CPU 类同步设计的 UVM 化要点：
 | `verif/docs/VERIF_TESTS.md` | 测试体系（verif 微测试/断言/形式化；运行命令见 RUN_GUIDE） | 现行 |
 | `verif/docs/B3_PLAN.md` | **B3 阶段**：分阶段计划与完成状态（阶段 1–7 ✅；**阶段 8 P-A~P-H 全部完成**，E4 落地按用户裁决暂停） | ✅ 结案 |
 | `verif/docs/STAGE_B3_CACHE_PERF.md` | B3 讲义必做题全清单 → 现状映射（34 项）+ P-A~P-H 任务计划表 + §2 参数化分析 | ✅ 全部有产出/豁免 |
+| `verif/docs/B4_PLAN.md` | **B4 阶段（已结档）**：讲义 36 项现状映射 + Q1–Q7 阶段表；结档证据见 `records/process/B4_Q7_CLOSE.md` | ✅ 结档 |
+| `verif/docs/ARCH_OPT_BACKLOG.md` + `arch_opt/` | **架构优化总台账**：OPT-01~19 收益/状态/决策日志 + 各专题子文档（时序/几何/微架构/前端/布局/ISA） | ✅ 现行 |
+| `verif/docs/RISCV_TESTS_PLAN.md` | **riscv-tests 引入计划与 R-1~R-5 状态**（NPC `66 PASS/0 FAIL/1 SKIP`）；结果表 `records/process/RISCV_TESTS_RESULT_{npc,nemu}.md` | ✅ 完成 |
+| `verif/docs/WORKFLOW_POLICY.md` | 开发推进工作流政策（计划先行/阶段停点/留档/上下文管理与交接） | ✅ 现行 |
 | `verif/cachesim/README.md` | cachesim 用法/配置/成本模型/对账口径（P-E E1 校准后与 RTL 逐项一致） | ✅ 现行 |
 | `verif/records/README.md` | **归档入口**：process/knowledge 分区说明 + 工具链状态 + 2026-09-21 结构化重构记录 | ✅ 现行 |
 | `verif/records/process/README.md` | 过程日志索引：**按项目推进顺序**（访存→外设→B3 阶段1–8（P-A~P-H 计划→结果→附件）→ONScripter→环境）+ 权威/快照/被取代表 | ✅ 现行 |
 | `verif/records/knowledge/README.md` | 经验索引：B3 性能链（含被取代标注）/工具入门/工程方法/跨平台旧案 + 按阶段经验地图 | ✅ 现行 |
 | `verif/records/process/STAGE_H_ONWARDS_TASKS.md` | 讲义阶段 H–K 的任务定义与实现路径 + 完成记录 | H–J5 ✅；K 🔶（ChipLink 结构保证） |
 | `verif/records/knowledge/MEM_PIPELINE_OPT.md` | 访存流水线性能分析与优化方向（方法论/浪费点清单；**架构现状已按 P-D 更新为 AXI SDRAM**） | 审计完成；P-D/P-F 已落地部分方向 |
-| `verif/README.md` | verif 目录结构与文件功能总索引（验证环境代码 + 文档区入口） | ✅ 现行 |
+| `verif/README.md` | verif 目录结构与文件功能总索引 + **调试技术目录（15 项：用途/用法/产物/详见）** + 输出行速查 + 使用约定 | ✅ 现行 |
 
 > 注：`verif/` 下除各级 `README.md` 外的 md 文件被 `npc/.gitignore` 忽略（工作区本地文档，
 > 不进 git 状态），按上面索引即可定位到各主题。
