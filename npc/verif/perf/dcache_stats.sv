@@ -113,6 +113,11 @@ module dcache_stats (
       avg(wmp_total[R_FLASH],wmp_n[R_FLASH]), wmp_n[R_FLASH],
       avg(wmp_total[R_SDRAM],wmp_n[R_SDRAM]), wmp_n[R_SDRAM],
       c_wr_wb_cyc);
+    // B4-Q7/OPT-05：写缺失 episode 拆分 = 填充读+FSM（总周期−WR_WB） vs 脏回写（WR_WB），按区域均值/次数
+    $display("DCACHE_WR_MISS_SPLIT: psram(fill_avg=%0d wb_avg=%0d n=%0d) flash(fill_avg=%0d wb_avg=%0d n=%0d) sdram(fill_avg=%0d wb_avg=%0d n=%0d)",
+      avg(wmp_total[R_PSRAM]-wrmp_wb_total[R_PSRAM], wmp_n[R_PSRAM]), avg(wrmp_wb_total[R_PSRAM], wmp_n[R_PSRAM]), wmp_n[R_PSRAM],
+      avg(wmp_total[R_FLASH]-wrmp_wb_total[R_FLASH], wmp_n[R_FLASH]), avg(wrmp_wb_total[R_FLASH], wmp_n[R_FLASH]), wmp_n[R_FLASH],
+      avg(wmp_total[R_SDRAM]-wrmp_wb_total[R_SDRAM], wmp_n[R_SDRAM]), avg(wrmp_wb_total[R_SDRAM], wmp_n[R_SDRAM]), wmp_n[R_SDRAM]);
     $display("DCACHE_MMIO_LAT: sram(avg=%0d n=%0d peak=%0d) other(avg=%0d n=%0d)",
       avg(mmio_total[R_SRAM],mmio_n[R_SRAM]), mmio_n[R_SRAM], mmio_peak[R_SRAM],
       avg(mmio_total[R_MMIO],mmio_n[R_MMIO]), mmio_n[R_MMIO]);

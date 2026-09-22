@@ -131,7 +131,10 @@
 > 总计划（活跃区）：`../../docs/B4_PLAN.md`（讲义 36 项 → 现状/待做/分阶段计划）；
 > **架构优化台账（活跃区）**：`../../docs/ARCH_OPT_BACKLOG.md` + `../../docs/arch_opt/*`
 > （所有优化候选/收益/状态/决策的统一入口，落地前须数据采样）。
-> 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim / Q4 ✅ fence.i 反例 / Q5 ✅ 流水线形式化（depth 20 PASS，~377s） / Q6 进行中（OPT-19 ✅、真实 RTL 缺陷×2 ✅：JALR LSB / `dnpc_reg_valid` 握手优先级；OPT-05 待拍板、OPT-11 排队）**。
+> 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim / Q4 ✅ fence.i 反例 / Q5 ✅ 流水线形式化（depth 20 PASS，~377s） /
+> Q6 ✅（OPT-19、真实 RTL 缺陷×2：JALR LSB / `dnpc_reg_valid` 握手优先级） / Q7 进行中
+> （计划 `../../docs/B4_Q7_PLAN.md`；Q7-A ✅ 写缺失拆分探针：收益集中填充侧 1,317 vs 回写 927；
+> OPT-05 待拍板、Q7-B OPT-11 待做、Q7-D 形式化深探待跑、Q7-E 待结档）**。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
@@ -144,6 +147,7 @@
 | `B4_Q6_OPT05_STORE.md` | RECORD | B4-Q6/OPT-05 采样：Python dcache 模型与 RTL **逐项一致**（rd 32,894/1,090、wr 18,075/3,307）；**97.1% 写缺失驱逐前写满整行（3,212/3,307）**；免填充上界 **≈4.2M（23%T）→ ≈1.30×**（推荐 write-validate）；含候选 A/B/C 与前置拆分实验 | ✅ 采样 |
 | `B4_Q6_JALR_LSB.md` | RECORD | B4-Q6 形式化反例调试**结档**：修复 4 处 harness 假反例（电平 valid/`O_pc=dnpc` 索引/逐拍自由指令/请求地址供给）+ **2 个真实 RTL 缺陷**：① `dnpc_reg` 未清 JALR 目标 bit0；② `dnpc_reg_valid` 握手优先级（跳转目标重复取指→同一指令执行两次，depth≥20 反例根因）；**depth 20 PASS（~377s）**；全回归逐位（微测试/assert 12/12、formal 四件、`make perf` 18,318,000/1,352,016、sdram-heap 15,329,912），零性能损失 | ✅ |
 | `B4_Q6_PROMPT.md` | PROMPT | B4-Q6 续作任务入口（历史，已完成：depth≥20 反例定位与修复） | 📦 |
+| `B4_Q7_OPT05_SPLIT.md` | RECORD | B4-Q7/Q7-A 写缺失 episode 拆分采样（纯 verif 打印 1 行）：psram fill_avg=1,317 / wb_avg=927（58.7%/41.3%），**收益集中在填充侧**，write-validate 上界维持 ≈1.30×；`make perf` 逐位一致（18,318,000/1,352,016） | ✅ |
 | `B4_Q7_PROMPT.md` | PROMPT | **B4-Q7 续作任务入口（活跃）**：OPT-05 决策落地 / OPT-11 / 形式化 depth 24+ 限时深探 / B4 结档（含基线、命令、坑与口径、时间预算） | 🔶 |
 
 附件：`B4_QUANT_RAW.md`、`B4_Q3_RAW.md`、`B4_Q6_OPT05_store_analysis.md`
