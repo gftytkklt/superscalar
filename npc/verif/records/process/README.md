@@ -133,9 +133,10 @@
 > （所有优化候选/收益/状态/决策的统一入口，落地前须数据采样）。
 > 进度：**Q1 ✅ 量化 / Q2 ✅ 计数器 / Q3 ✅ branchsim / Q4 ✅ fence.i 反例 / Q5 ✅ 流水线形式化（depth 20 PASS，~377s） /
 > Q6 ✅（OPT-19、真实 RTL 缺陷×2：JALR LSB / `dnpc_reg_valid` 握手优先级） / Q7 进行中
-> （计划 `../../docs/B4_Q7_PLAN.md`；Q7-A ✅ 写缺失拆分探针：收益集中填充侧 1,317 vs 回写 927，
-> OPT-05 已立项；Q7-B OPT-11 已实现+功能全绿但 **locality 回归 +2.3~3.5%、microbench 持平 → 已否决并回退**
-> （保留 `lduse_fwd.S` 测试）；Q7-C OPT-05 待做、Q7-D 形式化深探待跑、Q7-E 待结档）**。
+> （计划 `../../docs/B4_Q7_PLAN.md`；Q7-A ✅ 写缺失拆分探针（收益集中填充侧 1,317 vs 回写 927）；
+> Q7-B OPT-11 功能全绿但 locality 回归 → **否决并回退**（保留 `lduse_fwd.S`）；
+> Q7-C OPT-05 **暂缓**（字节掩码元数据实测 +26% 面积，面积/收益比不足）；
+> Q7-D 形式化深探 **depth 24 限时 1h 未判定**（判定上限 depth 20 PASS）；Q7-E ✅ 结档）→ **B4 完成**。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
@@ -149,8 +150,10 @@
 | `B4_Q6_JALR_LSB.md` | RECORD | B4-Q6 形式化反例调试**结档**：修复 4 处 harness 假反例（电平 valid/`O_pc=dnpc` 索引/逐拍自由指令/请求地址供给）+ **2 个真实 RTL 缺陷**：① `dnpc_reg` 未清 JALR 目标 bit0；② `dnpc_reg_valid` 握手优先级（跳转目标重复取指→同一指令执行两次，depth≥20 反例根因）；**depth 20 PASS（~377s）**；全回归逐位（微测试/assert 12/12、formal 四件、`make perf` 18,318,000/1,352,016、sdram-heap 15,329,912），零性能损失 | ✅ |
 | `B4_Q6_PROMPT.md` | PROMPT | B4-Q6 续作任务入口（历史，已完成：depth≥20 反例定位与修复） | 📦 |
 | `B4_Q7_OPT05_SPLIT.md` | RECORD | B4-Q7/Q7-A 写缺失 episode 拆分采样（纯 verif 打印 1 行）：psram fill_avg=1,317 / wb_avg=927（58.7%/41.3%），**收益集中在填充侧**，write-validate 上界维持 ≈1.30×；`make perf` 逐位一致（18,318,000/1,352,016） | ✅ |
+| `B4_Q7_OPT05_DESIGN.md` | RECORD | B4-Q7/Q7-C OPT-05 设计评估：write-validate 必需按字节有效性元数据；面积探针（`sta/probe/probe_validmask.v`）**+31.2Kμm²（+26% 全芯片）**、阵列 f_max 776MHz；A1/A4/A2 方案对比 → **用户裁决暂缓（A3）**，未动 RTL | ⏸ |
 | `B4_Q7_OPT11_LDUSE.md` | RECORD | B4-Q7/Q7-B OPT-11：MEM 拍 load 数据前递 + "数据未回才停"（定向测试抓到"直接去 MEM 项"的气泡漏洞）；功能全绿（微/assert 13/13、formal 四件、depth 20 PASS、difftest），裸核 −1 拍/事件；但 `make perf` −0.16%、**locality +2.3~3.5% 回归**（UART 轮询 + APB 时延模型）→ **否决并回退**（测试 `lduse_fwd.S` 保留） | ❌ |
-| `B4_Q7_PROMPT.md` | PROMPT | **B4-Q7 续作任务入口（活跃）**：OPT-05 决策落地 / OPT-11 / 形式化 depth 24+ 限时深探 / B4 结档（含基线、命令、坑与口径、时间预算） | 🔶 |
+| `B4_Q7_CLOSE.md` | RECORD | B4-Q7 收尾与 **B4 结档**：36 项最终状态（✅19/➖10/❌6/🔶1，无遗留必做）、结档回归证据（13/13、assert 13/13、formal 四件、perf 18,318,000/1,352,016、sdram-heap 15,329,912）、**形式化判定上限 depth 20 PASS / depth 24 限时 1h 未判定**、决策与遗留 | ✅ |
+| `B4_Q7_PROMPT.md` | PROMPT | B4-Q7 续作任务入口（历史，已完成）：OPT-05 决策落地 / OPT-11 / 形式化深探 / B4 结档；结果见 Q7 各 RECORD | 📦 |
 
 附件：`B4_QUANT_RAW.md`、`B4_Q3_RAW.md`、`B4_Q6_OPT05_store_analysis.md`
 
