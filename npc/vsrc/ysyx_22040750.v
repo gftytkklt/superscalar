@@ -3808,6 +3808,8 @@ module ysyx_22040750_npc(
     reg dnpc_reg_valid;
     wire dnpc_sel, intr_sel;
     wire store_dnpc;// indicate latch useful data
+    wire [31:0] dnpc_store;// B4-R5b: 存入 pending 前的目标（JALR 清 bit0）
+    wire dnpc_load;// B4-R5b: 本拍需要记住的新目标（区别于"正被接受的旧值"）
     assign dnpc_sel = ~(I_dnpc_sel[0] | I_dnpc_sel[2]);
     assign intr_sel = I_dnpc_sel[2];
     // assign dnpc_src1 = I_imm;
@@ -3816,6 +3818,12 @@ module ysyx_22040750_npc(
     assign dnpc_sum = dnpc_src1 + dnpc_src2;
     assign pc_handshake = I_pc_ready && I_pc_valid;
     assign store_dnpc = (I_pc_valid && !I_pc_ready && !dnpc_reg_valid) || (I_IF_ID_valid && !pc_handshake && dnpc_sel) || (I_IF_ID_valid && (dnpc_sel | intr_sel) && (dnpc != O_dnpc));
+    // B4-R5b: pending 语义规范式 —— accept 作用于旧值、load 作用于新值：
+    //   无握手时 store 一律 arm；与握手同拍时只有"与被接受值不同"才算新值，
+    //   相同则视为冗余 store（load=0），避免同一目标被重复请求/重复取指（B4-Q6）。
+    //   比较用清 bit0 后的值，避免 JALR odd 目标与已存偶数目标误判为"不同"。
+    assign dnpc_store = {dnpc[31:1], dnpc[0] & (~I_dnpc_sel[1])};
+    assign dnpc_load  = store_dnpc && (!pc_handshake || (dnpc_store != O_dnpc));
     //assign store_dnpc = (I_pc_valid && !I_pc_ready && !dnpc_reg_valid) || (I_IF_ID_valid && dnpc_sel && (dnpc != O_dnpc));
     // case 2: dnpc is generated, but next reg wb flush valid dnpc
     //assign store_dnpc = (I_pc_valid && !I_pc_ready && !dnpc_reg_valid) || (I_IF_ID_valid && dnpc_sel && !I_pc_valid && !dnpc_reg_valid);
@@ -3829,23 +3837,18 @@ module ysyx_22040750_npc(
     always @(posedge I_clk)
         if(I_rst)
             dnpc_reg <= 0;
-        else if(store_dnpc)
-            dnpc_reg <= {dnpc[31:1], dnpc[0] & (~I_dnpc_sel[1])}; // B4-Q6: JALR 目标须清 bit0（含寄存器路径）
+        else if(dnpc_load)
+            dnpc_reg <= dnpc_store; // B4-Q6: JALR 目标须清 bit0（含寄存器路径）
         else
             dnpc_reg <= dnpc_reg;
     always @(posedge I_clk)
         if(I_rst)
             dnpc_reg_valid <= 0;
-        // B4-Q6: handshake 优先 —— 目标已被 cache 接受（消费）即清 pending；
-        // 否则 store_dnpc 会在同拍把它重新置位，下一拍交付数据时又发一笔同目标请求，
-        // 同一指令被取两次/执行两次（depth≥20 形式化反例：xori 自依赖被写两次）。
-        else if(pc_handshake)
-            dnpc_reg_valid <= 0;
-        else if(store_dnpc)
-            dnpc_reg_valid <= 1;
+        // B4-R5b: valid' = load ∨ (valid ∧ ¬accept) —— load 针对新值、accept(pc_handshake)
+        // 只作用于旧值，二者可合法同拍、无需优先级链（替代 B4-Q6 的"handshake 优先"）
         else
-            dnpc_reg_valid <= dnpc_reg_valid;
-    assign O_dnpc = dnpc_reg_valid ? dnpc_reg : {dnpc[31:1], dnpc[0]&(~I_dnpc_sel[1])};
+            dnpc_reg_valid <= dnpc_load || (dnpc_reg_valid && !pc_handshake);
+    assign O_dnpc = dnpc_reg_valid ? dnpc_reg : dnpc_store;
     //assign dnpc = I_dnpc_sel[3] ? dnpc_sum : {dnpc_sum[63:1], 1'b0};
 endmodule
 module ysyx_22040750_pc(
