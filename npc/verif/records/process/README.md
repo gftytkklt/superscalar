@@ -137,6 +137,12 @@
 > Q7-B OPT-11 功能全绿但 locality 回归 → **否决并回退**（保留 `lduse_fwd.S`）；
 > Q7-C OPT-05 **暂缓**（字节掩码元数据实测 +26% 面积，面积/收益比不足）；
 > Q7-D 形式化深探 **depth 24 限时 1h 未判定**（判定上限 depth 20 PASS）；Q7-E ✅ 结档）→ **B4 完成**。
+>
+> **B4 后扩展：riscv-tests 接入**（与 cpu-tests 同模式：nemu/npc 双目标链接 + `ebreak`+a0 结束约定）——
+> `RISCV_TESTS_R3.md` 首轮 NPC 63/3/1、NEMU 55/3/8/1（REF 自身限制）；
+> **R-5 修复**（`B4_R5_RISCV_FIXES.md`）：`divuw/remuw` ✅ 已修（W 型结果符号扩展 1 行）+ 全回归逐位；
+> `jalr rd=rs1` ⏸ 已定位（重定向后接收陈旧取指数据，SoC 波形实证）**待设计修复**；
+> 最新 NPC 全套 **65 PASS / 1 FAIL(jalr) / 1 SKIP**；脚本 `riscv_tests_{build,run}.sh`、`riscv_tests_patch_env.py`。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
@@ -154,6 +160,8 @@
 | `B4_Q7_OPT11_LDUSE.md` | RECORD | B4-Q7/Q7-B OPT-11：MEM 拍 load 数据前递 + "数据未回才停"（定向测试抓到"直接去 MEM 项"的气泡漏洞）；功能全绿（微/assert 13/13、formal 四件、depth 20 PASS、difftest），裸核 −1 拍/事件；但 `make perf` −0.16%、**locality +2.3~3.5% 回归**（UART 轮询 + APB 时延模型）→ **否决并回退**（测试 `lduse_fwd.S` 保留） | ❌ |
 | `B4_Q7_CLOSE.md` | RECORD | B4-Q7 收尾与 **B4 结档**：36 项最终状态（✅19/➖10/❌6/🔶1，无遗留必做）、结档回归证据（13/13、assert 13/13、formal 四件、perf 18,318,000/1,352,016、sdram-heap 15,329,912）、**形式化判定上限 depth 20 PASS / depth 24 限时 1h 未判定**、决策与遗留 | ✅ |
 | `B4_Q7_PROMPT.md` | PROMPT | B4-Q7 续作任务入口（历史，已完成）：OPT-05 决策落地 / OPT-11 / 形式化深探 / B4 结档；结果见 Q7 各 RECORD | 📦 |
+| `RISCV_TESTS_R3.md` | RECORD | riscv-tests 接入（R-1~R-3，与 cpu-tests 双目标模式一致）：双目标链接（NPC flash/SRAM vs NEMU 0x80000000）、env 适配（ebreak+a0 / CSR 子集 / M 模式 / 数据搬运）、死锁三层防护；**NPC 63 PASS/3 FAIL/1 SKIP**；NEMU REF 自身 mulh/div 缺陷留档 | ✅ 首轮 |
+| `B4_R5_RISCV_FIXES.md` | RECORD | R-5 修复：**divuw/remuw ✅**（`word_sext` 对 W 型无符号除余错误零扩展 → 一律符号扩展，1 行；定向 4 例 + 全回归逐位）；**jalr rd=rs1 ⏸** 定位到"重定向后接收陈旧取指数据"（SoC 波形证据链：气泡替换生效但陈旧 link 被当真实指令执行）；最新全套 **65 PASS/1 FAIL(jalr)/1 SKIP** | 🔶 进行中 |
 
 附件：`B4_QUANT_RAW.md`、`B4_Q3_RAW.md`、`B4_Q6_OPT05_store_analysis.md`
 

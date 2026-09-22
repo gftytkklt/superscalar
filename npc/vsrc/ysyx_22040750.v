@@ -3018,9 +3018,9 @@ module ysyx_22040750_gpr_alu(
                         //| ({64{op_divu}} & divu_result)
                         | ({64{op_rem}} & rem_final)
                         | ({64{op_csr}} & csr_result);
-    // only divuw and remuw produce 0 sext
+    // B4-R5: 所有 W 型结果（含原本被特判为 0 扩展的 divuw/remuw）都必须按 bit31 符号扩展
     wire word_sext;
-    assign word_sext = ((op_div | op_rem) && (~|I_alu_op_sext)) ? 0 : dword_result[31];
+    assign word_sext = dword_result[31];
     assign word_sext_result = {{32{word_sext}}, dword_result[31:0]};
     assign O_result = I_word_op_mask ? word_sext_result : dword_result;
     assign O_result_valid = |I_alu_op_sel[13:10] ? (div_out_valid | mul_out_valid | mul_reg_valid | div_reg_valid) : 1;

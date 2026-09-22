@@ -1,0 +1,5 @@
+# B4 riscv-tests 跳过清单：每行「<测试名> <原因>」（# 开头为注释）
+# 规则：只跳过本核**明确未实现**的特性，每条必须有原因；R-3 首轮结果可回填。
+# 未实现范围：地址不对齐/非法指令/access fault 异常与多异常优先级（B4 #12/OPT-17）、
+#             A/F/D/C 扩展（OPT-18）。本版本 rv64ui 仅 ma_data 属异常类。
+rv64ui-p-ma_data misaligned load/store 异常未实现（B4 #12 / OPT-17）
