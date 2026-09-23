@@ -3902,33 +3902,33 @@ module ysyx_22040750_pc(
     wire IF_handshake;
     reg IF_valid;
     reg IF_en;
-    //reg [63:0] pc_cache;
-    reg [31:0] inst_cache;
-    reg cache_valid;
-    // latch data cannot be received by IF_ID
+    // S2 (P1): 响应槽规范式（原 inst_cache/cache_valid 更名并统一条件）——
+    //   valid' = load ∨ (valid ∧ ¬accept)，槽数据与 valid 同条件更新。
+    //   accept = 槽交付拍（与原 cache_valid 清除条件逐位相同）；
+    //   load   = 响应到而不能当场交付才入槽；槽满禁止覆盖（原实现该场景会静默覆盖
+    //            inst_cache，仅靠 icache 单次交付口头契约兜底；现保持旧值，
+    //            由 verif/assert/pc_fetch_check.sv 断言监督该场景不可达）。
+    //   fencei 语义不变：仍只作用于 IF_handshake（PC 更新门），不改变槽捕获/交付。
+    reg [31:0] inst_slot;
+    reg slot_valid;
+    wire accept = slot_valid && I_IF_ID_allowin;
+    wire load   = I_inst_valid && !slot_valid && !I_IF_ID_allowin;
     always @(posedge I_sys_clk)
     	if(I_rst)
-    		cache_valid <= 0;
-    	else if(IF_ready_go && (!I_IF_ID_allowin))
-    		cache_valid <= 1;
-    	else if(cache_valid && I_IF_ID_allowin)
-    		cache_valid <= 0;
+    		slot_valid <= 0;
     	else
-    		cache_valid <= cache_valid;
+    		slot_valid <= load || (slot_valid && !accept);
     always @(posedge I_sys_clk)
     	if(I_rst)
-    		inst_cache <= 32'b0;
-    	//else if(IF_ready_go && (!I_IF_ID_allowin))
-      else if(I_inst_valid && (!I_IF_ID_allowin))
-    		inst_cache <= I_inst;
-    	else
-    		inst_cache <= inst_cache;
+    		inst_slot <= 32'b0;
+    	else if(load)
+    		inst_slot <= I_inst;
     assign O_pc_valid = IF_allow_in && IF_en;
     assign O_IF_valid = IF_ready_go && IF_valid;
-    assign IF_ready_go = I_inst_valid || cache_valid;
+    assign IF_ready_go = I_inst_valid || slot_valid;
     assign IF_allow_in = (!IF_valid) || (IF_ready_go && I_IF_ID_allowin);
     assign IF_handshake = O_pc_valid && I_inst_ready && ~I_fencei;
-    assign O_inst = cache_valid ? inst_cache : I_inst;
+    assign O_inst = slot_valid ? inst_slot : I_inst;
     always @(posedge I_sys_clk)
     	if(I_rst)
     		IF_en <= 0;
