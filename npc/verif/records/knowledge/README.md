@@ -26,6 +26,7 @@
 
 | 文件 | 主题 | 要点 | 状态 |
 |---|---|---|---|
+| `CPU_STD_MODELS.md` | CPU 标准设计范式与实例（P1 弹性寄存器/P2 多周期握手/P3 请求响应解耦/P4 仲裁所有权/P5 事件悬挂） | 范式统一式与判据 + 本设计 5 个已落地范例（dnpc pending、S1.5 AX/X、OPT-19 AW/W 等）+ 11 个候选"现状→偏差→结论"对照（批次 A/B/C）+ 实施顺序 S1~S7 与停点（任务入口 `../process/RTL_STD_MODEL_PROMPT.md`） | 🔶 S0 完成，待用户确认首批改动 |
 | `LONG_SIM_PROC_MGMT.md` | 长仿真进程管理与安全终止（P-G/P-E 长跑经验） | `pkill -f <pattern>` 会自杀（匹配 shell 自身）→ 用 `pgrep/pkill -x` 或 `pkill -f '[y]syx...'`；长跑 `setsid` 脱离进程组；前置保险：`SIM_END`、总线看门狗、探针 cap、**启动前查镜像大小**（linker 错→GB 级镜像空转） | ✅ |
 
 ## 4. 跨平台旧案

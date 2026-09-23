@@ -1758,15 +1758,26 @@ module ysyx_22040750_dcachectrl #(
     // A1: fencei 回写地址的 tag 读改用下方 way1/fencei 共享读口（tag_rd2）
     assign fencei_addr = {tag_rd2, fencei_index[INDEX_LEN:1], {OFFT_LEN{1'b0}}};
     assign fencei_sram_cen = fencei_group ? 4'b0011 : 4'b1100;
+    // S1 (P3): 写响应单一 ack 定义点 + 单一 pend 拥有者。
+    //   b_ack 是协议标准应答点 (valid∧ready)，正确性不依赖 bready 恒 1：
+    //   bready=0 时 b_pend 保持、全部观察点等待 B 真正被消费；
+    //   当前实例化 O_mem_bready≡1，故 b_ack 与 I_mem_bvalid 同拍同值（配置事实，非正确性前提）。
+    wire b_ack = I_mem_bvalid && O_mem_bready;
+    // 写事务启动条件（原 AW_IDLE/WB_IDLE 两处重复表达式，提取为单点）：
+    // 三类写事务 = 替换脏行回写 / MMIO 写 / fence.i 逐行回写
+    wire wr_issue = (I_mem_rlast && replace_dirty && ~mmio_process)
+                  || (mmio_flag && I_cpu_wr_req)
+                  || (fencei_process && dirty_table[fencei_index]);
+    reg  b_pend;
     always @(posedge I_clk)
         if(I_rst)
             fencei_index <= 0;
-        else if(fencei_process & (~dirty_table[fencei_index] | I_mem_bvalid))
+        else if(fencei_process & (~dirty_table[fencei_index] | b_ack))
             fencei_index <= fencei_index + 1;
         else
             fencei_index <= fencei_index;
     // dcache clean: fencei_index incr to max(all 1) and (last cacheline clean or wb finish)
-    assign O_dcache_clean = fencei_process && (&fencei_index) && (~dirty_table[fencei_index] | I_mem_bvalid);
+    assign O_dcache_clean = fencei_process && (&fencei_index) && (~dirty_table[fencei_index] | b_ack);
     // // pending fence.i req
     // reg fencei_process;
     // always @(posedge I_clk)
@@ -1846,7 +1857,7 @@ module ysyx_22040750_dcachectrl #(
     // end
     assign mmio_rdata = I_mem_rdata;
     assign O_cpu_data = mmio_process ? mmio_rdata : cache_rdata;
-    assign O_cpu_bvalid = (current_state == WR_HIT) || ((current_state == MMIO_WR) && I_mem_bvalid);
+    assign O_cpu_bvalid = (current_state == WR_HIT) || ((current_state == MMIO_WR) && b_ack);
     // mem interface impl
     assign aw_handshake = I_mem_awready && O_mem_awvalid;
     assign wr_handshake = I_mem_wready && O_mem_wvalid;
@@ -1998,11 +2009,11 @@ module ysyx_22040750_dcachectrl #(
             end
             else if(wr_hit && cmp_hit_line[i])
                 dirty_table[i] <= 1'b1;
-            else if(rd_wb && I_mem_bvalid && cmp_alloc_line[i])
+            else if(rd_wb && b_ack && cmp_alloc_line[i])
                 dirty_table[i] <= 1'b0;
             else if(wr_allocate && cmp_alloc_line[i])
                 dirty_table[i] <= 1'b1;
-            else if(fencei_process && I_mem_bvalid && cmp_fencei_line[i])
+            else if(fencei_process && b_ack && cmp_fencei_line[i])
                 dirty_table[i] <= 1'b0;
             else begin
                 dirty_table[i] <= dirty_table[i];
@@ -2019,9 +2030,9 @@ module ysyx_22040750_dcachectrl #(
     always @(*) begin
         aw_next_state = AW_IDLE;
         case(aw_state)
-            AW_IDLE: aw_next_state = ((I_mem_rlast && replace_dirty && ~mmio_process) || (mmio_flag && I_cpu_wr_req) || (fencei_process && dirty_table[fencei_index])) ? AW_HANDSHAKE : aw_state;
+            AW_IDLE: aw_next_state = wr_issue ? AW_HANDSHAKE : aw_state;
             AW_HANDSHAKE: aw_next_state = aw_handshake ? AW_RESP : aw_state;
-            AW_RESP: aw_next_state = I_mem_bvalid ? AW_IDLE : aw_state;
+            AW_RESP: aw_next_state = b_ack ? AW_IDLE : aw_state;
             default: aw_next_state = aw_state;
         endcase
     end
@@ -2036,13 +2047,23 @@ module ysyx_22040750_dcachectrl #(
         case(wb_state)
             // cache wb and mmio wr, cache wb case must consider ~mmio_process
             // three case cause wb: replace dirty, mmio wr, fence.i
-            WB_IDLE: wb_next_state = ((I_mem_rlast && replace_dirty && ~mmio_process) || (mmio_flag && I_cpu_wr_req) || (fencei_process && dirty_table[fencei_index])) ? WB_DATA : wb_state;
+            WB_IDLE: wb_next_state = wr_issue ? WB_DATA : wb_state;
             // WB_HANDSHAKE: wb_next_state = aw_handshake ? WB_DATA : wb_state;
-            WB_DATA: wb_next_state = (wr_handshake && O_mem_wlast) ? (I_mem_bvalid ? WB_IDLE : WB_BVALID) : wb_state;
-            WB_BVALID: wb_next_state = I_mem_bvalid ? WB_IDLE : wb_state;
+            WB_DATA: wb_next_state = (wr_handshake && O_mem_wlast) ? (b_ack ? WB_IDLE : WB_BVALID) : wb_state;
+            WB_BVALID: wb_next_state = b_ack ? WB_IDLE : wb_state;
             default: wb_next_state = wb_state;
         endcase
     end
+    // S1 (P3): 写事务 pend —— AW 发出拍 arm、唯一 ack 点 b_ack 拍释放。
+    //   纪律不依赖 bready 恒 1：bready=0 时 b_pend 持有直到 B 被真正消费。
+    //   配套仿真期检查见 verif/assert/dcache_write_check.sv（bind 注入，非侵入）。
+    always @(posedge I_clk)
+        if(I_rst)
+            b_pend <= 1'b0;
+        else if(aw_handshake)
+            b_pend <= 1'b1;
+        else if(b_ack)
+            b_pend <= 1'b0;
     // overall
     // mmio_flag: current mem range: 80000000-87ffffff, other addr means mmio_addr
     // simple impl: [31:24] 1000_0000-1000_0111, so cached addr must have addr[31:27] == 10000
@@ -2052,7 +2073,7 @@ module ysyx_22040750_dcachectrl #(
             mmio_process <= 0;
         else if(mmio_flag)
             mmio_process <= 1;
-        else if(I_mem_rlast | I_mem_bvalid)
+        else if(I_mem_rlast | b_ack)
             mmio_process <= 0;
         
     // assign mmio_flag = (I_cpu_addr[31:27] != 5'b10000) && (I_cpu_rd_req || I_cpu_wr_req);
@@ -2108,16 +2129,16 @@ module ysyx_22040750_dcachectrl #(
             end
             RD_MISS: next_state = rd_ax_done ? RD_RELOAD : current_state;
             RD_RELOAD: next_state = rd_x_done ? (replace_dirty ? RD_WB : RD_ALLOCATE) : current_state;
-            RD_WB: next_state = I_mem_bvalid ? RD_ALLOCATE : current_state;
+            RD_WB: next_state = b_ack ? RD_ALLOCATE : current_state;
             RD_ALLOCATE: next_state = IDLE;
             WR_MISS: next_state = rd_ax_done ? WR_RELOAD : current_state;
             WR_RELOAD: next_state = rd_x_done ? (replace_dirty ? WR_WB : WR_ALLOCATE) : current_state;
-            WR_WB: next_state = I_mem_bvalid ? WR_ALLOCATE : current_state;
+            WR_WB: next_state = b_ack ? WR_ALLOCATE : current_state;
             WR_ALLOCATE: next_state = WR_HIT;
             MMIO_AR: next_state = rd_ax_done ? MMIO_RD : current_state;
             MMIO_AW: next_state = aw_handshake ? MMIO_WR : current_state;
             MMIO_RD: next_state = rd_x_done ? IDLE : current_state;
-            MMIO_WR: next_state = I_mem_bvalid ? IDLE : current_state;
+            MMIO_WR: next_state = b_ack ? IDLE : current_state;
             FENCEI: next_state = O_dcache_clean ? IDLE : current_state;
             //MMIO_WR: next_state = (wr_handshake && O_mem_wlast) ? IDLE : current_state;
             default: next_state = current_state;

@@ -168,6 +168,8 @@
 | `B4_R5B_PROMPT.md` | PROMPT | R-5b 续作任务入口（历史，已完成：`npc_e` 新目标保留修复 + 全回归；结果见 `B4_R5_RISCV_FIXES.md` §2） | 📦 |
 | `NEMU_REF_FIX_PLAN.md` | PLAN | N-1 计划：NEMU REF 语义修复（N-1 mulh 三例 / N-2 div·rem 八例 / N-3 REF 变更后交叉验证 / N-4 留档；Spike 未启用） | 📦 |
 | `NEMU_REF_FIXES.md` | RECORD | **NEMU REF 语义修复结档**：根因（64 位乘后才拓宽、宿主除法除零/INT_MIN÷-1 SIGFPE）+ 修复（128 位显式提升 + 8 个除零/溢出 helper）；**NEMU 66/0/1/0**、DIFF=1 定向 11 例 0 mismatch、cpu-tests/sdram-heap 无回归；含 REF `.so` 构建配置要点（SHARE 配置、DEVICE 关闭、`-pie` 冲突） | ✅ |
+| `RTL_STD_MODEL_PROMPT.md` | PROMPT | **RTL 标准模型化续作任务入口（活跃）**：标准范式 P1~P5（弹性寄存器/多周期握手/请求响应解耦/仲裁所有权/事件悬挂）+ 14 项候选（pc 取指槽、dcache B 双消费、mul/div done、流水 valid 口径、CSR 中断等）+ 阶段/验收/停点；**S0 完成**：候选实证/范式对照/顺序见 `../knowledge/CPU_STD_MODELS.md` | 🔶 |
+| `RTL_STD_MODELS_S1.md` | RECORD | **S1 结档：dcache 写通道 B 单一 ack/pend（P3）**——`b_ack/b_pend/wr_issue` 单点化 + 12 处观察点派生；断言走 bind 监视器（非侵入）；等价论证不依赖 `bready≡1`（协议一般性 + 当前配置逐位等价）；全回归绿、perf 18,318,000/1,352,016 与 sdram-heap 15,329,912 逐位、riscv-tests 双端 66/0/1、formal 四件 + depth 20 PASS | ✅ |
 | `RISCV_TESTS_RESULT_npc.md` | RESULT | riscv-tests **NPC 自校验结果表**（runner 自动生成/覆盖）：**66 PASS / 0 FAIL / 1 SKIP(ma_data) / 0 TIMEOUT**（R-5b 后，含逐用例 cycles） | ✅ 最新 |
 | `RISCV_TESTS_RESULT_nemu.md` | RESULT | riscv-tests **NEMU 原生结果表**（runner 自动生成）：**66 PASS / 0 FAIL / 1 SKIP / 0 UNDET**（N-1 修复 REF 后）；历史 REF 缺陷见 `NEMU_REF_FIXES.md` | ✅ 最新 |
 
