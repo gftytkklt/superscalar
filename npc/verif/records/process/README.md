@@ -172,6 +172,7 @@
 | `RTL_STD_MODELS_S1.md` | RECORD | **S1 结档：dcache 写通道 B 单一 ack/pend（P3）**——`b_ack/b_pend/wr_issue` 单点化 + 12 处观察点派生；断言走 bind 监视器（非侵入）；等价论证不依赖 `bready≡1`（协议一般性 + 当前配置逐位等价）；全回归绿、perf 18,318,000/1,352,016 与 sdram-heap 15,329,912 逐位、riscv-tests 双端 66/0/1、formal 四件 + depth 20 PASS | ✅ |
 | `RTL_STD_MODELS_S2.md` | RECORD | **S2 结档：pc 取指槽 P1 规范式**——`slot_valid/inst_slot` 统一 `valid'=load∨(valid∧¬accept)`、数据与 valid 同条件；槽满覆盖隐患改"保持+断言"，icache 单次交付/`slot⇒IF_valid` 契约断言化（`assert/pc_fetch_check.sv`）；全回归绿、perf/sdram-heap 逐位、riscv-tests 双端 66/0/1、formal 四件 + depth 20 PASS | ✅ |
 | `RTL_STD_MODELS_S3.md` | RECORD | **S3 结档（v2）：mul/div 数据+valid 对拍（零时延）**——div 保持"迭代直出"，接收保持由既有 `gpr_alu` 捕获寄存器保证（v1 模块级寄存器与后级冗余，按用户评审回退）；mul 空闲 hold 门控（呈现拍不变）；断言 3 监视器（start-while-busy/done 单拍/捕获==呈现）；**回归口径 v2：去 NEMU 端、常规 formal=depth 12，depth 20 仅疑点/收尾**；全绿、`mul_cyc=87,405` 不变、perf/sdram-heap 逐位、NPC 端 66/0/1 | ✅ |
+| `RTL_STD_MODELS_S4.md` | RECORD | **S4 结档：冒险/前递 match 五要素单点化**——stall_unit 增 wen 输入、match=读rsX(≠0)∧rs==rd∧rd≠0∧wen 单点表达式（decoder/forward_unit 零改动，forward &wen 幂等）；等价论证含 perf 探针/formal 探针消费者核查；断言 16 条（x0 不匹配/match⇒valid/完备性/前递优先级，`assert/hazard_forward_check.sv`）；全绿、perf 停顿计数逐位、perf/sdram-heap 逐位、NPC 端 66/0/1 | ✅ |
 | `RISCV_TESTS_RESULT_npc.md` | RESULT | riscv-tests **NPC 自校验结果表**（runner 自动生成/覆盖）：**66 PASS / 0 FAIL / 1 SKIP(ma_data) / 0 TIMEOUT**（R-5b 后，含逐用例 cycles） | ✅ 最新 |
 | `RISCV_TESTS_RESULT_nemu.md` | RESULT | riscv-tests **NEMU 原生结果表**（runner 自动生成）：**66 PASS / 0 FAIL / 1 SKIP / 0 UNDET**（N-1 修复 REF 后）；历史 REF 缺陷见 `NEMU_REF_FIXES.md` | ✅ 最新 |
 

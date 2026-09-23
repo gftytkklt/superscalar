@@ -987,6 +987,9 @@ module ysyx_22040750_cpu_core(
 		.I_WB_rd_addr(MEM_WB_rd_addr),// 
 		.I_WB_valid(MEM_WB_input_valid),// MEM_WB input valid
 		.I_stall_en(stall_en),// [1] for rs1, [0] for rs2 enable
+		.I_EX_reg_wen(ID_EX_reg_wen),// S4: 五要素 match 的 wen 项
+		.I_MEM_reg_wen(EX_MEM_reg_wen),
+		.I_WB_reg_wen(MEM_WB_reg_wen),
 		.I_EX_intr(ID_EX_csr_mret | ID_EX_csr_intr),
 		.I_MEM_intr(EX_MEM_csr_mret | EX_MEM_csr_intr),
 		.I_WB_intr(MEM_WB_csr_mret | MEM_WB_csr_intr),
@@ -4367,6 +4370,11 @@ module ysyx_22040750_stall_unit(
     input [4:0] I_WB_rd_addr,// 
     input I_WB_valid,// MEM_WB input valid
     input [1:0] I_stall_en,// [1] for rs1, [0] for rs2 enable
+    // S4: match 的 wen 项（五要素收敛到本模块单点；rd≠0 此前隐式于 decoder.stall_en
+    //     的消费者侧 rs≠0，现显式写进表达式）
+    input I_EX_reg_wen,
+    input I_MEM_reg_wen,
+    input I_WB_reg_wen,
     output O_ID_stall,
     // ecall & mret stall case
     // ecall & mret must finish csr change before next ID
@@ -4395,19 +4403,28 @@ module ysyx_22040750_stall_unit(
     assign O_EX_stall = I_EX_valid? EX_stall : 0;
     */
     // forward code
-    wire [1:0] EX_stall, MEM_stall, WB_stall;
+    // S4: 统一 match（五要素单点）——
+    //   match[rsX] = 消费者读 rsX 且 rsX≠0（decoder.stall_en）∧ rsX==rd ∧ rd≠0 ∧ wen
+    //   等价性：① forward 原条件 O_stall & wen ≡ 新 O_stall（wen 幂等）；
+    //           ② stall 原因 mem_rd/multicycle 仅当 mem_rd_en/alu_multicycle=1 时取用
+    //             O_stall，而二者 ⇒ wen=1（load=typeI、mul/div=typeR），新值≡旧值；
+    //           ③ rd=0 ⇒ 消费者 rs=0 ⇒ stall_en=0，显式 rd≠0 项冗余但自包含。
+    //   纪律断言见 verif/assert/hazard_forward_check.sv。
+    wire [1:0] EX_match = {((I_rs1_addr == I_EX_rd_addr) & I_stall_en[1] & (I_EX_rd_addr != 0) & I_EX_reg_wen),
+                           ((I_rs2_addr == I_EX_rd_addr) & I_stall_en[0] & (I_EX_rd_addr != 0) & I_EX_reg_wen)};
+    wire [1:0] MEM_match = {((I_rs1_addr == I_MEM_rd_addr) & I_stall_en[1] & (I_MEM_rd_addr != 0) & I_MEM_reg_wen),
+                            ((I_rs2_addr == I_MEM_rd_addr) & I_stall_en[0] & (I_MEM_rd_addr != 0) & I_MEM_reg_wen)};
+    wire [1:0] WB_match = {((I_rs1_addr == I_WB_rd_addr) & I_stall_en[1] & (I_WB_rd_addr != 0) & I_WB_reg_wen),
+                           ((I_rs2_addr == I_WB_rd_addr) & I_stall_en[0] & (I_WB_rd_addr != 0) & I_WB_reg_wen)};
     // stall cause
     wire mem_rd, multicycle_alu_op, intr_op;
     assign intr_op = (I_EX_intr & I_EX_valid) | (I_MEM_intr & I_MEM_valid) | (I_WB_intr & I_WB_valid);
     assign mem_rd = (|O_EX_stall & I_EX_mem_rd_en) | (|O_MEM_stall & I_MEM_mem_rd_en);
     assign multicycle_alu_op = |O_EX_stall & I_EX_alu_multcycle;
     assign O_ID_stall = I_ID_valid & (mem_rd | multicycle_alu_op | intr_op);
-    assign EX_stall = {((I_rs1_addr == I_EX_rd_addr) & I_stall_en[1]), ((I_rs2_addr == I_EX_rd_addr) & I_stall_en[0])};
-    assign MEM_stall = {((I_rs1_addr == I_MEM_rd_addr) & I_stall_en[1]), ((I_rs2_addr == I_MEM_rd_addr) & I_stall_en[0])};
-    assign WB_stall = {((I_rs1_addr == I_WB_rd_addr) & I_stall_en[1]), ((I_rs2_addr == I_WB_rd_addr) & I_stall_en[0])};
-    assign O_WB_stall = I_WB_valid ? WB_stall : 0;
-    assign O_MEM_stall = I_MEM_valid ? MEM_stall : 0;
-    assign O_EX_stall = I_EX_valid? EX_stall : 0;
+    assign O_WB_stall = I_WB_valid ? WB_match : 0;
+    assign O_MEM_stall = I_MEM_valid ? MEM_match : 0;
+    assign O_EX_stall = I_EX_valid? EX_match : 0;
 endmodule
 module ysyx_22040750_timerintr(
     // input I_ID_intr,
