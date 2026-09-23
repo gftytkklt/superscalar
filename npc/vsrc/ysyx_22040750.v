@@ -237,19 +237,21 @@ module ysyx_22040750_booth_mul_serial(
     // mul num
     //assign {sgn_ext1,sgn_ext2} = {mul1[63]&is_signed,mul2[63]&is_signed};
     assign {sgn_ext1, sgn_ext2} = {mul1[63] & sext_flag[1], mul2[63] & sext_flag[0]};
+    // S3 (P2): 空闲/完成后 hold 净化 —— 移位/累加仅在进行中演化（原 else 分支无条件执行，
+    //   空闲期也漂移）。只影响 P_valid=0 的不可观测拍（下次 start 重载），呈现拍与位值不变。
     always @(posedge clk)
         if(rst)
             booth_mul1 <= 0;
         else if(mul_valid)
             booth_mul1 <= {{2{sgn_ext1}},mul1,1'b0};
-        else
+        else if(mul_process)
             booth_mul1 <= {2'b0,booth_mul1[66:2]};
     always @(posedge clk)
         if(rst)
             booth_mul2 <= 0;
         else if(mul_valid)
             booth_mul2 <= {{68{sgn_ext2}},mul2};
-        else
+        else if(mul_process)
             booth_mul2 <= {booth_mul2[129:0],2'b0};
     assign booth = booth_mul1[2:0];
     // booth mul
@@ -260,7 +262,7 @@ module ysyx_22040750_booth_mul_serial(
             mid_result <= 0;
         else if(mul_valid)
             mid_result <= 0;
-        else
+        else if(mul_process)
             mid_result <= S;
     // 132 bit adder
     assign Ci = partial_c;
@@ -4052,6 +4054,12 @@ module ysyx_22040750_radix2_div(
 //            abs_remainder <= dividend_flag ? {64'b0,-dividend} : {64'b0,dividend};
 //        else
 //            abs_remainder <= current_q ? current_sub_result : abs_remainder;
+    // S3 (P2, v2 修订): 保持"迭代值逐拍更新、有效时直接输出"设计——Q_valid 拍组合呈现
+    //   最终商/余；未被后级接受时由 gpr_alu 的捕获寄存器（div_reg/rem_reg/div_reg_valid，
+    //   P3 响应捕获范式）在 done 同沿锁存，此后 div_final/rem_final 经 mux 读捕获值
+    //   保持不变直到被 EX_MEM 接受——"数据+valid 对拍、未接受则保持"由该既有接收机制
+    //   保证（纪律断言见 verif/assert/mdu_pair_check.sv）。
+    //   v1 曾在本模块加 q_out/r_out 输出寄存器，与后级捕获冗余（+128 FF），已回退。
     assign quotient = div_zero ? {64{1'b1}} :
                       q_flag ? -abs_quotient : abs_quotient;
 //    assign remainder = rem_flag ? -abs_remainder[63:0] : abs_remainder;
