@@ -2591,7 +2591,7 @@ module ysyx_22040750_EX_MEM_reg(
     input I_rst,
     input I_EX_MEM_valid,
     input I_EX_MEM_allowout,
-    output reg O_EX_MEM_allowin,
+    output O_EX_MEM_allowin,
     output O_EX_MEM_valid,
     //output reg O_EX_MEM_valid,
     input [8:0] I_rstrb,
@@ -2652,9 +2652,26 @@ module ysyx_22040750_EX_MEM_reg(
     //wire mem_rd_en;
     reg mem_rd_en, mem_wr_en;
 	reg mem_wstatus;
-    reg input_valid;
+    // B1-4 (P1): 控制三方程由 pipe_ctrl_slice 单点提供；out_ready 复合式（响应门）
+    //   原样保留、原样传入（input_valid 改由模板 O_valid_reg 驱动的同名 wire）；
+    //   exmem_load ≡ 原 I_EX_MEM_valid && O_EX_MEM_allowin；
+    //   mem_rd_en/mem_wr_en/mem_wstatus 握手位保留级内不动。
+    //   复合语义由 verif/assert/ex_mem_check.sv 钉死。
+    wire input_valid;
     wire output_valid;
 	wire rd_handshake, wr_handshake;
+    wire exmem_load;
+    ysyx_22040750_pipe_ctrl_slice ctrl_slice_e (
+        .I_clk               (I_sys_clk),
+        .I_rst               (I_rst),
+        .I_in_valid          (I_EX_MEM_valid),
+        .I_out_ready         (output_valid),
+        .I_downstream_allowout(I_EX_MEM_allowout),
+        .O_allowin           (O_EX_MEM_allowin),
+        .O_valid             (O_EX_MEM_valid),
+        .O_valid_reg         (input_valid),
+        .O_load              (exmem_load)
+    );
     //reg mem_data_valid;
     //assign mem_rd_en = O_regin_sel[1];
     //always @(posedge I_sys_clk)
@@ -2672,8 +2689,6 @@ module ysyx_22040750_EX_MEM_reg(
 	    output_valid <= 0;
 	else
 	    output_valid <= ((I_EX_MEM_valid & ~mem_rd_en) | I_mem_data_rvalid);*/
-    assign O_EX_MEM_allowin = !input_valid || (output_valid && I_EX_MEM_allowout);
-    assign O_EX_MEM_valid = input_valid && output_valid;
     assign O_memop_debug = mem_wstatus | O_regin_sel[1];
     /*always @(posedge I_sys_clk)
 	if(I_rst)
@@ -2686,7 +2701,7 @@ module ysyx_22040750_EX_MEM_reg(
 			mem_wr_en <= 0;
 		else if(wr_handshake)
 			mem_wr_en <= 0;
-		else if(I_EX_MEM_valid && O_EX_MEM_allowin && I_mem_wen)
+		else if(exmem_load && I_mem_wen)
 			mem_wr_en <= 1;
 		else
 			mem_wr_en <= mem_wr_en;
@@ -2695,17 +2710,10 @@ module ysyx_22040750_EX_MEM_reg(
 			mem_rd_en <= 0;
 		else if(rd_handshake)
 			mem_rd_en <= 0;
-		else if(I_EX_MEM_valid && O_EX_MEM_allowin && I_regin_sel[1])
+		else if(exmem_load && I_regin_sel[1])
 			mem_rd_en <= 1;
 		else
 			mem_rd_en <= mem_rd_en;
-    always @(posedge I_sys_clk)
-		if(I_rst)
-			input_valid <= 0;
-		else if(O_EX_MEM_allowin)
-			input_valid <= I_EX_MEM_valid;
-		else
-			input_valid <= input_valid;
     always @(posedge I_sys_clk)
     	if(I_rst) begin
 			O_reg_wen <= 0;
@@ -2731,7 +2739,7 @@ module ysyx_22040750_EX_MEM_reg(
 			O_csr <= 0;
 			O_fencei <= 0;
     	end
-    	else if(I_EX_MEM_valid && O_EX_MEM_allowin) begin
+    	else if(exmem_load) begin
 			O_reg_wen <= I_reg_wen;
 			O_rstrb <= I_rstrb;
 			O_pc <= I_pc;
@@ -3464,26 +3472,27 @@ module ysyx_22040750_ID_EX_reg(
     input I_bubble_inst_debug,
     output reg O_bubble_inst_debug
     );
-    reg input_valid;
-    wire output_valid;
-    assign O_ID_EX_input_valid = input_valid;
-    assign output_valid = I_alu_output_valid;// single cycle alu, for multicycle case, use alu_valid signal
-    assign O_ID_EX_allowin = !input_valid || (output_valid && I_ID_EX_allowout);
-    assign O_ID_EX_valid = input_valid && output_valid;
+    // B1-2 (P1): 控制三方程由 pipe_ctrl_slice 单点提供（原手写方程逐条等价，机械替换）；
+    //   idex_load = I_ID_EX_valid && O_ID_EX_allowin，O_alu_multicycle 与载荷寄存器统一以它装载。
+    wire idex_load;
+    ysyx_22040750_pipe_ctrl_slice ctrl_slice_e (
+        .I_clk               (I_sys_clk),
+        .I_rst               (I_rst),
+        .I_in_valid          (I_ID_EX_valid),
+        .I_out_ready         (I_alu_output_valid),
+        .I_downstream_allowout(I_ID_EX_allowout),
+        .O_allowin           (O_ID_EX_allowin),
+        .O_valid             (O_ID_EX_valid),
+        .O_valid_reg         (O_ID_EX_input_valid),
+        .O_load              (idex_load)
+    );
     always @(posedge I_sys_clk)
     	if(I_rst)
     		O_alu_multicycle <= 0;
-    	else if(I_ID_EX_valid && O_ID_EX_allowin && (|I_alu_op_sel[13:10]))
+    	else if(idex_load && (|I_alu_op_sel[13:10]))
     		O_alu_multicycle <= 1;
     	else
     		O_alu_multicycle <= 0;
-    always @(posedge I_sys_clk)
-    	if(I_rst)
-    	    input_valid <= 0;
-		else if(O_ID_EX_allowin)
-			input_valid <= I_ID_EX_valid;
-		else
-			input_valid <= input_valid;
     always @(posedge I_sys_clk)
 		if(I_rst) begin
 			O_imm <= 0;
@@ -3514,7 +3523,7 @@ module ysyx_22040750_ID_EX_reg(
 			O_csr_mret <= 0;
 			O_fencei <= 0;
 		end
-    	else if(I_ID_EX_valid && O_ID_EX_allowin) begin
+    	else if(idex_load) begin
 			O_imm <= I_imm;
 			O_rs1 <= I_rs1;
 			O_rs2 <= I_rs2;
@@ -3574,6 +3583,40 @@ module ysyx_22040750_ID_EX_reg(
 		end
 endmodule
 
+// B1 (P1): 流水寄存器控制模板 —— 四级共享的 valid/allowin/load 控制单点实现。
+//   规范式：valid' = load ∨ (valid ∧ ¬accept)——load 装新值、accept 只作用于旧值，
+//   二者可同拍（下游反压时 accept=0，valid 保持，不得清零）。
+//   数据寄存器必须以 O_load 为装载使能，使"数据与 valid 同条件更新"成为接线必然。
+//   I_out_ready 为本级出队条件（不透明参数，逐级不同：
+//   IF_ID=~stall / ID_EX=alu done / MEM_WB=1 / EX_MEM=响应门复合式，原样传入）。
+//   与四级原手写方程逐条等价（S0 实证），机械替换零行为变化。
+//   ⚠️ 教训（B1-1 首版）：曾误写 valid' = load（丢 ∨(valid∧¬accept) 项）——下游
+//   反压拍 valid 被清零、指令丢失，凡会停顿的用例全部挂死；正是停顿类定向用例
+//   （bug3_div/lduse_fwd/fencei/pmem_stress）当场抓获。
+module ysyx_22040750_pipe_ctrl_slice (
+    input I_clk,
+    input I_rst,
+    input I_in_valid,
+    input I_out_ready,
+    input I_downstream_allowout,
+    output O_allowin,
+    output O_valid,
+    output O_valid_reg,
+    output O_load
+);
+    reg valid;
+    wire accept = valid && I_out_ready && I_downstream_allowout;
+    assign O_allowin   = !valid || accept;
+    assign O_valid     = valid && I_out_ready;
+    assign O_valid_reg = valid;
+    assign O_load      = I_in_valid && O_allowin;
+    always @(posedge I_clk)
+        if(I_rst)
+            valid <= 0;
+        else
+            valid <= O_load || (valid && !accept);
+endmodule
+
 module ysyx_22040750_IF_ID_reg(
     input I_sys_clk,
     input I_rst,
@@ -3594,48 +3637,49 @@ module ysyx_22040750_IF_ID_reg(
     output O_IF_ID_valid// corresponding to pip1_to_pip2_valid
     );
     // storage PC for PC related calculation
-    reg input_valid;// input data valid
-    wire output_valid;// output data valid
+    // B1 (P1): 控制三方程由 pipe_ctrl_slice 单点提供（原手写方程逐条等价，机械替换）；
+    //   ifid_load = I_IF_ID_valid && O_IF_ID_allowin，数据/气泡/中断标记寄存器统一以它装载。
+    wire ifid_load;
+    ysyx_22040750_pipe_ctrl_slice ctrl_slice_e (
+        .I_clk               (I_sys_clk),
+        .I_rst               (I_rst),
+        .I_in_valid          (I_IF_ID_valid),
+        .I_out_ready         (~I_IF_ID_stall),
+        .I_downstream_allowout(I_IF_ID_allowout),
+        .O_allowin           (O_IF_ID_allowin),
+        .O_valid             (O_IF_ID_valid),
+        .O_valid_reg         (O_IF_ID_input_valid),
+        .O_load              (ifid_load)
+    );
     reg ID_tip_reg;
-    assign output_valid = ~I_IF_ID_stall;// one cycle decoder
-    assign O_IF_ID_input_valid = input_valid;
-    assign O_IF_ID_allowin = !input_valid || (output_valid && I_IF_ID_allowout);// no valid input data or output data trans enable
-    assign O_IF_ID_valid = input_valid && output_valid;
     always @(posedge I_sys_clk)
         if(I_rst)
             ID_tip_reg <= 0;
-        else if(I_ID_timer_intr && ~(I_IF_ID_valid && O_IF_ID_allowin))
+        else if(I_ID_timer_intr && ~ifid_load)
             ID_tip_reg <= 1;
-        else if(I_IF_ID_valid && O_IF_ID_allowin)
+        else if(ifid_load)
             ID_tip_reg <= 0;
         else
             ID_tip_reg <= ID_tip_reg;
     always @(posedge I_sys_clk)
-    	if(I_rst)
-    	    input_valid <= 0;
-    	else if(O_IF_ID_allowin)
-    	    input_valid <= I_IF_ID_valid;
-    	else
-    	    input_valid <= input_valid;
-    always @(posedge I_sys_clk)
         if(I_rst)
             {O_pc, O_inst} <= {32'h0, 32'h0};
             // if inst jump, induce a bubble
-        else if(I_IF_ID_valid && O_IF_ID_allowin)
+        else if(ifid_load)
             {O_pc, O_inst} <= (I_IF_ID_jmp | I_ID_timer_intr | ID_tip_reg) ? {I_pc, 32'h00000013} : {I_pc, I_inst};
         else
             {O_pc, O_inst} <= {O_pc, O_inst};
     always @(posedge I_sys_clk)
         if(I_rst)
             O_timer_intr <= 0;
-        else if(I_IF_ID_valid && O_IF_ID_allowin)// avoid latch bubble inst
+        else if(ifid_load)// avoid latch bubble inst
             O_timer_intr <= ~I_IF_ID_jmp & I_timer_intr;
         else
             O_timer_intr <= O_timer_intr;
     always @(posedge I_sys_clk)
         if(I_rst)
             O_IF_ID_bubble_inst <= 0;
-        else if(I_IF_ID_valid && O_IF_ID_allowin)
+        else if(ifid_load)
             O_IF_ID_bubble_inst <= I_IF_ID_jmp;
         else
             O_IF_ID_bubble_inst <= O_IF_ID_bubble_inst;
@@ -3644,7 +3688,7 @@ module ysyx_22040750_MEM_WB_reg(
     input I_sys_clk,
     input I_rst,
     input I_MEM_WB_valid,
-    output reg O_MEM_WB_allowin,
+    output O_MEM_WB_allowin,
     output O_MEM_WB_valid,
     input [31:0] I_pc,
     input [63:0] I_mem_data,
@@ -3697,20 +3741,20 @@ module ysyx_22040750_MEM_WB_reg(
     // valid case: mem rd or non-mem rd
     // the second case contains reg wb or nop op
     // regin_sel[1] indicates data from mem
-    reg input_valid;
-    wire output_valid;
-    assign O_MEM_WB_input_valid = input_valid;
-    assign output_valid = input_valid;
-    assign O_MEM_WB_valid = output_valid;
-    assign O_MEM_WB_allowin = !input_valid || output_valid;// MEM_WB_allowout is always 1
-    always @(posedge I_sys_clk)
-    	if(I_rst)
-    	    input_valid <= 0;
-    	else if(O_MEM_WB_allowin)
-    	    //input_valid <= I_MEM_WB_valid;
-    	    input_valid <= I_MEM_WB_valid;
-    	else
-    	    input_valid <= input_valid;
+    // B1-3 (P1): 直通级——out_ready=1'b1、downstream_allowout=1'b1（原 allowin≡1）。
+    //   wb_load = I_MEM_WB_valid，载荷寄存器统一以它装载。
+    wire wb_load;
+    ysyx_22040750_pipe_ctrl_slice ctrl_slice_e (
+        .I_clk               (I_sys_clk),
+        .I_rst               (I_rst),
+        .I_in_valid          (I_MEM_WB_valid),
+        .I_out_ready         (1'b1),
+        .I_downstream_allowout(1'b1),
+        .O_allowin           (O_MEM_WB_allowin),
+        .O_valid             (O_MEM_WB_valid),
+        .O_valid_reg         (O_MEM_WB_input_valid),
+        .O_load              (wb_load)
+    );
     always @(posedge I_sys_clk)
         if(I_rst) begin
 			O_pc <= 0;
@@ -3736,7 +3780,7 @@ module ysyx_22040750_MEM_WB_reg(
 			// O_mem_addr_debug <= 0;
 			
 		end
-		else if(O_MEM_WB_allowin && I_MEM_WB_valid) begin
+		else if(wb_load) begin
 			O_pc <= I_pc;
 			O_mem_data <= I_mem_data;
 			O_mem_rstrb <= I_mem_rstrb;
