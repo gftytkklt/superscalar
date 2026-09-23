@@ -174,6 +174,7 @@
 | `RTL_STD_MODELS_S3.md` | RECORD | **S3 结档（v2）：mul/div 数据+valid 对拍（零时延）**——div 保持"迭代直出"，接收保持由既有 `gpr_alu` 捕获寄存器保证（v1 模块级寄存器与后级冗余，按用户评审回退）；mul 空闲 hold 门控（呈现拍不变）；断言 3 监视器（start-while-busy/done 单拍/捕获==呈现）；**回归口径 v2：去 NEMU 端、常规 formal=depth 12，depth 20 仅疑点/收尾**；全绿、`mul_cyc=87,405` 不变、perf/sdram-heap 逐位、NPC 端 66/0/1 | ✅ |
 | `RTL_STD_MODELS_S4.md` | RECORD | **S4 结档：冒险/前递 match 五要素单点化**——stall_unit 增 wen 输入、match=读rsX(≠0)∧rs==rd∧rd≠0∧wen 单点表达式（decoder/forward_unit 零改动，forward &wen 幂等）；等价论证含 perf 探针/formal 探针消费者核查；断言 16 条（x0 不匹配/match⇒valid/完备性/前递优先级，`assert/hazard_forward_check.sv`）；全绿、perf 停顿计数逐位、perf/sdram-heap 逐位、NPC 端 66/0/1 | ✅ |
 | `RTL_STD_MODELS_S5.md` | RECORD | **S5 结档（v2.1）：slave_crossbar owner 释放点 ready 门**——v1 改握手点置位致 riscv-tests 14 UNDET；根因（v2.1 更正）=单拍握手（valid 一拍+组合 ready 同窗）对 posedge 采样不可见，**非伙伴违规**（AXI4ToAPB.scala s_wait_rready_bready 保持到 fire，"单拍 rvalid"系 VCD code 复用误读已收回）；v2 回退置位、保留写释放 B 握手 ready 门；断言 5 条；全绿恢复 66/0/1、perf/sdram-heap 逐位 | ✅ |
+| `RTL_STD_MODELS_S6.md` | RECORD | **S6 结档：CSR 仲裁/中断提交纪律断言**——csr 三事件（wen/intr_wr/mret_wr）同拍互斥 3 条 + intr 提交次拍 MIE==0（"恰一次消费"的 MIE 门控机制钉死）；mtip 采样口径/无 pending 清除端注释化；RTL 行为零改动；全绿 13/13、formal 四件、NPC 端 66/0/1、perf/sdram-heap 逐位 | ✅ |
 | `RISCV_TESTS_RESULT_npc.md` | RESULT | riscv-tests **NPC 自校验结果表**（runner 自动生成/覆盖）：**66 PASS / 0 FAIL / 1 SKIP(ma_data) / 0 TIMEOUT**（R-5b 后，含逐用例 cycles） | ✅ 最新 |
 | `RISCV_TESTS_RESULT_nemu.md` | RESULT | riscv-tests **NEMU 原生结果表**（runner 自动生成）：**66 PASS / 0 FAIL / 1 SKIP / 0 UNDET**（N-1 修复 REF 后）；历史 REF 缺陷见 `NEMU_REF_FIXES.md` | ✅ 最新 |
 

@@ -1496,6 +1496,10 @@ module ysyx_22040750_csr(
     assign O_rd_data = rd_data;
     // assign O_timer_intr = (mip[7] & mie[7] & mstatus_mie) & ~(I_ID_intr | I_EX_intr | I_MEM_intr | I_WB_intr);
     assign O_timer_intr = (mip[7] & mie[7] & mstatus_mie);
+    // S6: mtip 采样口径——clint O_mtip = (mtime >= mtimecmp) 电平（同一仿真时钟域，
+    //     无 CDC，无亚稳态问题）；mip[7] 仅状态锁存，无 pending 清除端：
+    //     中断的"恰一次消费"由 MIE 门控实现（intr 提交清 mstatus.MIE、mret 经 MPIE
+    //     恢复），MTIP 源由软件写 mtimecmp 清除。
     //reg [63:0] mip, mie, mtime, mtimecmp; clint as mmio p
     always @(posedge I_sys_clk)
         if(I_rst)
@@ -1507,8 +1511,10 @@ module ysyx_22040750_csr(
             {satp, mie, mtvec, mepc, mcause} <= 'h0;
             mstatus <= 64'ha00001800;
         end
-        // these ena signals will not occur at the same time
-        else if(csr_wen) 
+        // S6: "these ena signals will not occur at the same time" 已升级为断言钉死
+        //     （同一 WB 指令按译码只能是 CSR 写 / 中断注入 / mret 三者之一），
+        //     见 verif/assert/csr_intr_check.sv
+        else if(csr_wen)
             case(I_wr_addr)
                 SATP: satp <= I_wr_data;
                 MSTATUS: mstatus <= I_wr_data;
