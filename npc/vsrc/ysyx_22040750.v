@@ -4206,6 +4206,18 @@ module ysyx_22040750_slave_crossbar(
     assign bus_rlasthandshake = I_bus_rvalid && O_bus_rready && I_bus_rlast;
     // psram 读完成: axiburst master 侧 R 完成 (rlast)
     assign psram_rlasthandshake = m_rvalid && m_rready && m_rlast;
+    // S5 (P4, v2 修订): owner 释放点统一为响应握手（B 带 ready 门，不依赖 bready 恒 1）；
+    //   置位保持"请求电平"（v1 曾改 AR/AW 握手点，全 SoC 回归 14 例挂死，已回退）。
+    //   ⚠️ 置位点不可后移的结构性原因（勿改）：cache 侧 arvalid/awvalid 是只维持一拍
+    //   的寄存器（cache 侧握手 = valid ∧ 组合直通的 ready，在 valid 拍内即完成并撤 valid），
+    //   而从机 ready 是组合信号、与 valid 同窗出现——posedge 采样的 always 块永远采不到
+    //   三者同时为 1（沿前 valid=0；次沿 valid 已撤）。请求电平（valid 寄存器完整一拍）
+    //   是唯一可靠的时钟化置位点；owner 早于响应最早可达时刻，天然覆盖响应路由窗口。
+    //   总线伙伴（AXI4ToAPB，ysyxSoC/soc/AXI4ToAPB.scala）AXI 合规：rvalid/bvalid 在
+    //   s_wait_rready_bready 态保持到 fire，不丢响应。
+    //   释放点补 ready 门是纯加固：bready=1（本设计）下逐位等价，bready=0 时
+    //   owner 保持到 B 被真正消费。
+    //   纪律断言见 verif/assert/slave_crossbar_check.sv。
     always @(posedge I_clk)
         if(I_rst)
             clint_rd_process <= 0;
@@ -4238,7 +4250,7 @@ module ysyx_22040750_slave_crossbar(
             clint_wr_process <= 0;
         else if(clint_aw_flag & I_cache_awvalid)
             clint_wr_process <= 1;
-        else if(I_clint_bvalid)
+        else if(I_clint_bvalid && O_clint_bready)
             clint_wr_process <= 0;
         else
             clint_wr_process <= clint_wr_process;
@@ -4247,7 +4259,7 @@ module ysyx_22040750_slave_crossbar(
             bus_wr_process <= 0;
         else if(bus_aw_flag & I_cache_awvalid)
             bus_wr_process <= 1;
-        else if(I_bus_bvalid)
+        else if(I_bus_bvalid && O_bus_bready)
             bus_wr_process <= 0;
         else
             bus_wr_process <= bus_wr_process;
@@ -4256,7 +4268,7 @@ module ysyx_22040750_slave_crossbar(
             psram_wr_process <= 0;
         else if(psram_aw_flag & I_cache_awvalid)
             psram_wr_process <= 1;
-        else if(m_bvalid)
+        else if(m_bvalid && m_bready)
             psram_wr_process <= 0;
         else
             psram_wr_process <= psram_wr_process;
