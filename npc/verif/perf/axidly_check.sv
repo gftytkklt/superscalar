@@ -15,7 +15,9 @@ module axidly_check (
   input        in_wvalid, out_wready, in_wlast,
   input        out_bvalid, in_bvalid, in_bready
 );
-`ifdef PERF_DELAY_R426
+`ifdef PERF_DELAY_R45
+  localparam int R_S = 9, S_SHIFT = 1;    // r = 4.5（与 delayer 同步，B1 后口径）
+`elsif PERF_DELAY_R426
   localparam int R_S = 17, S_SHIFT = 2;   // r = 4.25（与 delayer 同步）
 `else
   localparam int R_S = 7, S_SHIFT = 1;    // r = 3.5

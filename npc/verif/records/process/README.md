@@ -178,6 +178,7 @@
 | `RTL_STD_MODELS_B1.md` | RECORD | **B1 结档：四级流水寄存器控制模板化（P1 slice）**——新增 pipe_ctrl_slice 模板（valid'=load∨(valid∧¬accept)），四级 out_ready 原样传入、握手位留级内；模板首版丢反压保持项致 6 停顿类用例挂死当场抓获（教训入档）；EX_MEM 复合语义 3 条 SVA（首版误报=气泡陈旧载荷改写 wstatus 良性形态，已限定）；全绿 13/13 ×3、formal 四件、NPC 端 66/0/1、perf/sdram-heap 逐位；STA apples-to-apples：面积 +0.19%、f_max 429.9→452.1MHz 无回归 | ✅ |
 | `RTL_STD_MODELS_S7.md` | RECORD | **S7 结档：C 批归档**——C1 随 B1-3 模板收敛；C2 axi_crossbar 4 条仲裁纪律 SVA（grant 互斥/R 路由互斥/事务保持到 last×2）；C3 axiburst2xxx 归档不动；跨拍断言组合信号须同沿延迟采样（第 3 次同构修正）；RTL 零改动，assert/formal/微测试全绿 | ✅ |
 | `RTL_STD_MODELS_FINAL.md` | RECORD | **RTL 标准模型化任务总收尾**——S0~S7+B1 全部完成（8 commit）；最终基线：微/assert 13/13（新增 8 监视器 48 条断言，合计 12 文件 57 条）、formal 四件、NPC 端 66/0/1、perf/sdram-heap 逐位、STA 无回归；六条可复用结论（等价性铁律/检查非侵入/范式让位于承载性行为/逐格真值表/跨拍采样纪律/数据-valid 同条件结构保证）+ 五项留档不动清单 | ✅ |
+| `OPT08_SAMPLE.md` | RECORD | **OPT-08 采样+试做证伪结档**：W1/W2/M3/M6 结构证据→双口径基线（r=3.5/4.5）→M1/M2 试做被 sdram TB 证伪（W1=桥 2 拍/写间隔拍、W2=采样/DQ 窗口最小对齐，均非位扩展可消除开销）→❌ 否决回退；附带产出 PERF_R45 旋钮（r=4.5 现行口径，EQUATION OK 验证）；SDRAM 控制器已恢复原实现 TB 7/7 | ✅ |
 | `RISCV_TESTS_RESULT_npc.md` | RESULT | riscv-tests **NPC 自校验结果表**（runner 自动生成/覆盖）：**66 PASS / 0 FAIL / 1 SKIP(ma_data) / 0 TIMEOUT**（R-5b 后，含逐用例 cycles） | ✅ 最新 |
 | `RISCV_TESTS_RESULT_nemu.md` | RESULT | riscv-tests **NEMU 原生结果表**（runner 自动生成）：**66 PASS / 0 FAIL / 1 SKIP / 0 UNDET**（N-1 修复 REF 后）；历史 REF 缺陷见 `NEMU_REF_FIXES.md` | ✅ 最新 |
 

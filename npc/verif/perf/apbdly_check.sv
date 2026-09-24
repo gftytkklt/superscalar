@@ -18,7 +18,9 @@ module apbdly_check (
   input out_pready, in_pready,
   input [31:0] in_prdata
 );
-`ifdef PERF_DELAY_R426
+`ifdef PERF_DELAY_R45
+  localparam int R_S = 9, S_SHIFT = 1;           // r = 4.5（与 apb_delayer 同步，B1 后口径）
+`elsif PERF_DELAY_R426
   localparam int R_S = 17, S_SHIFT = 2;          // r = 4.25（与 apb_delayer 同步）
 `else
   localparam int R_S = 7, S_SHIFT = 1;           // r = 3.5
