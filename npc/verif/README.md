@@ -13,7 +13,7 @@
 | `tb_main.cpp` | Verilator testbench：AXI4 从端内存模型 + 时钟/复位 harness；按 `a0` 打印 `HIT GOOD/BAD TRAP`，断言失败返回非 0（CI 友好）；`VTB_MAXT` 周期看门狗（默认 400000，出波形时 30000） |
 | `tb_axiburst.cpp` | AXI burst 行为专用 testbench（配合 `formal/axiburst.sby` 与 `make axiburst`） |
 | `tests/` | **汇编微测试 13 例**（`make all`）：`bug2_csr`（CSR 冒险）、`bug3_div`（有符号除零）、`bug4_fencei`、`cache_data`、`cache_region`、`fencei_cache`、`fencei_pipeline`（SMC+fence.i 反例）、`lduse_fwd`（load→use 前递）、`partial_store`（WR merge 字节保留）、`pmem_stress`（>4KB 伪随机写读）、`psram_burst`（32B/边界）、`residual_mret`、`shift_fwd`（移位结果下一条消费） |
-| `assert/` | 仿真期断言 4 个（`bind` 注入，`$error` 报错）：`cache_bypass_check`（cacheable 访问禁入 MMIO，可 `CACHE_CHECK_OFF`）、`csr_hazard_check`（MEPC 写读冒险）、`div_zero_check`（除零商 -1）、`axi_protocol_check`（ARVALID/arlen 协议） |
+| `assert/` | 仿真期断言 **12 文件 57 条**（`bind` 注入，`$error` 报错，`make assert` 全绿）。历史 4 件：`cache_bypass_check`（可 `CACHE_CHECK_OFF`）/`csr_hazard_check`/`div_zero_check`/`axi_protocol_check`；**RTL 标准模型化新增 8 件 48 条**：`dcache_write_check`（B 单一 ack/pend 纪律）、`pc_fetch_check`（取指槽契约）、`mdu_pair_check`（mul/div 对拍）、`hazard_forward_check`（match 五要素/前递优先级）、`ex_mem_check`（响应门复合语义）、`slave_crossbar_check`（owner 纪律）、`csr_intr_check`（CSR 互斥/中断提交）、`axi_crossbar_check`（仲裁纪律） |
 | `formal/` | 形式化 **4 件**：`div.sby`（depth 100, z3）、`axiburst.sby`（35, z3）、`icache.sby`（20, boolector）、`pipeline.sby`（12, boolector；深探 `depth 20`）；`trim_rtl.py` 裁剪 RTL 并注入 46 个 `PROBE_*` 探针；`props_dcache.sv` 为无 sby 的历史残留 |
 | `perf/` | 性能探针 10 个（`perf_counters.sv` + `dcache_stats/icache_stats/apbdly_check/axidly_check/axiwatch/sdramprobe/sdramcore_probe/pmem_probe/dcache_axi_probe.sv`，经 `npc/Makefile` 的 `VSRC` 注入全系统 SoC 仿真）与分析脚本 7 个（`amat_report.py`/`ctr_trace_plot.py`/`trace_locality.py`/`trace_compress.py`/`branchsim.py`/`b4_quant_eval.py`/`store_path_analysis.py`）。**不接入本 Makefile**（裸核仿真不出 `PERF`） |
 | `cachesim/` | 参数化 cache 模拟器（C++，读 `CACHESIM_TRACE` 导出的 trace 扫配置）；用法见其 `README.md` |
@@ -30,7 +30,7 @@ make run T=cache_data        # 裸核单例（自校验，失败非 0）
 make                         # 裸核全部 13 例
 make fst T=cache_data        # 裸核 + FST 波形
 make ptest T=cache_data      # 主存模式（0x80000000 boot）
-make assert                  # 断言回归（4 监视器；assert-cache 含 bug1 检查）
+make assert                  # 断言回归（12 监视器；assert-cache 含 bug1 检查）
 make formal                  # 形式化四件
 TARGET=npc DIFF=0 ./riscv_tests_run.sh      # riscv-tests 67 例（NPC 自校验）
 make -C ../ perf             # SoC 性能：microbench test（基线 18,318,000/1,352,016）
@@ -48,7 +48,7 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
    用法：`make ptest T=<name>` / `make pfst T=<name>`（波形）。
    产物：同 ① + `build/<T>.fst`。详见：`docs/VERIF_TESTS.md` §1。
 
-3. **仿真期断言回归** —— 4 个 `bind` 监视器在仿真中主动报错（cache 旁路 / CSR 冒险 / 除零 / AXI 协议）。
+3. **仿真期断言回归** —— 12 个 `bind` 监视器（57 条断言）在仿真中主动报错：历史 4 件（cache 旁路 / CSR 冒险 / 除零 / AXI 协议）+ RTL 标准模型化 8 件（写响应/取指槽/MDU 对拍/前递/EX_MEM/owner/CSR 中断/仲裁纪律，见 `records/knowledge/CPU_STD_MODELS.md`）。
    用法：`make assert`（关 cache 旁路检查，聚焦 bug2/3）/ `make assert-cache`（全开）。
    产物：逐例 PASS/FAIL + `build/assert_*.log`（`%Error`）。详见：`docs/VERIF_TESTS.md` §3、`assert/*.sv`。
 
@@ -73,7 +73,8 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
 7. **性能计数器与统计输出** —— 讲义性能计数器闭环 + 停顿/分支/缓存/总线延迟归因。
    用法：全系统 SoC 仿真路径（探针经 `npc/Makefile` 注入）：`make -C npc perf`（microbench test，基线
    **18,318,000 / 1,352,016**；sdram-heap **15,329,912**）或 `cd am-kernels/... && make ARCH=riscv64-npc ... run`；
-   `PERF=1` 开 APB/AXI 真实延迟、`PERF_R426=1` 切 r=4.25 口径、`WITH_TRACE=0` 提速。
+   `PERF=1` 开 APB/AXI 真实延迟、`PERF_R45=1` 切 **r=4.5**（B1 后 f_max≈452MHz 现行口径）/
+   `PERF_R426=1` 切 r=4.25（历史口径）、`WITH_TRACE=0` 提速。
    产物：`PERF[snap]/[ebreak]/[final]`、`PERF-CHECK`、`ICACHE_STAT`、`DCACHE_*`、`APBDLY_CHECK`、`AXIDLY_CHECK`
    （行义见 §4）。注意：裸核 `make run` 不出 `PERF`。详见：§4、`docs/STAGE_B3_CACHE_PERF.md`。
 
@@ -117,8 +118,8 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
     长跑：`setsid` 脱离 + `SIM_END` + 查镜像大小 + 结束后清理进程（详见 `records/knowledge/LONG_SIM_PROC_MGMT.md`）。
 
 15. **开关速查与定向用例索引** —— 常用编译/运行开关与历史调试用例。
-    开关：`DIFF / WAVE(+WAVE_ON/WAVE_FILE/WAVE_START/END/DIV) / WITH_TRACE / WITH_SDL / PERF / PERF_R426 /
-    DEBUG_APBDLY / DEBUG_AXIDLY`、AM 侧 `BOOT_MODE / HEAP_SIZE / LDS / BOOT_S`；构建开关与源文件变化由
+    开关：`DIFF / WAVE(+WAVE_ON/WAVE_FILE/WAVE_START/END/DIV) / WITH_TRACE / WITH_SDL / PERF / PERF_R45 /
+    PERF_R426 / DEBUG_APBDLY / DEBUG_AXIDLY`、AM 侧 `BOOT_MODE / HEAP_SIZE / LDS / BOOT_S`；构建开关与源文件变化由
     `npc/build/.build_cfg` 与 `.deps_*` 指纹自动重建（无需手删 `build/`）。
     定向用例：正式 13 例见 §1（其中 `fencei_pipeline`=SMC 反例、`lduse_fwd`=load-use 前递、`shift_fwd`=移位自依赖）；
     历史 `tmp/*.S`（`divuw_dbg.S`、`jalr_raw.S`、`jalr_seq.S`）与 records 内嵌反例（如 R-5b 远目标行边界用例）。
@@ -141,7 +142,7 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
 
 | 位置 | 内容 |
 |---|---|
-| [`docs/`](./docs/) | **活跃文档**：`PROJECT_OVERVIEW.md`（总览/现状与目标/文档索引——先看这个）、`DEBUG_WORKFLOW.md`（开关/启动链/硬件经验/阶段记录）、`RUN_GUIDE.md`（各测试程序编译运行权威速查）、`VERIF_TESTS.md`（验证体系：微测试/断言/形式化/SDRAM TB）、`WORKFLOW_POLICY.md`（推进工作流政策）、`RISCV_TESTS_PLAN.md`（套件引入计划与 R-1~R-5 状态）、`ARCH_OPT_BACKLOG.md` + `arch_opt/`（优化台账与子文档）、`B3_PLAN.md`/`STAGE_B3_CACHE_PERF.md`/`B4_PLAN.md`/`B4_Q7_PLAN.md`（历史阶段计划与任务说明） |
+| [`docs/`](./docs/) | **活跃文档**：`PROJECT_OVERVIEW.md`（总览/现状与目标/文档索引——先看这个）、`DEBUG_WORKFLOW.md`（开关/启动链/硬件经验/阶段记录）、`RUN_GUIDE.md`（各测试程序编译运行权威速查）、`VERIF_TESTS.md`（验证体系：微测试/断言/形式化/SDRAM TB）、`WORKFLOW_POLICY.md`（推进工作流政策 + **文档资产整理 SOP**）、`RISCV_TESTS_PLAN.md`（套件引入计划与 R-1~R-5 状态）、`ARCH_OPT_BACKLOG.md` + `arch_opt/`（优化台账与子文档）；**历史阶段计划（已全部结档）**：`B3_PLAN.md`/`STAGE_B3_CACHE_PERF.md`/`B4_PLAN.md`/`B4_Q7_PLAN.md`/`OPT08_PLAN.md`（❌ 否决留档） |
 | [`records/process/`](./records/process/) | **归档·日志型**：各阶段实施/调试过程记录、任务提示词、riscv-tests 结果表（索引见其 README） |
 | [`records/knowledge/`](./records/knowledge/) | **归档·经验性**：案例复盘/方法论/性能分析 + 跨文档经验地图（索引见其 README） |
 

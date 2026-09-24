@@ -53,4 +53,5 @@
 | 双侧对照打印验证自研层语义 | `../process/ONSCRIPTER_FIX_PLAN.md` 阶段 B | 自研库是否"语义合规"：与参考实现同打印点跑同样本对齐调用序列 |
 | 差分调试锁定"被替换层" | `../process/ONSCRIPTER_FIX_PLAN.md`（用户裁决） | 两世界唯一差异层=被替换层，应优先锁定；复用层测出问题既不可修也解释不了参考侧正常 |
 | NEMU MMU 断言的定位法 | `../process/ONSCRIPTER_RISCV_NEMU_PORT.md` §2 | 断言前打印 pc/ra/vaddr/satp → addr2line 落到源码行 → 反推调用链 |
+| 控制通路标准范式落地（P1~P5）与等价性铁律/断言纪律 | `../process/RTL_STD_MODELS_FINAL.md` §3 | 范式让位于承载性行为（单拍握手对 posedge 采样不可见）；逐格真值表核对；跨拍断言组合信号同沿延迟采样；检查非侵入（bind 监视器） |
 | Kconfig 修改静默失效 | `../process/ONSCRIPTER_RISCV_NEMU_PORT.md` §3 | 直接 sed `.config` 不触发 `autoconf.h` 重生成，须 `conf --syncconfig Kconfig` |
