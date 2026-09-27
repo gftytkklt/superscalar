@@ -1,8 +1,8 @@
 # records/process —— 日志型归档（阶段实施/调试过程/任务提示词）
 
 > **按项目推进顺序组织**：访存体系（阶段1–3）→ RT-Thread/SDRAM/外设（阶段F–K）→ B3 性能优化
-> （阶段1–8）→ ONScripter（PA4.5 选做）→ 环境。每组内按「任务入口（PROMPT/TASKS）→ 计划（PLAN）
-> → 结果（RECORD）」排列，附件（图/表）列在所属记录行下。
+> （阶段1–8）→ ONScripter（PA4.5 选做）→ 环境 → **Linux 双端启动（LINUX_PLAN M0~，进行中）**。
+> 每组内按「任务入口（PROMPT/TASKS）→ 计划（PLAN）→ 结果（RECORD）」排列，附件（图/表）列在所属记录行下。
 > 经验性文档见 [`../knowledge/README.md`](../knowledge/README.md)；入口总览见
 > [`../../docs/PROJECT_OVERVIEW.md`](../../docs/PROJECT_OVERVIEW.md)。
 > 重复/取代关系见文末 §7「权威 / 快照 / 被取代」。
@@ -221,3 +221,9 @@
 | 阶段2/3 性能结论 | `B3_STAGE7_RECALIB_PERF.md`、`B3_STAGE8_PE_CACHESIM_DIFF.md` | `../knowledge/B3_STAGE2_PERF_ANALYSIS.md` ⚠️、`../knowledge/B3_CACHESIM_ANALYSIS.md` ⚠️ | 旧数字/旧成本模型已被校准口径取代；计数器手册与工具说明仍有效 |
 | riscv-tests 状态 | `B4_R5_RISCV_FIXES.md`（R-5 结论）+ `RISCV_TESTS_RESULT_npc.md`（最新结果表） | `RISCV_TESTS_R3.md`（首轮 63/3/1 快照）、`RISCV_TESTS_RESULT_nemu.md`（首轮含 REF 缺陷） | 结果表由 `riscv_tests_run.sh` 自动覆盖；首轮记录留档 |
 | NEMU REF 语义（mul/div） | `NEMU_REF_FIXES.md`（修复后，DIFF=1 可用） | `RISCV_TESTS_RESULT_nemu.md` 首轮（55/3/8/1） | 其余 REF 限制（6 CSR、无 `fence`、`ma_data`）仍有效 |
+
+## 8. Linux 双端启动（LINUX_PLAN M0~）🔧
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| `LINUX_M0_SPEC.md` | SPEC | **M0 规格冻结 v1.0（2026-09-27 结档）**：特性矩阵（RV64IMA+zicsr/zifencei，排除 F/D/C 三重机制）、版本选型、DTB 草案（UART 字节步长/CLINT mtime 每拍+1 实测核对）、flash 布局与**实测回填**（kernel Image 1.7MB + OpenSBI 265KB + busybox 314KB ≈ 2.3MB≪16MB）；§8 七项拍板全按推荐 + §8.1 扩展性说明（键盘两路线）；D-M0-3 实测切 musl（lp64d/lp64 ABI 互斥）；§11 构建配方固化（含 4 个已踩平坑）；产物在 `~/linux-m0/` | ✅ v1.0 冻结 |
