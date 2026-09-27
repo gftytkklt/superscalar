@@ -142,7 +142,7 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
 
 | 位置 | 内容 |
 |---|---|
-| [`docs/`](./docs/) | **活跃文档**：`PROJECT_OVERVIEW.md`（总览/现状与目标/文档索引——先看这个）、`DEBUG_WORKFLOW.md`（开关/启动链/硬件经验/阶段记录）、`RUN_GUIDE.md`（各测试程序编译运行权威速查）、`VERIF_TESTS.md`（验证体系：微测试/断言/形式化/SDRAM TB）、`WORKFLOW_POLICY.md`（推进工作流政策 + **文档资产整理 SOP**）、`RISCV_TESTS_PLAN.md`（套件引入计划与 R-1~R-5 状态）、`ARCH_OPT_BACKLOG.md` + `arch_opt/`（优化台账与子文档）；**历史阶段计划（已全部结档）**：`B3_PLAN.md`/`STAGE_B3_CACHE_PERF.md`/`B4_PLAN.md`/`B4_Q7_PLAN.md`/`OPT08_PLAN.md`（❌ 否决留档） |
+| [`docs/`](./docs/) | **活跃文档**：`PROJECT_OVERVIEW.md`（总览/现状与目标/文档索引——先看这个）、`DEBUG_WORKFLOW.md`（开关/启动链/硬件经验/阶段记录）、`RUN_GUIDE.md`（各测试程序编译运行权威速查）、`VERIF_TESTS.md`（验证体系：微测试/断言/形式化/SDRAM TB）、`WORKFLOW_POLICY.md`（推进工作流政策 + **文档资产整理 SOP**）、`LINUX_PLAN.md`（**顶层计划：双端启动 Linux + 体系结构优化，M0~M8**）、`RISCV_TESTS_PLAN.md`（套件引入计划与 R-1~R-5 状态）、`ARCH_OPT_BACKLOG.md` + `arch_opt/`（优化台账与子文档）；**历史阶段计划（已全部结档）**：`B3_PLAN.md`/`STAGE_B3_CACHE_PERF.md`/`B4_PLAN.md`/`B4_Q7_PLAN.md`/`OPT08_PLAN.md`（❌ 否决留档） |
 | [`records/process/`](./records/process/) | **归档·日志型**：各阶段实施/调试过程记录、任务提示词、riscv-tests 结果表（索引见其 README） |
 | [`records/knowledge/`](./records/knowledge/) | **归档·经验性**：案例复盘/方法论/性能分析 + 跨文档经验地图（索引见其 README） |
 
