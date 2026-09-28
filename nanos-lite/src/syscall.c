@@ -16,7 +16,8 @@ int sys_execve(const char *fname, char * const argv[], char *const envp[]) {
   // load the new program into the current process, then abandon the current
   // execution flow: switch to the boot PCB (never scheduled) and yield, so the
   // next schedule() resumes the newly loaded program.
-  context_uload(current, fname, argv, envp);
+  int status = context_uload(current, fname, argv, envp);
+  if (status < 0) return status;
   switch_boot_pcb();
   yield();
 #else
@@ -127,7 +128,7 @@ void do_syscall(Context *c) {
     case SYS_lseek: ret = sys_lseek((int)a[1],(long)a[2],(int)a[3]);break;
     case SYS_brk: ret = sys_brk((void*)a[1]);break;
     case SYS_gettimeofday: ret = sys_gettimeofday((struct timeval *)a[1], (struct timezone *)a[2]);break;
-    case SYS_execve: sys_execve((const char *)a[1], (char * const *)a[2], (char *const *)a[3]);break;  // 成功时不返回
+    case SYS_execve: ret = sys_execve((const char *)a[1], (char * const *)a[2], (char *const *)a[3]);break;  // 成功时不返回
     default: panic("Unhandled syscall ID = %d", a[0]);
   }
   c->GPRx = ret;

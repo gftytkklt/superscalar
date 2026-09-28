@@ -1,6 +1,7 @@
 #include <proc.h>
 #include <elf.h>
 #include <fs.h>
+#include <errno.h>
 
 #ifdef __LP64__
 # define Elf_Ehdr Elf64_Ehdr
@@ -100,7 +101,12 @@ void naive_uload(PCB *pcb, const char *filename) {
   ((void(*)())entry) ();
 }
 
-void context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+int context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+  // Reject a missing executable before replacing the caller's address space
+  // or context. fs_open() uses a fixed file table; the loader opens it again.
+  int fd = fs_open(filename, 0, 0);
+  if (fd < 0) return -ENOENT;
+  fs_close(fd);
 #ifdef HAS_VME
   protect(&pcb->as);
 #endif
@@ -176,6 +182,7 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
 
   // load the new program (may overwrite the calling process's static data)
   uintptr_t entry = loader(pcb, filename);
+  assert(entry != (uintptr_t)-1); // preflight found this file in the fixed table
   Log("Jump to entry = %p", entry);
 
   Context *cp = ucontext(&pcb->as, kstack, (void *)entry);
@@ -185,5 +192,6 @@ void context_uload(PCB *pcb, const char *filename, char *const argv[], char *con
   cp->GPRx = sp;
 
 #undef USTACK_TO_PA
+  return 0;
 }
 

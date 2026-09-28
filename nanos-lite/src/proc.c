@@ -29,7 +29,7 @@ void init_proc() {
   {
     char *const argv[] = {"/bin/nterm", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[0], "/bin/nterm", argv, envp);
+    assert(context_uload(&pcb[0], "/bin/nterm", argv, envp) == 0);
   }
   switch_boot_pcb();
   #elif defined(TEST_KLOAD)
@@ -41,19 +41,19 @@ void init_proc() {
   {
     char *const argv[] = {"/bin/pal", "--skip", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[1], "/bin/pal", argv, envp);
+    assert(context_uload(&pcb[1], "/bin/pal", argv, envp) == 0);
   }
   switch_boot_pcb();
   #elif defined(TIME_SHARING)
   {
     char *const argv[] = {"/bin/nterm", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[0], "/bin/nterm", argv, envp);
+    assert(context_uload(&pcb[0], "/bin/nterm", argv, envp) == 0);
   }
   {
     char *const argv[] = {"/bin/hello", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[1], "/bin/hello", argv, envp);
+    assert(context_uload(&pcb[1], "/bin/hello", argv, envp) == 0);
   }
   switch_boot_pcb();
   #elif defined(FG_PROCESS)
@@ -62,22 +62,22 @@ void init_proc() {
   {
     char *const argv[] = {"/bin/pal", "--skip", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[0], "/bin/pal", argv, envp);
+    assert(context_uload(&pcb[0], "/bin/pal", argv, envp) == 0);
   }
   {
     char *const argv[] = {"/bin/nterm", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[1], "/bin/nterm", argv, envp);
+    assert(context_uload(&pcb[1], "/bin/nterm", argv, envp) == 0);
   }
   {
     char *const argv[] = {"/bin/nslider", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[2], "/bin/nslider", argv, envp);
+    assert(context_uload(&pcb[2], "/bin/nslider", argv, envp) == 0);
   }
   {
     char *const argv[] = {"/bin/hello", NULL};
     char *const envp[] = {NULL};
-    context_uload(&pcb[3], "/bin/hello", argv, envp);
+    assert(context_uload(&pcb[3], "/bin/hello", argv, envp) == 0);
   }
   fg_pcb = &pcb[0]; // start with pal as the foreground
   switch_boot_pcb();

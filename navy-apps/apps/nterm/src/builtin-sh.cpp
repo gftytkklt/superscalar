@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <SDL.h>
 
 char handle_key(SDL_Event *ev);
@@ -46,9 +47,11 @@ static void sh_handle_cmd(const char *cmd) {
   argv[argc] = NULL;
   if (argc == 0) return;
 
-  // execvp 按 PATH 搜索程序；exec 成功后不返回，失败返回 -1
-  execvp(argv[0], argv);
-  sh_printf("exec %s: bad thing happen\n", argv[0]);
+  // execvp 按 PATH 搜索程序；成功不返回，失败继续接受命令。
+  if (execvp(argv[0], argv) == -1) {
+    if (errno == ENOENT) sh_printf("%s: command not found\n", argv[0]);
+    else sh_printf("exec %s failed (errno=%d)\n", argv[0], errno);
+  }
 }
 
 void builtin_sh_run() {
