@@ -5,6 +5,7 @@
 !*.py
 !*.mk
 !/verif/linux/dtb/dts/*.dts
+!/verif/linux/initramfs/init
 !*.scala
 !*.[cSh]
 !*.v
