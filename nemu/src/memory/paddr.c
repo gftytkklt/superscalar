@@ -133,3 +133,49 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }
+#ifdef CONFIG_RV64
+static MemRegion *find_mem_region_range(paddr_t addr, int len) {
+  if (len < 1 || len > 8) return NULL;
+  MemRegion *r = find_mem_region(addr);
+  if (r == NULL) return NULL;
+  paddr_t offset = addr - r->base;
+  return (paddr_t)len <= r->size - offset ? r : NULL;
+}
+
+bool paddr_is_region(paddr_t addr, int len) {
+  return find_mem_region_range(addr, len) != NULL;
+}
+
+bool paddr_try_access(paddr_t addr, int len) {
+  if (paddr_is_region(addr, len)) return true;
+#ifdef CONFIG_DEVICE
+  return mmio_range_mapped(addr, len);
+#else
+  return false;
+#endif
+}
+
+bool paddr_try_read(paddr_t addr, int len, word_t *data) {
+  if (!paddr_try_access(addr, len)) return false;
+  *data = paddr_read(addr, len);
+  return true;
+}
+
+bool paddr_try_write(paddr_t addr, int len, word_t data) {
+  if (!paddr_try_access(addr, len)) return false;
+  paddr_write(addr, len, data);
+  return true;
+}
+
+bool paddr_try_read_region(paddr_t addr, int len, word_t *data) {
+  if (!paddr_is_region(addr, len)) return false;
+  *data = paddr_read(addr, len);
+  return true;
+}
+
+bool paddr_try_write_region(paddr_t addr, int len, word_t data) {
+  if (!paddr_is_region(addr, len)) return false;
+  paddr_write(addr, len, data);
+  return true;
+}
+#endif

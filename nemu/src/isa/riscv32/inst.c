@@ -108,6 +108,37 @@ static void riscv_illegal(Decode *s) {
   s->dnpc = riscv_raise_exception(2, s->pc, s->isa.inst.val);
 }
 
+static bool riscv_load(Decode *s, int rd, vaddr_t addr, int len, bool sign) {
+  word_t value;
+  VAddrFault fault;
+  if (!vaddr_try_read(addr, len, &value, &fault)) {
+    s->dnpc = riscv_raise_exception(fault.cause, s->pc, fault.tval);
+    return false;
+  }
+  if (sign && len == 1) value = SEXT(value, 8);
+  else if (sign && len == 2) value = SEXT(value, 16);
+  else if (sign && len == 4) value = SEXT(value, 32);
+  R(rd) = value;
+  return true;
+}
+
+static bool riscv_store(Decode *s, vaddr_t addr, int len, word_t data) {
+  VAddrFault fault;
+  if (!vaddr_try_write(addr, len, data, &fault)) {
+    s->dnpc = riscv_raise_exception(fault.cause, s->pc, fault.tval);
+    return false;
+  }
+  return true;
+}
+
+static void riscv_sfence_vma(Decode *s) {
+  if (cpu.priv == 0 || (cpu.priv == 1 && (C(MSTATUS) & MSTATUS_TVM))) {
+    riscv_illegal(s);
+    return;
+  }
+  // No translation cache: every access walks the current page tables.
+}
+
 // A extension: aq/rl bits are accepted; the interpreter executes one hart
 // serially, so they require no additional host ordering operation here.
 static void riscv_exec_atomic(Decode *s, int rd, word_t addr, word_t rhs) {
@@ -125,15 +156,27 @@ static void riscv_exec_atomic(Decode *s, int rd, word_t addr, word_t rhs) {
     return;
   }
 
+  VAddrFault fault;
   if (op == 3) {
     bool success = cpu.lr_valid && cpu.lr_addr == addr && cpu.lr_len == len;
     cpu.lr_valid = false; // every SC consumes the most recent reservation
-    if (success) Mw(addr, len, rhs);
+    bool ok = success ? vaddr_try_write(addr, len, rhs, &fault)
+                      : vaddr_try_probe_write(addr, len, &fault);
+    if (!ok) {
+      s->dnpc = riscv_raise_exception(fault.cause, s->pc, fault.tval);
+      return;
+    }
     R(rd) = success ? 0 : 1;
     return;
   }
 
-  word_t old = Mr(addr, len);
+  word_t old;
+  bool ok = op == 2 ? vaddr_try_read(addr, len, &old, &fault)
+                    : vaddr_try_amo_read(addr, len, &old, &fault);
+  if (!ok) {
+    s->dnpc = riscv_raise_exception(fault.cause, s->pc, fault.tval);
+    return;
+  }
   if (op == 2) {
     cpu.lr_addr = addr;
     cpu.lr_len = len;
@@ -170,7 +213,10 @@ static void riscv_exec_atomic(Decode *s, int rd, word_t addr, word_t rhs) {
       default: next = old > rhs ? old : rhs; break;
     }
   }
-  Mw(addr, len, next);
+  if (!vaddr_try_write(addr, len, next, &fault)) {
+    s->dnpc = riscv_raise_exception(fault.cause, s->pc, fault.tval);
+    return;
+  }
   R(rd) = len == 4 ? SEXT(old, 32) : old;
 }
 
@@ -243,7 +289,20 @@ static int decode_exec(Decode *s) {
   INSTPAT_START();
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
-  // load mem
+  // RV64 loads/stores use explicit fault results; RV32 retains its old path.
+#ifdef CONFIG_RV64
+  INSTPAT("??????? ????? ????? 000 ????? 00000 11", lb , I, riscv_load(s, rd, src1 + imm, 1, true));
+  INSTPAT("??????? ????? ????? 100 ????? 00000 11", lbu, I, riscv_load(s, rd, src1 + imm, 1, false));
+  INSTPAT("??????? ????? ????? 001 ????? 00000 11", lh , I, riscv_load(s, rd, src1 + imm, 2, true));
+  INSTPAT("??????? ????? ????? 101 ????? 00000 11", lhu, I, riscv_load(s, rd, src1 + imm, 2, false));
+  INSTPAT("??????? ????? ????? 010 ????? 00000 11", lw , I, riscv_load(s, rd, src1 + imm, 4, true));
+  INSTPAT("??????? ????? ????? 110 ????? 00000 11", lwu, I, riscv_load(s, rd, src1 + imm, 4, false));
+  INSTPAT("??????? ????? ????? 011 ????? 00000 11", ld , I, riscv_load(s, rd, src1 + imm, 8, false));
+  INSTPAT("??????? ????? ????? 011 ????? 01000 11", sd , S, riscv_store(s, src1 + imm, 8, src2));
+  INSTPAT("??????? ????? ????? 010 ????? 01000 11", sw , S, riscv_store(s, src1 + imm, 4, src2));
+  INSTPAT("??????? ????? ????? 001 ????? 01000 11", sh , S, riscv_store(s, src1 + imm, 2, src2));
+  INSTPAT("??????? ????? ????? 000 ????? 01000 11", sb , S, riscv_store(s, src1 + imm, 1, src2));
+#else
   INSTPAT("??????? ????? ????? 000 ????? 00000 11", lb     , I, R(rd) = SEXT(Mr(src1 + imm, 1), 8));
   INSTPAT("??????? ????? ????? 100 ????? 00000 11", lbu    , I, R(rd) = Mr(src1 + imm, 1));
   INSTPAT("??????? ????? ????? 001 ????? 00000 11", lh     , I, R(rd) = SEXT(Mr(src1 + imm, 2), 16));
@@ -256,6 +315,7 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 010 ????? 01000 11", sw     , S, Mw(src1 + imm, 4, src2));//pass
   INSTPAT("??????? ????? ????? 001 ????? 01000 11", sh     , S, Mw(src1 + imm, 2, src2));
   INSTPAT("??????? ????? ????? 000 ????? 01000 11", sb     , S, Mw(src1 + imm, 1, src2));//pass
+#endif
   // imm op
   INSTPAT("??????? ????? ????? 111 ????? 00100 11", andi   , I, R(rd) = src1 & imm);//pass
   INSTPAT("??????? ????? ????? 110 ????? 00100 11", ori    , I, R(rd) = src1 | imm);
@@ -325,6 +385,7 @@ static int decode_exec(Decode *s) {
           s->dnpc = isa_raise_intr(cpu.priv == 0 ? 8 : (cpu.priv == 1 ? 9 : 11), s->pc));
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, riscv_mret(s));
   INSTPAT("0001000 00010 00000 000 00000 11100 11", sret   , N, riscv_sret(s));
+  INSTPAT("0001001 ????? ????? 000 00000 11100 11", sfence_vma, N, riscv_sfence_vma(s));
 #else
   INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, R(rd) = C(imm); C(imm) = src1);
   INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , I, R(rd) = C(imm); C(imm) |= src1);
@@ -353,6 +414,18 @@ static int decode_exec(Decode *s) {
 }
 
 int isa_exec_once(Decode *s) {
+#ifdef CONFIG_RV64
+  word_t inst;
+  VAddrFault fault;
+  if (!vaddr_try_ifetch(s->snpc, 4, &inst, &fault)) {
+    s->isa.inst.val = 0;
+    s->dnpc = riscv_raise_exception(fault.cause, s->pc, fault.tval);
+    return 0;
+  }
+  s->isa.inst.val = inst;
+  s->snpc += 4;
+#else
   s->isa.inst.val = inst_fetch(&s->snpc, 4);
+#endif
   return decode_exec(s);
 }

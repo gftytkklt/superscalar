@@ -39,8 +39,13 @@ typedef struct {
   } inst;
 } MUXDEF(CONFIG_RV64, riscv64_ISADecodeInfo, riscv32_ISADecodeInfo);
 
-// satp.MODE != 0 (i.e. Sv39) means the MMU must translate virtual addresses.
+#ifdef CONFIG_RV64
+int riscv64_mmu_check(vaddr_t vaddr, int len, int type);
+#define isa_mmu_check(vaddr, len, type) riscv64_mmu_check(vaddr, len, type)
+#else
+// Preserve the RV32 pre-M1 path.
 #define isa_mmu_check(vaddr, len, type) \
   (BITS(cpu.csr[4], 63, 60) ? MMU_TRANSLATE : MMU_DIRECT)
+#endif
 
 #endif

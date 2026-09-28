@@ -213,7 +213,19 @@ static word_t eval(int p, int q, bool *success) {
         value = -value;
       }
       else if((tokens[op_position].type) == '*') {
+#ifdef CONFIG_RV64
+        word_t data;
+        VAddrFault fault;
+        if (!vaddr_try_read(value, sizeof(word_t), &data, &fault)) {
+          printf("memory read fault at " FMT_WORD " (cause=%lu)\n",
+                 fault.tval, fault.cause);
+          *success = false;
+          return 0;
+        }
+        value = data;
+#else
         value = vaddr_read(value, sizeof(word_t));
+#endif
       }
     }
     else {

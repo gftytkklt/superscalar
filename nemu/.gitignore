@@ -5,6 +5,7 @@
 !*.mk
 !*.[cSh]
 !tests/m1_p6_atomic.sh
+!tests/m1_p7_sv39.sh
 !*.cc
 !.gitignore
 !README.md

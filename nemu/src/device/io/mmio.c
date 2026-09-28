@@ -53,6 +53,17 @@ void add_mmio_map(const char *name, paddr_t addr, void *space, uint32_t len, io_
   nr_map ++;
 }
 
+#ifdef CONFIG_RV64
+bool mmio_range_mapped(paddr_t addr, int len) {
+  if (len < 1 || len > 8) return false;
+  for (int i = 0; i < nr_map; i++) {
+    if (addr >= maps[i].low && addr <= maps[i].high &&
+        (paddr_t)len - 1 <= maps[i].high - addr) return true;
+  }
+  return false;
+}
+#endif
+
 /* bus interface */
 word_t mmio_read(paddr_t addr, int len) {
   return map_read(addr, len, fetch_mmio_map(addr));

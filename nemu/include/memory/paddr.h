@@ -58,4 +58,14 @@ static inline bool in_sdram(paddr_t addr) {
 word_t paddr_read(paddr_t addr, int len);
 void paddr_write(paddr_t addr, int len, word_t data);
 
+#ifdef CONFIG_RV64
+// Checked access for RV64 guest faults. PTE walks use registered-memory variants.
+bool paddr_try_access(paddr_t addr, int len);
+bool paddr_try_read(paddr_t addr, int len, word_t *data);
+bool paddr_try_write(paddr_t addr, int len, word_t data);
+bool paddr_try_read_region(paddr_t addr, int len, word_t *data);
+bool paddr_try_write_region(paddr_t addr, int len, word_t data);
+bool paddr_is_region(paddr_t addr, int len);
+#endif
+
 #endif

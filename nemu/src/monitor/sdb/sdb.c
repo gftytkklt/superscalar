@@ -90,7 +90,18 @@ static int cmd_x(char *args) {
     if(!success){printf("check addr expr\n");return 0;}
     //sscanf(addrstr, "%lx", &addr);
     for (int i=0;i<rd_len;i++){
+#ifdef CONFIG_RV64
+      word_t data;
+      VAddrFault fault;
+      if (!vaddr_try_read(addr, 4, &data, &fault)) {
+        printf("memory read fault at " FMT_WORD " (cause=%lu)\n",
+               fault.tval, fault.cause);
+        break;
+      }
+      printf("0x%lx: %08lx\n", addr, data);
+#else
       printf("0x%lx: %08lx\n", addr, vaddr_read(addr, 4));
+#endif
       addr += 4;
       /*for(int j=0;j<4;j++){
         printf("%02lx ", vaddr_read(addr, 1));

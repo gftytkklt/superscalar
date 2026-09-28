@@ -20,5 +20,8 @@
 
 word_t mmio_read(paddr_t addr, int len);
 void mmio_write(paddr_t addr, int len, word_t data);
+#ifdef CONFIG_RV64
+bool mmio_range_mapped(paddr_t addr, int len);
+#endif
 
 #endif
