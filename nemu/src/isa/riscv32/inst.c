@@ -103,6 +103,66 @@ static word_t rv_remuw(word_t s1, word_t s2) {
   return SEXT(a % b, 32);
 }
 
+#ifdef CONFIG_RV64
+static void riscv_illegal(Decode *s) {
+  s->dnpc = riscv_raise_exception(2, s->pc, s->isa.inst.val);
+}
+
+static void riscv_exec_csr(Decode *s, int rd) {
+  uint32_t inst = s->isa.inst.val;
+  uint32_t addr = BITS(inst, 31, 20);
+  uint32_t rs1 = BITS(inst, 19, 15);
+  uint32_t op = BITS(inst, 14, 12);
+  bool write = (op == 1 || op == 5) ||
+               ((op == 2 || op == 3 || op == 6 || op == 7) && rs1 != 0);
+  if (!riscv_csr_access(addr, write)) {
+    riscv_illegal(s);
+    return;
+  }
+
+  word_t old = 0;
+  if (!riscv_csr_read(addr, &old)) {
+    riscv_illegal(s);
+    return;
+  }
+  word_t source = op >= 5 ? rs1 : R(rs1);
+  word_t next = old;
+  if (op == 1 || op == 5) next = source;
+  else if (op == 2 || op == 6) next |= source;
+  else next &= ~source;
+  if (write && !riscv_csr_write(addr, next)) {
+    riscv_illegal(s);
+    return;
+  }
+  R(rd) = old;
+}
+
+static void riscv_mret(Decode *s) {
+  if (cpu.priv != 3) { riscv_illegal(s); return; }
+  word_t status = C(MSTATUS);
+  word_t next_priv = (status & MSTATUS_MPP) >> 11;
+  C(MSTATUS) = (status & ~(MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPP)) |
+               ((status & MSTATUS_MPIE) ? MSTATUS_MIE : 0) | MSTATUS_MPIE;
+  if (next_priv < 3) C(MSTATUS) &= ~MSTATUS_MPRV;
+  cpu.priv = next_priv;
+  s->dnpc = C(MEPC);
+}
+
+static void riscv_sret(Decode *s) {
+  if (cpu.priv < 1 || (cpu.priv == 1 && (C(MSTATUS) & MSTATUS_TSR))) {
+    riscv_illegal(s);
+    return;
+  }
+  word_t status = C(MSTATUS);
+  word_t next_priv = (status & MSTATUS_SPP) ? 1 : 0;
+  C(MSTATUS) = (status & ~(MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_SPP)) |
+               ((status & MSTATUS_SPIE) ? MSTATUS_SIE : 0) | MSTATUS_SPIE;
+  C(MSTATUS) &= ~MSTATUS_MPRV;
+  cpu.priv = next_priv;
+  s->dnpc = C(SEPC);
+}
+#endif
+
 static int decode_exec(Decode *s) {
   int rd = 0;
   word_t src1 = 0, src2 = 0, imm = 0;
@@ -182,7 +242,19 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 110 ????? 11000 11", bltu   , B, s->dnpc = (((word_t) src1) < ((word_t) src2)) ? (s->pc + imm) : s->dnpc);
   INSTPAT("??????? ????? ????? 101 ????? 11000 11", bge    , B, s->dnpc = (((sword_t) src1) >= ((sword_t) src2)) ? (s->pc + imm) : s->dnpc);//pass
   INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B, s->dnpc = (((word_t) src1) >= ((word_t) src2)) ? (s->pc + imm) : s->dnpc);
-  // CSR INST
+  // CSR and privilege instructions. RV32 retains its pre-M1 implementation.
+#ifdef CONFIG_RV64
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , N, riscv_exec_csr(s, rd));
+  INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , N, riscv_exec_csr(s, rd));
+  INSTPAT("??????? ????? ????? 011 ????? 11100 11", csrrc  , N, riscv_exec_csr(s, rd));
+  INSTPAT("??????? ????? ????? 101 ????? 11100 11", csrrwi , N, riscv_exec_csr(s, rd));
+  INSTPAT("??????? ????? ????? 110 ????? 11100 11", csrrsi , N, riscv_exec_csr(s, rd));
+  INSTPAT("??????? ????? ????? 111 ????? 11100 11", csrrci , N, riscv_exec_csr(s, rd));
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N,
+          s->dnpc = isa_raise_intr(cpu.priv == 0 ? 8 : (cpu.priv == 1 ? 9 : 11), s->pc));
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, riscv_mret(s));
+  INSTPAT("0001000 00010 00000 000 00000 11100 11", sret   , N, riscv_sret(s));
+#else
   INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, R(rd) = C(imm); C(imm) = src1);
   INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , I, R(rd) = C(imm); C(imm) |= src1);
   INSTPAT("??????? ????? ????? 011 ????? 11100 11", csrrc  , I, R(rd) = C(imm); C(imm) &= ~src1);
@@ -191,10 +263,12 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 111 ????? 11100 11", csrrci , IS, R(rd) = C(imm); C(imm) &= ~src1);
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = isa_raise_intr((cpu.priv == 0 ? 0x8 : 0xb), s->pc));
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, C(MSTATUS) = ((BITS(C(MSTATUS),7,7) << 3) | (C(MSTATUS) & ~0x88ul) | 0x80ul); cpu.priv = BITS(C(MSTATUS), 12, 11); s->dnpc = C(MEPC));
+#endif
   // fence.i: NEMU 无 cache 一致性需求，实现为空操作（仅需 pc 前进）。
   // 编码 0x0000100f：funct3=001（fence 是 000，fence.i 是 001）。
   INSTPAT("0000000 00000 00000 001 00000 00011 11", fence  , N, s->dnpc = s->snpc);
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
+  // Keep unmatched opcodes as an emulator debug stop until the full illegal-instruction path is validated.
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
   INSTPAT_END();
 
