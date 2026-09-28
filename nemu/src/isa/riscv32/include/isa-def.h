@@ -24,6 +24,12 @@ typedef struct {
   word_t csr[MUXDEF(CONFIG_RV64, 18, 6)];
   word_t priv; // current privilege level (0 = U, 3 = M)
   bool INTR;
+#ifdef CONFIG_RV64
+  // Single-hart LR/SC reservation. An exact address/width match is required.
+  vaddr_t lr_addr;
+  uint8_t lr_len;
+  bool lr_valid;
+#endif
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode

@@ -4,6 +4,7 @@
 !Makefile
 !*.mk
 !*.[cSh]
+!tests/m1_p6_atomic.sh
 !*.cc
 !.gitignore
 !README.md

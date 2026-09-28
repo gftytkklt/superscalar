@@ -36,6 +36,10 @@ word_t vaddr_read(vaddr_t addr, int len) {
 }
 
 void vaddr_write(vaddr_t addr, int len, word_t data) {
+  // Any local store ends the single-hart reservation, including an AMO or SC.
+#ifdef CONFIG_RV64
+  cpu.lr_valid = false;
+#endif
   // fprintf(dtrace, "w %08lx\n", addr);
   if (isa_mmu_check(addr, len, MEM_TYPE_WRITE) == MMU_TRANSLATE) {
     paddr_write(isa_mmu_translate(addr, len, MEM_TYPE_WRITE), len, data);

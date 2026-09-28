@@ -70,8 +70,8 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   (1ull << 3) | (1ull << 4) | (1ull << 5) | (1ull << 6) | \
   (1ull << 7) | (1ull << 8) | (1ull << 9) | (1ull << 12) | \
   (1ull << 13) | (1ull << 15))
-#define MISA_VALUE ((2ull << 62) | (1ull << 8) | (1ull << 12) | \
-                    (1ull << 18) | (1ull << 20)) // RV64 I/M/S/U; A follows in P6
+#define MISA_VALUE ((2ull << 62) | (1ull << 0) | (1ull << 8) | \
+                    (1ull << 12) | (1ull << 18) | (1ull << 20)) // RV64 A/I/M/S/U
 
 static bool csr_implemented(uint32_t addr) {
   switch (addr) {

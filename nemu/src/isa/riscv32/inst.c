@@ -108,6 +108,72 @@ static void riscv_illegal(Decode *s) {
   s->dnpc = riscv_raise_exception(2, s->pc, s->isa.inst.val);
 }
 
+// A extension: aq/rl bits are accepted; the interpreter executes one hart
+// serially, so they require no additional host ordering operation here.
+static void riscv_exec_atomic(Decode *s, int rd, word_t addr, word_t rhs) {
+  uint32_t inst = s->isa.inst.val;
+  uint32_t op = BITS(inst, 31, 27);
+  int len = BITS(inst, 14, 12) == 2 ? 4 : 8;
+  if (op == 2 && BITS(inst, 24, 20) != 0) { INV(s->pc); return; }
+  if (op != 2 && op != 3 && op != 1 && op != 0 && op != 4 &&
+      op != 12 && op != 8 && op != 16 && op != 20 &&
+      op != 24 && op != 28) { INV(s->pc); return; }
+
+  if (addr & (len - 1)) {
+    // LR is a load; SC and AMOs have store/AMO misalignment cause.
+    s->dnpc = riscv_raise_exception(op == 2 ? 4 : 6, s->pc, addr);
+    return;
+  }
+
+  if (op == 3) {
+    bool success = cpu.lr_valid && cpu.lr_addr == addr && cpu.lr_len == len;
+    cpu.lr_valid = false; // every SC consumes the most recent reservation
+    if (success) Mw(addr, len, rhs);
+    R(rd) = success ? 0 : 1;
+    return;
+  }
+
+  word_t old = Mr(addr, len);
+  if (op == 2) {
+    cpu.lr_addr = addr;
+    cpu.lr_len = len;
+    cpu.lr_valid = true;
+    R(rd) = len == 4 ? SEXT(old, 32) : old;
+    return;
+  }
+
+  word_t next;
+  if (len == 4) {
+    uint32_t a = (uint32_t)old, b = (uint32_t)rhs, result = 0;
+    switch (op) {
+      case 0: result = a + b; break;        // AMOADD
+      case 1: result = b; break;            // AMOSWAP
+      case 4: result = a ^ b; break;        // AMOXOR
+      case 8: result = a | b; break;        // AMOOR
+      case 12: result = a & b; break;       // AMOAND
+      case 16: result = (int32_t)a < (int32_t)b ? a : b; break; // AMOMIN
+      case 20: result = (int32_t)a > (int32_t)b ? a : b; break; // AMOMAX
+      case 24: result = a < b ? a : b; break; // AMOMINU
+      default: result = a > b ? a : b; break; // AMOMAXU
+    }
+    next = result;
+  } else {
+    switch (op) {
+      case 0: next = old + rhs; break;
+      case 1: next = rhs; break;
+      case 4: next = old ^ rhs; break;
+      case 8: next = old | rhs; break;
+      case 12: next = old & rhs; break;
+      case 16: next = (sword_t)old < (sword_t)rhs ? old : rhs; break;
+      case 20: next = (sword_t)old > (sword_t)rhs ? old : rhs; break;
+      case 24: next = old < rhs ? old : rhs; break;
+      default: next = old > rhs ? old : rhs; break;
+    }
+  }
+  Mw(addr, len, next);
+  R(rd) = len == 4 ? SEXT(old, 32) : old;
+}
+
 static void riscv_exec_csr(Decode *s, int rd) {
   uint32_t inst = s->isa.inst.val;
   uint32_t addr = BITS(inst, 31, 20);
@@ -233,6 +299,11 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 101 ????? 01110 11", divuw  , R, R(rd) = rv_divuw(src1, src2));// B4-N2
   INSTPAT("0000001 ????? ????? 110 ????? 01110 11", remw   , R, R(rd) = rv_remw(src1, src2));// B4-N2
   INSTPAT("0000001 ????? ????? 111 ????? 01110 11", remuw  , R, R(rd) = rv_remuw(src1, src2));// B4-N2
+#ifdef CONFIG_RV64
+  // RV64A W/D: bits 26:25 (aq/rl) are decoded but do not alter serial execution.
+  INSTPAT("??????? ????? ????? 01? ????? 01011 11", atomic, R,
+          riscv_exec_atomic(s, rd, src1, src2));
+#endif
   // jump
   INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, R(rd) = s->snpc; s->dnpc = imm + s->pc); //pass
   INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, R(rd) = s->snpc; s->dnpc = (src1 + imm) & (0xfffffffe));//pass
@@ -263,6 +334,10 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 111 ????? 11100 11", csrrci , IS, R(rd) = C(imm); C(imm) &= ~src1);
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = isa_raise_intr((cpu.priv == 0 ? 0x8 : 0xb), s->pc));
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, C(MSTATUS) = ((BITS(C(MSTATUS),7,7) << 3) | (C(MSTATUS) & ~0x88ul) | 0x80ul); cpu.priv = BITS(C(MSTATUS), 12, 11); s->dnpc = C(MEPC));
+#endif
+#ifdef CONFIG_RV64
+  // In a single-hart serial interpreter FENCE imposes no extra ordering.
+  INSTPAT("??????? ????? ????? 000 ????? 00011 11", fence_mem, N, s->dnpc = s->snpc);
 #endif
   // fence.i: NEMU 无 cache 一致性需求，实现为空操作（仅需 pc 前进）。
   // 编码 0x0000100f：funct3=001（fence 是 000，fence.i 是 001）。
