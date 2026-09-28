@@ -1,0 +1,38 @@
+/dts-v1/;
+
+/* NEMU native Linux target. The console and SBI timer need device work before
+ * they can be advertised here; see LINUX_M1_NEMU.md M1-P2. */
+/ {
+	model = "NEMU native RV64IMA";
+	compatible = "nemu,native";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen { };
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		timebase-frequency = <DT_TIMEBASE_HZ>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "riscv";
+			reg = <0>;
+			status = "okay";
+			riscv,isa = "rv64ima";
+			mmu-type = "riscv,sv39";
+
+			cpu_intc: interrupt-controller {
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+				#interrupt-cells = <1>;
+			};
+		};
+	};
+
+	memory@DT_RAM_UNIT {
+		device_type = "memory";
+		reg = <0 DT_RAM_BASE 0 DT_RAM_SIZE>;
+	};
+};

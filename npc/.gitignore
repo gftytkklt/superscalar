@@ -4,6 +4,7 @@
 !Makefile
 !*.py
 !*.mk
+!/verif/linux/dtb/dts/*.dts
 !*.scala
 !*.[cSh]
 !*.v
