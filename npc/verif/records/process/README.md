@@ -227,4 +227,4 @@
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
 | `LINUX_M0_SPEC.md` | SPEC | **M0 规格冻结 v1.0（2026-09-27 结档）**：特性矩阵（RV64IMA+zicsr/zifencei，排除 F/D/C 三重机制）、版本选型、DTB 草案（UART 字节步长/CLINT mtime 每拍+1 实测核对）、flash 布局与**实测回填**（kernel Image 1.7MB + OpenSBI 265KB + busybox 314KB ≈ 2.3MB≪16MB）；§8 七项拍板全按推荐 + §8.1 扩展性说明（键盘两路线）；D-M0-3 实测切 musl（lp64d/lp64 ABI 互斥）；§11 构建配方固化（含 4 个已踩平坑）；产物在 `~/linux-m0/`；M1-P4 新 Image 容量以 §13 附记回填，不改 M0 基线 | ✅ v1.0 冻结，附 P4 回填 |
-| `LINUX_M1_NEMU.md` | PROCESS | M1-P1 NEMU 只读盘点、native/REF 边界与构建复用评估；M1-P2 NEMU native DTS 结构基线；M1-P3 initramfs 首版；M1-P4 kernel 配置、内建归档与 Image 静态验收；M1-P5 NEMU RV64 CSR/委托/sret、INV 调试停点；M1-P6 NEMU A 扩展、reservation 与 rv64ua 验收；后续 M1 实施续记 | ✅ P2/P3/P4 已提交；✅ P5 已确认（NEMU 代码 `4dc1046`、确认索引 `83a1e9c`）；✅ P6 技术验收与用户确认完成，修改待提交 |
+| `LINUX_M1_NEMU.md` | PROCESS | M1-P1 NEMU 只读盘点、native/REF 边界与构建复用评估；M1-P2 NEMU native DTS 结构基线；M1-P3 initramfs 首版；M1-P4 kernel 配置、内建归档与 Image 静态验收；M1-P5 NEMU RV64 CSR/委托/sret、INV 调试停点；M1-P6 NEMU A 扩展、reservation 与 rv64ua 验收；后续 M1 实施续记 | ✅ P2/P3/P4 已提交；✅ P5 已确认（NEMU 代码 `4dc1046`、确认索引 `83a1e9c`）；✅ P6 技术验收与用户确认完成；`boot_linux` 已提交 `fcaefef` |
