@@ -15,6 +15,7 @@
 
 #include <isa.h>
 #include "local-include/reg.h"
+#include <device/timer.h>
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -80,7 +81,7 @@ static bool csr_implemented(uint32_t addr) {
     case MSTATUS: case MISA: case MEDELEG: case MIDELEG: case MIE:
     case MTVEC: case MCOUNTEREN: case MSCRATCH: case MEPC: case MCAUSE:
     case MTVAL: case MIP: case MVENDORID: case MARCHID: case MIMPID:
-    case MHARTID:
+    case MHARTID: case TIME:
       return true;
     default:
       return false;
@@ -90,6 +91,8 @@ static bool csr_implemented(uint32_t addr) {
 bool riscv_csr_access(uint32_t addr, bool write) {
   if (!csr_implemented(addr) || cpu.priv < ((addr >> 8) & 3)) return false;
   if (write && ((addr >> 10) & 3) == 3) return false;
+  if (addr == TIME && cpu.priv < 3 && !(csr(MCOUNTEREN) & 2)) return false;
+  if (addr == TIME && cpu.priv == 0 && !(csr(SCOUNTEREN) & 2)) return false;
   // TVM prevents S-mode from accessing satp; M-mode remains unrestricted.
   if (addr == SATP && cpu.priv == 1 && (csr(MSTATUS) & MSTATUS_TVM)) return false;
   return true;
@@ -100,7 +103,9 @@ bool riscv_csr_read(uint32_t addr, word_t *value) {
   switch (addr) {
     case SSTATUS: *value = csr(MSTATUS) & SSTATUS_READ_MASK; break;
     case SIE: *value = csr(MIE) & csr(MIDELEG); break;
-    case SIP: *value = csr(MIP) & csr(MIDELEG); break;
+    case SIP: *value = riscv_interrupt_pending() & csr(MIDELEG); break;
+    case MIP: *value = riscv_interrupt_pending(); break;
+    case TIME: *value = nemu_timer_time(); break;
     case MISA: *value = MISA_VALUE; break;
     case MVENDORID: case MARCHID: case MIMPID: case MHARTID:
       *value = 0; break;
@@ -136,7 +141,7 @@ bool riscv_csr_write(uint32_t addr, word_t value) {
     case MEDELEG: csr(MEDELEG) = value & EXCEPTION_DELEG_MASK; break;
     case MIDELEG: csr(MIDELEG) = value & S_INTERRUPT_MASK; break;
     case MIE: csr(MIE) = value & INTERRUPT_MASK; break;
-    case MIP: csr(MIP) = (csr(MIP) & ~2ull) | (value & 2ull); break;
+    case MIP: csr(MIP) = (csr(MIP) & ~0x22ull) | (value & 0x22ull); break;
     case MTVEC: case STVEC:
       csr(addr) = (value & ~3ull) | ((value & 3ull) == 1 ? 1ull : 0ull);
       break;

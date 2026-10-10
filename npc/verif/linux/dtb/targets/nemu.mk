@@ -13,7 +13,7 @@ $(error NEMU_CONFIG needs CONFIG_MSIZE)
 endif
 
 # Target clock contract: NEMU RTC reads are currently in microseconds.
-# Guest TIME CSR and SBI timer are still to be implemented against this scale.
+# MTIMER and CSR time use the same native microsecond clock.
 TIMEBASE_HZ ?= 1000000
 DT_CPPFLAGS += -DDT_RAM_BASE=$(NEMU_MBASE)
 DT_CPPFLAGS += -DDT_RAM_UNIT=$(patsubst 0x%,%,$(NEMU_MBASE))

@@ -20,8 +20,9 @@
 | `sdram/` | SDRAM AXI 控制器定向回归 TB：`./run.sh` → `[TB] ALL PASS`（7 case：单/突发读写、读写交替、16 拍长突发、跨行边界）；详见其 `README.md` |
 | `sta/` | 综合/STA 与部件频率探针：`gen_synth_rtl.py`（去 DPI/blackbox SRAM）、`patch_apbdelayer.py`、`probe/probe_run.sh`；结果 `result*/` |
 | `boot/` | 裸机探针启动代码：`boot.S`（FSBL 搬运）、`psram_memtest.S`（PSRAM 存储测试，配 `make pboot`） |
-| `linux/dtb/` | Linux DTB 按目标编译入口：M1-P2 `TARGET=nemu` 从 NEMU `.config` 生成 native 128 MiB PMEM DTS/DTB；当前设备缺口见其 `README.md` |
+| `linux/dtb/` | Linux DTB 按目标编译入口：M1-P2 `TARGET=nemu` 从 NEMU `.config` 生成 native 128 MiB PMEM DTS/DTB；P8已补UART/MTIMER并实测交互shell，见其 `README.md` |
 | `linux/initramfs/` | M1-P3 initramfs 首版：复用 M0 静态 BusyBox 与 kernel `gen_init_cpio` 生成 NEMU `newc`/gzip 归档；见其 `README.md` |
+| `linux/boot/` | M1-P8 native OpenSBI/Linux独立构建、串口FIFO两轮shell验收、日志/配置/哈希；见其README |
 | `riscv_tests_{build,run}.sh`、`riscv_tests_patch_env.py`、`riscv_tests_skip.txt` | riscv-tests 双目标套件资产（见 §3-⑤）；`riscv_tests_link_npc.ld` 由 build 脚本**当场生成**（不入库） |
 | `build/` | 构建产物（Verilator 模型/镜像/波形/日志），不入库 |
 
@@ -145,8 +146,9 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
 | 位置 | 内容 |
 |---|---|
 | [`docs/`](./docs/) | **活跃文档**：`PROJECT_OVERVIEW.md`（总览/现状与目标/文档索引——先看这个）、`DEBUG_WORKFLOW.md`（开关/启动链/硬件经验/阶段记录）、`RUN_GUIDE.md`（各测试程序编译运行权威速查）、`VERIF_TESTS.md`（验证体系：微测试/断言/形式化/SDRAM TB）、`WORKFLOW_POLICY.md`（推进工作流政策 + **文档资产整理 SOP**）、`LINUX_PLAN.md`（**顶层计划：双端启动 Linux + 体系结构优化，M0~M8**）、`LINUX_M1_PLAN.md`（当前 M1 阶段计划）、`RISCV_TESTS_PLAN.md`（套件引入计划与 R-1~R-5 状态）、`ARCH_OPT_BACKLOG.md` + `arch_opt/`（优化台账与子文档）；**历史阶段计划（已全部结档）**：`B3_PLAN.md`/`STAGE_B3_CACHE_PERF.md`/`B4_PLAN.md`/`B4_Q7_PLAN.md`/`OPT08_PLAN.md`（❌ 否决留档） |
-| [`linux/dtb/`](./linux/dtb/) | **M1-P2 NEMU native DTS 源码/目标配置**：仅编译结构基线，使用和设备缺口见其 README |
+| [`linux/dtb/`](./linux/dtb/) | **M1-P2 NEMU native DTS 源码/目标配置**：P8已增加UART/MTIMER和console，使用见其README |
 | [`linux/initramfs/`](./linux/initramfs/) | **M1-P3 NEMU initramfs 首版**：`/init`、BusyBox、控制台设备节点与构建说明 |
+| [`linux/boot/`](./linux/boot/) | **M1-P8 NEMU Linux首启**：独立构建/两轮shell验证、配置快照及哈希 |
 | [`records/process/`](./records/process/) | **归档·日志型**：各阶段实施/调试过程记录、任务提示词、riscv-tests 结果表（索引见其 README） |
 | [`records/knowledge/`](./records/knowledge/) | **归档·经验性**：案例复盘/方法论/性能分析 + 跨文档经验地图（索引见其 README） |
 

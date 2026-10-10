@@ -12,3 +12,6 @@
 !Kconfig
 include/config
 include/generated
+
+!tests/m1_p8_*.sh
+!tests/m1_p8_*.py

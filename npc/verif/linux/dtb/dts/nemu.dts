@@ -1,14 +1,32 @@
 /dts-v1/;
 
-/* NEMU native Linux target. The console and SBI timer need device work before
- * they can be advertised here; see LINUX_M1_NEMU.md M1-P2. */
+/* NEMU native RV64 timer-source=mtimer platform; independent of NPC. */
 / {
 	model = "NEMU native RV64IMA";
 	compatible = "nemu,native";
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	chosen { };
+	aliases { serial0 = &uart0; };
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs = "console=ttyS0,115200 earlycon";
+	};
+
+	uart0: serial@a00003f8 {
+		compatible = "ns16550a";
+		reg = <0 0xa00003f8 0 8>;
+		clock-frequency = <1843200>;
+		current-speed = <115200>;
+		reg-shift = <0>;
+		reg-io-width = <1>;
+	};
+
+	mtimer@200bff8 {
+		compatible = "riscv,aclint-mtimer";
+		reg = <0 0x0200bff8 0 8>, <0 0x02004000 0 8>;
+		interrupts-extended = <&cpu_intc 7>;
+	};
 
 	cpus {
 		#address-cells = <1>;
@@ -27,6 +45,7 @@
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;
 				#interrupt-cells = <1>;
+				#address-cells = <0>;
 			};
 		};
 	};

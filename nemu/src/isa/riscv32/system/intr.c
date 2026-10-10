@@ -15,6 +15,7 @@
 
 #include <isa.h>
 #include "../local-include/reg.h"
+#include <device/timer.h>
 
 #ifdef CONFIG_RV64
 static word_t trap_vector(word_t tvec, word_t cause) {
@@ -61,12 +62,30 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   return riscv_raise_exception(NO, epc, 0);
 }
 
+word_t riscv_interrupt_pending(void) {
+  // MTIP is a device input, not software-writable CSR storage. Other pending
+  // bits include SSIP/STIP and any connected interrupt-controller inputs.
+  word_t pending = csr(MIP) & ~(1ull << 7);
+  if (nemu_timer_legacy() ? cpu.INTR : nemu_timer_mtip()) pending |= 1ull << 7;
+  return pending;
+}
+
 word_t isa_query_intr() {
-  // Preserve the PA timer source until P8 replaces it with pending/enable CSRs.
-  // A machine interrupt is globally enabled in less-privileged modes.
-  if (cpu.INTR && (cpu.priv < 3 || (csr(MSTATUS) & MSTATUS_MIE))) {
-    cpu.INTR = false;
-    return 0x8000000000000007ull;
+  word_t ready = riscv_interrupt_pending() & csr(MIE);
+  static const unsigned priority[] = {11, 3, 7, 9, 1, 5};
+  for (unsigned i = 0; i < sizeof(priority) / sizeof(priority[0]); i++) {
+    unsigned cause = priority[i];
+    word_t bit = 1ull << cause;
+    if (!(ready & bit)) continue;
+    bool delegated = (csr(MIDELEG) & bit) != 0;
+    bool enabled = delegated
+      ? (cpu.priv < 1 || (cpu.priv == 1 && (csr(MSTATUS) & MSTATUS_SIE)))
+      : (cpu.priv < 3 || (cpu.priv == 3 && (csr(MSTATUS) & MSTATUS_MIE)));
+    if (!enabled) continue;
+    // Only the legacy one-shot latch is acknowledged here. MTIMER remains
+    // asserted until software moves the comparison point into the future.
+    if (cause == 7 && nemu_timer_legacy()) cpu.INTR = false;
+    return (1ull << 63) | cause;
   }
   return INTR_EMPTY;
 }

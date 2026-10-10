@@ -1,7 +1,9 @@
 #!/bin/sh
+set -e
 
 PATH=/bin
-export PATH
+PS1="/ # "
+export PATH PS1
 
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys

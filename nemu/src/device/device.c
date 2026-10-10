@@ -16,6 +16,7 @@
 #include <common.h>
 #include <utils.h>
 #include <device/alarm.h>
+#include <device/timer.h>
 #ifndef CONFIG_TARGET_AM
 #include <SDL2/SDL.h>
 #endif
@@ -79,6 +80,9 @@ void init_device() {
 
   IFDEF(CONFIG_HAS_SERIAL, init_serial());
   IFDEF(CONFIG_HAS_TIMER, init_timer());
+#if defined(CONFIG_RV64) && !defined(CONFIG_TARGET_AM)
+  init_mtimer();
+#endif
   IFDEF(CONFIG_HAS_VGA, init_vga());
   IFDEF(CONFIG_HAS_KEYBOARD, init_i8042());
   IFDEF(CONFIG_HAS_AUDIO, init_audio());

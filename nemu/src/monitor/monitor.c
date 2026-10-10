@@ -14,6 +14,8 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <device/timer.h>
+#include <device/serial.h>
 #include <memory/paddr.h>
 
 void init_rand();
@@ -44,30 +46,51 @@ void sdb_set_batch_mode();
 static char *log_file = NULL;
 static char *diff_so_file = NULL;
 static char *img_file = NULL;
+static const char *kernel_file, *dtb_file;
 static int difftest_port = 1234;
 static int elf_num = 0;
 static char **elf_file = NULL;
 
-static long load_img() {
-  if (img_file == NULL) {
-    Log("No image is given. Use the default build-in image.");
-    return 4096; // built-in image size
-  }
-
-  FILE *fp = fopen(img_file, "rb");
-  Assert(fp, "Can not open '%s'", img_file);
-
-  fseek(fp, 0, SEEK_END);
+static long load_at(const char *file, paddr_t addr, uint64_t limit) {
+  FILE *fp = fopen(file, "rb");
+  if (!fp) { perror(file); exit(1); }
+  if (fseek(fp, 0, SEEK_END)) { perror(file); exit(1); }
   long size = ftell(fp);
-
-  Log("The image is %s, size = %ld", img_file, size);
-
-  fseek(fp, 0, SEEK_SET);
-  int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
-  assert(ret == 1);
-
+  if (size <= 0 || (uint64_t)size > limit || addr < CONFIG_MBASE ||
+      (uint64_t)addr - CONFIG_MBASE + (uint64_t)size > CONFIG_MSIZE) {
+    fprintf(stderr, "Image out of range or overlaps next image: %s\n", file); exit(1);
+  }
+  rewind(fp);
+  if (fread(guest_to_host(addr), 1, size, fp) != (size_t)size) { perror(file); exit(1); }
   fclose(fp);
+  Log("Loaded %s: %ld bytes at " FMT_PADDR, file, size, addr);
   return size;
+}
+static long load_img() {
+  if (!!kernel_file != !!dtb_file || (kernel_file && !img_file)) {
+    fprintf(stderr, "--kernel and --dtb require each other and a firmware IMAGE\n"); exit(1);
+  }
+  if (!img_file) {
+    Log("No image is given. Use the default build-in image.");
+    return 4096;
+  }
+  if (kernel_file) {
+#if defined(CONFIG_RV64) && defined(CONFIG_DEVICE)
+    if (CONFIG_MBASE != 0x80000000 || RESET_VECTOR != 0x80000000 || CONFIG_MSIZE <= 0x2200000) {
+      fprintf(stderr, "Linux loader requires PMEM/reset at 0x80000000 and RAM beyond DTB\n"); exit(1);
+    }
+    long size = load_at(img_file, RESET_VECTOR, 0x200000);
+    load_at(kernel_file, 0x80200000, 0x2000000);
+    load_at(dtb_file, 0x82200000, CONFIG_MSIZE - 0x2200000);
+    cpu.gpr[10] = 0;
+    cpu.gpr[11] = 0x82200000;
+    return size;
+#else
+    fprintf(stderr, "Multi-image boot requires native RV64 devices\n"); exit(1);
+#endif
+  }
+  return load_at(img_file, RESET_VECTOR,
+      CONFIG_MSIZE - ((uint64_t)RESET_VECTOR - CONFIG_MBASE));
 }
 
 static int parse_args(int argc, char *argv[]) {
@@ -77,12 +100,30 @@ static int parse_args(int argc, char *argv[]) {
     {"diff"     , required_argument, NULL, 'd'},
     {"port"     , required_argument, NULL, 'p'},
     {"help"     , no_argument      , NULL, 'h'},
+    {"timer-source", required_argument, NULL, 256},
+    {"serial-input", required_argument, NULL, 257},
+    {"kernel", required_argument, NULL, 258},
+    {"dtb", required_argument, NULL, 259},
     {0          , 0                , NULL,  0 },
   };
   int o;
   while ( (o = getopt_long(argc, argv, "-bhe:l:d:p:", table, NULL)) != -1) {
     switch (o) {
       case 'b': sdb_set_batch_mode(); break;
+      case 256:
+#if defined(CONFIG_RV64) && defined(CONFIG_DEVICE)
+        nemu_timer_select(optarg); break;
+#else
+        fprintf(stderr, "--timer-source requires native RV64 devices\n"); exit(1);
+#endif
+      case 257:
+#if defined(CONFIG_RV64) && defined(CONFIG_DEVICE) && defined(CONFIG_HAS_SERIAL)
+        nemu_serial_input(optarg); break;
+#else
+        fprintf(stderr, "--serial-input requires native RV64 serial\n"); exit(1);
+#endif
+      case 258: kernel_file = optarg; break;
+      case 259: dtb_file = optarg; break;
       case 'p': sscanf(optarg, "%d", &difftest_port); break;
       case 'l': log_file = optarg; break;
       case 'd': diff_so_file = optarg; break;
@@ -102,7 +143,10 @@ static int parse_args(int argc, char *argv[]) {
         printf("\t-d,--diff=REF_SO        run DiffTest with reference REF_SO\n");
         printf("\t-p,--port=PORT          run DiffTest with port PORT\n");
         printf("\t-e,--elf=ELF_FILE_SRC	  run with elf file for ftrace\n");
-        printf("\n");
+        printf("\t--timer-source=legacy|mtimer  select timer input (default legacy)\n");
+        printf("\t--serial-input=PATH      nonblocking file/FIFO RX\n");
+        printf("\t--kernel=FILE --dtb=FILE multi-image RV64 boot\n");
+        printf("\nOptions must precede IMAGE.\n");
         exit(0);
     }
   }

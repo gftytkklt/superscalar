@@ -21,6 +21,10 @@ $(ARCHIVE): init Makefile $(BUSYBOX) $(GEN_INIT_CPIO) | $(OUT)
 		'dir /sys 0755 0 0' \
 		'dir /tmp 1777 0 0' \
 		'slink /bin/sh busybox 0777 0 0' \
+		'slink /bin/mount busybox 0777 0 0' \
+		'slink /bin/ls busybox 0777 0 0' \
+		'slink /bin/cat busybox 0777 0 0' \
+		'slink /bin/echo busybox 0777 0 0' \
 		'nod /dev/console 0600 0 0 c 5 1' \
 		'nod /dev/null 0666 0 0 c 1 3' > "$(MANIFEST)"
 	@printf 'file /bin/busybox %s 0755 0 0\n' "$(abspath $(BUSYBOX))" >> "$(MANIFEST)"

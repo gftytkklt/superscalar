@@ -45,6 +45,7 @@
 #define MARCHID 0xf12
 #define MIMPID 0xf13
 #define MHARTID 0xf14
+#define TIME 0xc01
 
 // Preserve the first six indices: existing M-mode users and REF PC/GPR ABI rely
 // on their layout. Supervisor CSRs are added after them; aliases use read/write.
@@ -72,6 +73,7 @@ bool riscv_csr_read(uint32_t addr, word_t *value);
 bool riscv_csr_write(uint32_t addr, word_t value);
 bool riscv_csr_access(uint32_t addr, bool write);
 word_t riscv_raise_exception(word_t cause, vaddr_t epc, word_t tval);
+word_t riscv_interrupt_pending(void);
 #endif
 
 static inline int check_reg_idx(int idx) {

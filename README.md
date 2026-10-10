@@ -99,7 +99,8 @@ bash init.sh subproject-name
 - 顶层 `Makefile` 仅用于 ysyx 自动 git 提交（tracer 机制），请勿修改其中"勿动"部分。
 
 ## 分支说明（本地）
-new_world（当前分支）: PA4.5选做部分分支，npc验证环境与用例搭建
+boot_linux（当前分支）: NEMU Linux 扩容主线；P7 已提交 `7782bdb`，其后 NTerm exec 错误返回修复为 `36ca7b1`。M1-P8 中断/MTIMER/UART 与 Linux 交互首启技术验收完成（含人工终端补充），用户已确认；[启动配方](npc/verif/linux/boot/README.md)，REF 对拍留 P9。
+new_world: PA4.5选做部分分支，npc验证环境与用例搭建
 soc: 与第六期讲义兼容的分支，大概开发至SPI接口（未完成）
 pa3-test: 软件部分运行仙剑和rt的第五期流片环境
 其余分支: 我也记不清都是什么了

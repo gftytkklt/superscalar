@@ -50,6 +50,10 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 
   // register event handler
   user_handler = handler;
+#if __riscv_xlen == 64
+  // NEMU now applies the architectural per-source enable gate as well as MIE.
+  asm volatile("csrs mie, %0" :: "r"(1UL << 7));
+#endif
 
   return true;
 }
