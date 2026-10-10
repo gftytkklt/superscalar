@@ -15,3 +15,4 @@ include/generated
 
 !tests/m1_p8_*.sh
 !tests/m1_p8_*.py
+!tests/m1_p9_ref.py

@@ -1,6 +1,6 @@
 # M1-P8 NEMU native Linux boot
 
-This profile boots one RV64IMA/Sv39 hart with 128 MiB PMEM, OpenSBI FW_JUMP, Linux 6.1.188 and the static musl/lp64 BusyBox 1.36.1 initramfs. It uses installed tools and existing local sources; it does not install or fetch dependencies. NPC/REF validation belongs to later phases.
+This profile boots one RV64IMA/Sv39 hart with 128 MiB PMEM, OpenSBI FW_JUMP, Linux 6.1.188 and the static musl/lp64 BusyBox 1.36.1 initramfs. It uses installed tools and existing local sources; it does not install or fetch dependencies. The separate M1-P9 NPC/REF check is described below.
 
 From the workspace root:
 
@@ -68,6 +68,45 @@ bash nemu/tests/m1_p5_priv.sh
 bash nemu/tests/m1_p6_atomic.sh
 bash nemu/tests/m1_p7_sv39.sh
 ```
+
+## M1-P9 REF build and existing NPC difftest
+
+From the workspace root, with the existing NPC DIFF=1 simulator and compiled
+NPC riscv-tests/cpu-tests available:
+
+```sh
+python3 nemu/tests/m1_p9_ref.py --out npc/verif/build/m1p9-ref-recheck --install
+```
+
+Choose a fresh `--out` directory for each run. This builds a temporary source
+copy using `nemu/configs/riscv64-ref_defconfig` (`TARGET_SHARE=y`,
+`TARGET_NATIVE_ELF=n`, `DEVICE=n`), saves the normalized configuration and shared
+object, and leaves the active native `.config`, generated headers and interpreter
+unchanged. It uses installed kconfig/fixdep/compiler tools, disables ccache for
+this process, skips the tracer commit hook and does not rebuild NPC.
+
+Checks cover immediate loading, exported interfaces, the existing 33-word GPR/PC
+packet with copy-boundary canaries, both ends of five SoC memory domains, actual
+instruction execution and `time=0` without devices. The runner requires real
+DIFF=1 logs for all 67 UI/UM cases (the existing `ma_data` exception remains
+SKIP), seven cpu-tests including the existing 32 KiB PSRAM heap `mem-test`, and
+two negative controls that corrupt PC and GPR comparison output separately.
+Success requires both controls to report `DIFF ABORT`; process exit alone is
+insufficient. The mem-test receives a larger simulation budget than short ISA
+tests. `result.json`, per-case logs and SHA-256 values preserve the evidence.
+
+Only after all checks pass, `--install` backs up the previous default REF as
+`OUT/previous-ref.so` and copies the verified library to
+`nemu/build/riscv64-nemu-interpreter-so`, the existing NPC Makefile path. Omit
+`--install` for verification alone; direct NPC runs can use `OUT/ref.so` as their
+second argument. To roll back the installed REF, copy `OUT/previous-ref.so` back
+to the default path when that backup exists.
+
+Native Linux continues to use the DEVICE-enabled interpreter and its own
+platform images above. REF maps SoC SDRAM at `0xa0000000`; DUT MMIO remains
+subject to the existing skip protocol. It supplies no autonomous MTIMER clock
+and keeps the existing PC/GPR ABI. Privilege/CSR comparison and S-mode difftest
+remain M6 work; this check does not establish NPC Linux boot or NPC A support.
 
 The host harnesses link actual CSR/arbiter/device/nanos scheduler/NDL code with controlled inputs. FG F1/F2/F3 testing injects AM keyboard events into actual nanos `events_read` and checks actual context switches; it is not graphical keyboard end-to-end validation. The NDL harness checks actual nanos gettimeofday/NDL conversion using controlled AM uptime. Actual old RTC progression is observed separately in AM `t`. The No-DEVICE check links CSR/interrupt code and syntax-checks inst/monitor, without reconfiguring the active build; it is not a REF .so acceptance test. Device-free CSR time is currently constant zero, without a host clock.
 
