@@ -32,3 +32,7 @@ sta/*_synth.v
 
 # M1-P8 reproducible native Linux boot runner
 !linux/boot/run.sh
+
+# CCR historical snapshots: README/Python copies are local evidence, not active sources.
+/records/process/code_correctness_review/p1/final-closeout/original/
+/records/process/code_correctness_review/p1/scope-s06/original/
