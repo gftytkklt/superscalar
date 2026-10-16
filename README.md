@@ -99,6 +99,9 @@ bash init.sh subproject-name
 - 顶层 `Makefile` 仅用于 ysyx 自动 git 提交（tracer 机制），请勿修改其中"勿动"部分。
 
 ## 分支说明（本地）
+
+独立审阅（2026-10-16）：[整体代码正确性审阅计划](npc/verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)已形成，覆盖 NEMU/AM/nanos-lite/navy 系统栈；v0.1 与 S01–S05 已获确认，本条为 CCR-P0 文档收尾记录；P1 未开始，等待新对话明确授权。业务 M2 状态保持不变。[规划记录](npc/verif/records/process/CODE_CORRECTNESS_REVIEW_PLANNING.md)。
+
 boot_linux（当前分支）: NEMU Linux 扩容主线；P7 已提交 `7782bdb`，其后 NTerm exec 错误返回修复为 `36ca7b1`。M1-P8 中断/MTIMER/UART 与 Linux 交互首启技术验收完成（含人工终端补充），用户已确认；[启动配方](npc/verif/linux/boot/README.md)，REF 对拍留 P9。
 new_world: PA4.5选做部分分支，npc验证环境与用例搭建
 soc: 与第六期讲义兼容的分支，大概开发至SPI接口（未完成）

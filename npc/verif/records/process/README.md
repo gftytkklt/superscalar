@@ -228,3 +228,9 @@
 |---|---|---|---|
 | `LINUX_M0_SPEC.md` | SPEC | **M0 规格冻结 v1.0（2026-09-27 结档）**：特性矩阵（RV64IMA+zicsr/zifencei，排除 F/D/C 三重机制）、版本选型、DTB 草案（UART 字节步长/CLINT mtime 每拍+1 实测核对）、flash 布局与**实测回填**（kernel Image 1.7MB + OpenSBI 265KB + busybox 314KB ≈ 2.3MB≪16MB）；§8 七项拍板全按推荐 + §8.1 扩展性说明（键盘两路线）；D-M0-3 实测切 musl（lp64d/lp64 ABI 互斥）；§11 构建配方固化（含 4 个已踩平坑）；产物在 `~/linux-m0/`；M1-P4 新 Image 容量以 §13 附记回填，不改 M0 基线 | ✅ v1.0 冻结，附 P4 回填 |
 | `LINUX_M1_NEMU.md` | PROCESS | M1-P1～P9：NEMU native/REF平台边界、DTS/initramfs/kernel、CSR/特权/A/Sv39、中断/MTIMER/UART、Linux交互首启、REF隔离构建与旧PC-GPR对拍；含阶段提交回执及M1 Handoff | ✅ M1 Completed（2026-10-10）：P8已提交7efb232；P9已获用户确认并提交14179a3，UI/UM对拍66 PASS/1既有SKIP、cpu-tests7及两注入负例通过；独立总体验收及资产哈希核对通过。ma_data留OPT-17/M3，priv/CSR对拍留M6；M2 Next / Planned未开始。复现/回滚见 `linux/boot/README.md` |
+
+## 独立任务：系统栈代码正确性审阅（CCR）
+
+| 文档 | 类型 | 主题/要点 | 状态 |
+|---|---|---|---|
+| [CODE_CORRECTNESS_REVIEW_PLANNING.md](CODE_CORRECTNESS_REVIEW_PLANNING.md) | PROCESS | Project Resume/Guard、四组件模块/配置摸底、已有修改保护；[整体计划](../../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)及[盘点附件](code_correctness_review/p0-inventory.json) | ✅ 2026-10-16 CCR-P0 规划 Completed，v0.1/S01–S05 已确认；本行为 P0 文档收尾提交记录；P1 未开始，等待新对话明确授权；无全面审阅或业务测试 |

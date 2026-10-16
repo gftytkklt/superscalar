@@ -27,6 +27,9 @@
 
 ## 工具链状态（B3/E1 相关，全部就绪）
 
+独立代码审阅：[CCR-P0 规划记录](process/CODE_CORRECTNESS_REVIEW_PLANNING.md)与[整体计划](../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)已落盘（2026-10-16）；P0 规划 Completed 且 v0.1/S01–S05 已确认，本条为 P0 文档收尾记录；P1 未开始，等待新对话明确授权。覆盖矩阵/问题/跨层/验证的后续落点见计划 §9。
+
+
 | 项 | 状态 | 说明 |
 |---|---|---|
 | **yosys-sta** | ✅ 已安装（2026-09-08） | oss-cad-suite (Yosys 0.68) + iEDA/icsprout55；GCD 样例与 npc 均跑通 |

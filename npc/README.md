@@ -18,6 +18,9 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 ## 1. 目录结构
 
+独立任务：[NEMU/AM/nanos-lite/navy 整体正确性审阅计划](verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)（2026-10-16，v0.1 与 S01–S05 已确认，CCR-P0 文档收尾）；[规划记录](verif/records/process/CODE_CORRECTNESS_REVIEW_PLANNING.md)。P1 未开始，等待新对话明确授权；不推进 M2 或修改 RTL。
+
+
 ```
 npc/
 ├── vsrc/                    # RTL 源码
