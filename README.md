@@ -100,7 +100,7 @@ bash init.sh subproject-name
 
 ## 分支说明（本地）
 
-独立审阅（2026-10-16）：[整体代码正确性审阅计划](npc/verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)已形成，覆盖 NEMU/AM/nanos-lite/navy 系统栈；v0.1 与 S01–S05 已获确认，本条为 CCR-P0 文档收尾记录；P1 未开始，等待新对话明确授权。业务 M2 状态保持不变。[规划记录](npc/verif/records/process/CODE_CORRECTNESS_REVIEW_PLANNING.md)。
+独立审阅（2026-10-17）：[整体代码正确性审阅计划](npc/verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md) v0.3；[CCR-P1](npc/verif/records/process/code_correctness_review/P1.md)基线与[Final Gate](npc/verif/records/process/code_correctness_review/P1_FINAL_GATE.md#final-gate-20261017)收尾完成。仅RV64，AM/OS为NEMU/NPC双平台，Spike作NEMU DUT golden；[构建入口](npc/verif/records/process/code_correctness_review/BUILD_PATHS.md)。P1结果已确认，本提交归档P1增量，CCR-P2未开始；业务M2不变。
 
 boot_linux（当前分支）: NEMU Linux 扩容主线；P7 已提交 `7782bdb`，其后 NTerm exec 错误返回修复为 `36ca7b1`。M1-P8 中断/MTIMER/UART 与 Linux 交互首启技术验收完成（含人工终端补充），用户已确认；[启动配方](npc/verif/linux/boot/README.md)，REF 对拍留 P9。
 new_world: PA4.5选做部分分支，npc验证环境与用例搭建
