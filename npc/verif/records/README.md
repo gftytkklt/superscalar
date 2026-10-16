@@ -25,6 +25,8 @@
 > `YSYXSOC_REGEN_SETUP`、`B3_CTR_TRACE`）、标注重复/取代关系；计划与范围见
 > [`RECORDS_RESTRUCTURE_PLAN.md`](./RECORDS_RESTRUCTURE_PLAN.md)（含讲义复核结论）。
 
+当前Linux主线：M1已交接；[M2过程记录](process/LINUX_M2_AMO.md)收录2026-10-11计划自审，六Phase计划待确认，人工RTL与AI审查职责见[整体计划](../docs/LINUX_M2_PLAN.md)。
+
 ## 工具链状态（B3/E1 相关，全部就绪）
 
 独立代码审阅：[P0历史](process/CODE_CORRECTNESS_REVIEW_PLANNING.md)、[整体计划v0.3](../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)、[CCR-P1](process/code_correctness_review/P1.md)。2026-10-17 [Final Gate](process/code_correctness_review/P1_FINAL_GATE.md#final-gate-20261017)通过，P1 Completed且已确认，本提交归档P1增量，P2未开始；[BUILD_PATHS](process/code_correctness_review/BUILD_PATHS.md)固定RV64双平台及golden角色，[COVERAGE](process/code_correctness_review/COVERAGE.md)反查当前义务。

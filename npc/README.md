@@ -8,6 +8,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 - CPU 模块名 / 学号 ID：`ysyx_22040750`
 - 指令集：RV64IM（含乘法/除法，M 扩展为多周期实现）
+- Linux主线：M1 NEMU/REF已交接；[M2 A扩展六Phase计划](verif/docs/LINUX_M2_PLAN.md)已自审待确认（2026-10-11），人工RTL/验证、AI设计审查，NPC A实现尚未开始。
 - 复位 PC：Flash 模式 `0x2FFFFFFC`（首取 `0x30000000`）；主存模式（`NPC_PMEM_BOOT`）`0x7FFFFFFC`（首取 `0x80000000`）
 - 访存模型：AXI4（核内 64 位数据总线；cacheable 32B 突发 / MMIO 单拍）
 - 常用开关：`DIFF/WAVE/WITH_TRACE/WITH_SDL`；`PERF=1`（apb_delayer 校准，r=3.5）、
