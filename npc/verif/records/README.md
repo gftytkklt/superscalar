@@ -29,7 +29,7 @@
 
 ## 工具链状态（B3/E1 相关，全部就绪）
 
-独立CCR：[P5审阅/Final Gate](process/code_correctness_review/P5.md) Completed；2,537文件/1,213条件，新增19 Confirmed、3 Robustness、2 ContractQuestion。[AM/klib/API](process/code_correctness_review/AM_RUNTIME.md)、[问题](process/code_correctness_review/FINDINGS.md)累计56项、[证据](process/code_correctness_review/p5/README.md)、[覆盖](process/code_correctness_review/COVERAGE.md)。P4已确认/提交`a419cea`；P5结果已获用户确认，本次授权提交；P6已获授权，提交后开始；生产源码与M2未改。
+独立CCR：[P6审阅/Final Gate](process/code_correctness_review/P6.md) Completed；70文件/91条件，新增14 Confirmed、5 Robustness，累计75项未修。[OS矩阵](process/code_correctness_review/OS_RUNTIME.md)、[跨层链](process/code_correctness_review/CROSS_LAYER_P6.md)、[问题](process/code_correctness_review/FINDINGS.md)、[证据](process/code_correctness_review/p6/README.md)、[覆盖](process/code_correctness_review/COVERAGE.md)。P5已确认/提交`632b843`；P6结果已获用户确认，本次授权提交；P7已获授权，提交后开始；生产源码与M2未改。
 
 
 | 项 | 状态 | 说明 |
