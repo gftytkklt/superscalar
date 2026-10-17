@@ -29,7 +29,7 @@
 
 ## 工具链状态（B3/E1 相关，全部就绪）
 
-独立代码审阅：[P0历史](process/CODE_CORRECTNESS_REVIEW_PLANNING.md)、[整体计划v0.3](../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)、[CCR-P1](process/code_correctness_review/P1.md)。2026-10-17 [Final Gate](process/code_correctness_review/P1_FINAL_GATE.md#final-gate-20261017)通过，P1 Completed且已确认，本提交归档P1增量，P2未开始；[BUILD_PATHS](process/code_correctness_review/BUILD_PATHS.md)固定RV64双平台及golden角色，[COVERAGE](process/code_correctness_review/COVERAGE.md)反查当前义务。
+独立代码审阅：[P0历史](process/CODE_CORRECTNESS_REVIEW_PLANNING.md)、[计划v0.3](../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)、[P1基线](process/code_correctness_review/P1.md)、[P2审阅/Final Gate](process/code_correctness_review/P2.md)。P2 Completed，29入口RV64 CPU/类型责任闭合；[8项问题](process/code_correctness_review/FINDINGS.md)、[证据](process/code_correctness_review/p2/README.md)；确认/commit Pending，P3未开始。
 
 
 | 项 | 状态 | 说明 |

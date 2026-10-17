@@ -3,7 +3,7 @@
 > 本目录包含：**验证/性能/形式化/综合资产**（代码，§1）与**文档区**（`docs/` 活跃 + `records/` 归档，§5）。
 > 入口链：根 `README.md` → `npc/README.md` → 本文件 → [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md)。
 
-独立审阅：[计划v0.3](docs/CODE_CORRECTNESS_REVIEW_PLAN.md)；[CCR-P1](records/process/code_correctness_review/P1.md)于2026-10-17完成[Final Gate](records/process/code_correctness_review/P1_FINAL_GATE.md#final-gate-20261017)，结果已确认，本提交归档P1增量。[双平台构建入口](records/process/code_correctness_review/BUILD_PATHS.md)、[当前覆盖](records/process/code_correctness_review/COVERAGE.md)、[契约](records/process/code_correctness_review/CONTRACTS.md)。仅RV64，P2未开始，业务M2不变。
+独立审阅：[计划v0.3](docs/CODE_CORRECTNESS_REVIEW_PLAN.md)；[CCR-P2/Final Gate](records/process/code_correctness_review/P2.md) Completed，新增8项问题；[问题台账](records/process/code_correctness_review/FINDINGS.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)、[P2证据](records/process/code_correctness_review/p2/README.md)。仅RV64 CPU/类型；P2确认/commit Pending，P3未开始，业务M2不变。
 
 > **想用某个工具/流程时先查 §3「调试技术目录」**：每项给出用途、精确用法、产物与详见文档；
 > 常用输出行见 §4，使用约定（gitignore/生成物/超时）见 §6。

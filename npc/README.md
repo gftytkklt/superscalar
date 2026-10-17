@@ -19,7 +19,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 ## 1. 目录结构
 
-独立任务：[整体正确性审阅计划](verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md) v0.3；[CCR-P1](verif/records/process/code_correctness_review/P1.md)与[Final Gate](verif/records/process/code_correctness_review/P1_FINAL_GATE.md#final-gate-20261017)收尾Completed，结果已确认，本提交归档P1增量。RV64双平台构建见[BUILD_PATHS](verif/records/process/code_correctness_review/BUILD_PATHS.md)，当前义务见[覆盖矩阵](verif/records/process/code_correctness_review/COVERAGE.md)；P2未开始，不推进M2。
+独立任务：[整体正确性审阅计划v0.3](verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)；[CCR-P2](verif/records/process/code_correctness_review/P2.md) Completed，RV64 CPU/类型29入口责任闭合；[问题台账](verif/records/process/code_correctness_review/FINDINGS.md)、[覆盖矩阵](verif/records/process/code_correctness_review/COVERAGE.md)。P2确认/commit Pending，生产源码未改，P3未开始，不推进M2。
 
 
 ```

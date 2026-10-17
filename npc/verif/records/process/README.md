@@ -234,8 +234,9 @@
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
-| [CODE_CORRECTNESS_REVIEW_PLANNING.md](CODE_CORRECTNESS_REVIEW_PLANNING.md) | PROCESS | CCR-P0最小摸底、计划/范围S01–S05与批准/提交回执 | ✅ P0历史完成；47b6c78已提交；当前阶段见下行P1 |
-| [code_correctness_review/P1.md](code_correctness_review/P1.md) | PROCESS | CCR-P1身份/配置/契约/覆盖冻结；[COVERAGE](code_correctness_review/COVERAGE.md)、[CONTRACTS](code_correctness_review/CONTRACTS.md)、[CONFIGURATIONS](code_correctness_review/CONFIGURATIONS.md)、[INTERFACES](code_correctness_review/INTERFACES.md)、[AVAILABILITY](code_correctness_review/AVAILABILITY.md)、[GENERATORS](code_correctness_review/GENERATORS.md)及JSON/复现证据 | ✅ 2026-10-17 P1 Final Gate交付Completed，已确认，本提交归档P1增量；RV64仍Enumerated、其他ISA按S06排除，P2未开始 |
-| [code_correctness_review/SCOPE_RV64.md](code_correctness_review/SCOPE_RV64.md) | PROCESS | CCR S06：用户批准仅RV64；非RV64实现获准排除，共享/宿主支撑保留，原P1证据留存 | ✅ P1补充Completed；结果已确认，本提交归档P1增量，P2未开始 |
-| [code_correctness_review/P1_FINAL_GATE.md](code_correctness_review/P1_FINAL_GATE.md) | PROCESS | P1一致性检查及双平台澄清后的复验；FG-01/02已闭合，原NotPassed记录保留 | ✅ 2026-10-17 Final Gate通过；P1结果已确认，本提交归档P1增量，P2未开始 |
+| [CODE_CORRECTNESS_REVIEW_PLANNING.md](CODE_CORRECTNESS_REVIEW_PLANNING.md) | PROCESS | CCR-P0最小摸底、计划/范围S01–S05与批准/提交回执 | ✅ P0历史完成；47b6c78已提交；当前阶段见P2行 |
+| [code_correctness_review/P1.md](code_correctness_review/P1.md) | PROCESS | CCR-P1身份/配置/契约/覆盖冻结；[COVERAGE](code_correctness_review/COVERAGE.md)、[CONTRACTS](code_correctness_review/CONTRACTS.md)、[CONFIGURATIONS](code_correctness_review/CONFIGURATIONS.md)、[INTERFACES](code_correctness_review/INTERFACES.md)、[AVAILABILITY](code_correctness_review/AVAILABILITY.md)、[GENERATORS](code_correctness_review/GENERATORS.md)及JSON/复现证据 | ✅ P1历史基线已确认/提交0d65d72；当前审阅状态见P2行 |
+| [code_correctness_review/SCOPE_RV64.md](code_correctness_review/SCOPE_RV64.md) | PROCESS | CCR S06：用户批准仅RV64；非RV64实现获准排除，共享/宿主支撑保留，原P1证据留存 | ✅ S06已批准；P1已确认/提交，当前状态见P2行 |
+| [code_correctness_review/P1_FINAL_GATE.md](code_correctness_review/P1_FINAL_GATE.md) | PROCESS | P1一致性检查及双平台澄清后的复验；FG-01/02已闭合，原NotPassed记录保留 | ✅ P1历史Final Gate通过，已确认/提交0d65d72；当前阶段见P2 |
 | [code_correctness_review/BUILD_PATHS.md](code_correctness_review/BUILD_PATHS.md) | PROCESS | RV64 NEMU/NPC双平台run/update/编译/链接/ramdisk及NEMU→Spike/NPC→NEMU角色；build_profiles.json含6场景/31来源hash | ✅ P1入口冻结，动态NotRun；不是代码正确性结论 |
+| [code_correctness_review/P2.md](code_correctness_review/P2.md) | PROCESS | CCR-P2 RV64 CPU/类型、ISA/异常/CSR/Sv39逐路径审阅与Final Gate；[FINDINGS](code_correctness_review/FINDINGS.md)、[证据](code_correctness_review/p2/README.md) | ✅ Completed；29入口，8项Confirmed（H1/M5/L2）；结果确认/commit Pending；P3未开始 |

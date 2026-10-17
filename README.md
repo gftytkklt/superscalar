@@ -100,7 +100,7 @@ bash init.sh subproject-name
 
 ## 分支说明（本地）
 
-独立审阅（2026-10-17）：[整体代码正确性审阅计划](npc/verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md) v0.3；[CCR-P1](npc/verif/records/process/code_correctness_review/P1.md)基线与[Final Gate](npc/verif/records/process/code_correctness_review/P1_FINAL_GATE.md#final-gate-20261017)收尾完成。仅RV64，AM/OS为NEMU/NPC双平台，Spike作NEMU DUT golden；[构建入口](npc/verif/records/process/code_correctness_review/BUILD_PATHS.md)。P1结果已确认，本提交归档P1增量，CCR-P2未开始；业务M2不变。
+独立审阅（2026-10-17）：[整体计划v0.3](npc/verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)；[CCR-P2审阅与Final Gate](npc/verif/records/process/code_correctness_review/P2.md) Completed，29个入口的RV64 CPU/类型责任闭合；[8项问题](npc/verif/records/process/code_correctness_review/FINDINGS.md)（High1/Medium5/Low2）。生产源码未改，P2结果确认/commit Pending，P3未开始；业务M2不变。
 
 boot_linux（当前分支）: M1 Linux native首启与REF已完成/Handoff，P9 `14179a3`、收尾`6bf7ba2`；[启动配方](npc/verif/linux/boot/README.md)。2026-10-11 [M2 NPC A扩展计划](npc/verif/docs/LINUX_M2_PLAN.md)已落盘自审待用户确认，P1未Start；采用人工RTL/验证、AI设计与审查模式。
 new_world: PA4.5选做部分分支，npc验证环境与用例搭建
