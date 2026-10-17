@@ -117,7 +117,7 @@ $(DST_DIR)/%.o: %.S
 
 ### Rule (recursive make): build dependent libraries (libc, libos, ...)
 libs:
-	@for t in $(LIBS); do $(MAKE) -s -C $(NAVY_HOME)/libs/$$t archive; done
+	@for t in $(LIBS); do $(MAKE) -s -C $(NAVY_HOME)/libs/$$t archive || exit $$?; done
 
 ### Rule (link): objects (`*.o`) and libraries (`*.a`) -> `$(APP)`, the final ELF binary to be packed into application (ld)
 $(APP): $(OBJS) libs
@@ -170,7 +170,7 @@ APPS = nslider menu nterm bird pal nplayer busybox
 TESTS = hello bmp-test file-test timer-test event-test audiotest cpp-test exec-test busybox-test execvp-test
 
 fsimg: $(addprefix apps/, $(APPS)) $(addprefix tests/, $(TESTS))
-	-for t in $^; do $(MAKE) -s -C $(NAVY_HOME)/$$t install; done
+	@for t in $^; do $(MAKE) -s -C $(NAVY_HOME)/$$t install || exit $$?; done
 
 RAMDISK = build/ramdisk.img
 RAMDISK_H = build/ramdisk.h

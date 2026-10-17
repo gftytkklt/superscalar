@@ -284,3 +284,18 @@ F0051修复及验证资料实际提交`4ab9f3f04c12f6e09adf2dab2d873626db51a511`
 流程优化见根[AGENTS.md / 每轮执行与提交收尾](../../../../AGENTS.md#每轮执行与提交收尾)：
 无真实未决项则直接完成本轮修改/验证后总结；用户示意提交时补齐或复用已有收尾，
 避免重复确认、归档和无故重测。当前不push、不启动下一项，实际工作流提交回执见本地记录。
+
+
+2026-10-18 CRP最新：[CCR-F0085递归失败传播与fsimg发布边界分析](code_correctness_review/crp-f0085/README.md)
+Completed，生产修复未开始。20种隔离观察证明两行候选可阻断link/ramdisk并保留旧镜像/header，
+失败前部分fsimg仍保留；需裁决允许部分安装残留或整批发布。结果确认/commit Pending，
+没有真实nanos guest新结果，未commit/push。后续范围/门槛仅见[唯一CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)，M2不变。
+
+
+CRP最新：[F0085 A修复及真实nanos回归](code_correctness_review/crp-f0085/README.md#f0085-implementation-20261018)
+Completed，修复结果确认/commit Pending。navy Makefile两行；10/10同版定向，完整update/image、108 extent
+字节匹配，真实riscv64-nemu的nterm输入响应/nslider翻页/pal继续渲染及后台hello递增通过。
+52.32秒后受控SIGTERM非guest正常退出；未commit/push，未测能力不扩写。[唯一入口/门槛](../../../../.agent/TASK_QUEUE.md#crp-next)，M2不变。
+
+F0085用户已明确“提交”，确认已报告范围并授权提交；[收尾范围](code_correctness_review/crp-f0085/README.md#f0085-submit-20261018)
+复用现有验收。生产修复/报告/本批忽略规则入库，一次性测试代码与生成证据留本地；新增“测试代码只提交必要部分或不提交”规则落AGENTS，验证要求不减少。实际提交回执随后补充；不push、不启动下一项。

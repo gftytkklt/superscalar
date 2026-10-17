@@ -1,0 +1,4 @@
+# Keep one-off repair tests and generated evidence local; commit the report only.
+/*
+!/README.md
+!/.gitignore
