@@ -232,6 +232,8 @@
 
 ## 独立任务：系统栈代码正确性审阅（CCR）
 
+2026-10-17后续方案已确定：[执行差异与首批范围](code_correctness_review/REPAIR_AND_REGRESSION.md#repair-readiness-20261017)、[用户确认回执](code_correctness_review/REPAIR_AND_REGRESSION.md#repair-plan-approval-20261017)。首批仅CCR-F0015，范围/host局部验收已确认；用户最新“提交后继续实施”授权提交现有准备文档后实施该单项修复。本文档提交时修复尚未开始；本批结束即停，不改变CCR收尾或M2状态。
+
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
 | [CODE_CORRECTNESS_REVIEW_PLANNING.md](CODE_CORRECTNESS_REVIEW_PLANNING.md) | PROCESS | CCR-P0最小摸底、计划/范围S01–S05与批准/提交回执 | ✅ P0历史完成；47b6c78已提交；当前阶段见P10行 |
