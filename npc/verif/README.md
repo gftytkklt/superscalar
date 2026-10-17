@@ -3,7 +3,7 @@
 > 本目录包含：**验证/性能/形式化/综合资产**（代码，§1）与**文档区**（`docs/` 活跃 + `records/` 归档，§5）。
 > 入口链：根 `README.md` → `npc/README.md` → 本文件 → [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md)。
 
-独立CCR：[P7审阅/Final Gate](records/process/code_correctness_review/P7.md) Completed；2624保留文件入口、8322条件导航，65个native资产按S06排除；新增11 Confirmed/3 Robustness，累计89项未修。[用户运行时](records/process/code_correctness_review/USER_RUNTIME.md)、[syscall/ABI](records/process/code_correctness_review/SYSCALL_ABI.md)、[第三方边界](records/process/code_correctness_review/THIRD_PARTY_P7.md)、[问题](records/process/code_correctness_review/FINDINGS.md)、[证据](records/process/code_correctness_review/p7/README.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)。P6已确认/提交`bdc02a3`；P7结果确认/commit Pending，P8未开始；生产源码与M2未改。
+独立CCR：[P8审阅/Final Gate](records/process/code_correctness_review/P8.md) **Partial**；6,434文件入口/13,629条件导航，2项缺源未审；新增12 Confirmed/14 Robustness，累计115项未修。[NDL/SDL](records/process/code_correctness_review/SERVICE_RUNTIME.md)、[媒体](records/process/code_correctness_review/MEDIA_RUNTIME.md)、[应用调用](records/process/code_correctness_review/APP_OS_CALLS.md)、[逐文件边界](records/process/code_correctness_review/BOUNDARIES_P8.md)、[证据](records/process/code_correctness_review/p8/README.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)。P7已确认/提交`679cc16`；P8未提交、不标Completed，P9未开始；生产源码与M2未改。
 
 > **想用某个工具/流程时先查 §3「调试技术目录」**：每项给出用途、精确用法、产物与详见文档；
 > 常用输出行见 §4，使用约定（gitignore/生成物/超时）见 §6。

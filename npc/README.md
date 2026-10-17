@@ -19,7 +19,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 ## 1. 目录结构
 
-独立CCR：[P7审阅/Final Gate](verif/records/process/code_correctness_review/P7.md) Completed；2624保留文件入口、8322条件导航，65个native资产按S06排除；新增11 Confirmed/3 Robustness，累计89项未修。[用户运行时](verif/records/process/code_correctness_review/USER_RUNTIME.md)、[syscall/ABI](verif/records/process/code_correctness_review/SYSCALL_ABI.md)、[第三方边界](verif/records/process/code_correctness_review/THIRD_PARTY_P7.md)、[问题](verif/records/process/code_correctness_review/FINDINGS.md)、[证据](verif/records/process/code_correctness_review/p7/README.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)。P6已确认/提交`bdc02a3`；P7结果确认/commit Pending，P8未开始；生产源码与M2未改。
+独立CCR：[P8审阅/Final Gate](verif/records/process/code_correctness_review/P8.md) **Partial**；6,434文件入口/13,629条件导航，2项缺源未审；新增12 Confirmed/14 Robustness，累计115项未修。[NDL/SDL](verif/records/process/code_correctness_review/SERVICE_RUNTIME.md)、[媒体](verif/records/process/code_correctness_review/MEDIA_RUNTIME.md)、[应用调用](verif/records/process/code_correctness_review/APP_OS_CALLS.md)、[逐文件边界](verif/records/process/code_correctness_review/BOUNDARIES_P8.md)、[证据](verif/records/process/code_correctness_review/p8/README.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)。P7已确认/提交`679cc16`；P8未提交、不标Completed，P9未开始；生产源码与M2未改。
 
 
 ```
