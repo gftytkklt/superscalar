@@ -311,3 +311,13 @@ F0085修复实际提交`b7391768dd6c3060f455a4b1ab9470ead37b2134`，已获用户
 
 本轮维护已获用户“提交”确认和提交授权，技术收尾复用；[维护报告附记](code_correctness_review/repair-maintenance-20261018/README.md)
 及本地closeout/.agent记录实际提交。12份移出材料全部本地保留，4份必要测试继续跟踪；后续仍只沿唯一CRP Next，本次不启动功能修复或push。
+
+
+<a id="crp-policy-migration-20261018"></a>
+2026-10-18 [AGENTS 规则职责维护计划/结果](code_correctness_review/agent-policy-maintenance-20261018/README.md)：
+CRP 专用接口、合批、真实回归和测试证据提交规则已迁至[修复执行流程](code_correctness_review/workflow/README.md)，作为现行必读入口；
+前文“规则落 AGENTS”的表述保留为历史事实，全局生命周期仍在 AGENTS。
+维护 Completed、结果确认/commit Pending；本轮仅文档，无新产品验证或业务阶段推进。
+当前检查点见[CURRENT_STATE](../../../../.agent/CURRENT_STATE.md#agent-policy-maintenance-20261018)，后续仍只沿[唯一 CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。
+
+2026-10-18 本轮规则维护已获用户“提交当前改动，并且继续CRP修复任务”确认及提交授权；技术收尾复用。实际回执见维护目录本地 commit-receipt.json/.agent；另行授权提交后执行唯一 CRP Next 的一个批次，无 push 授权。

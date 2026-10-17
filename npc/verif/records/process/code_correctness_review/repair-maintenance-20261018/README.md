@@ -76,3 +76,10 @@ HEAD14ca16c，Working tree contains uncommitted maintenance changes；12份索�
 不重复维护完成事件。提交包含12份索引删除及规则/局部忽略/报告/索引；所有移出者本地原字节保留，
 历史commit不重写。实际提交/工作树核对记录在closeout-20261018，.agent保存确认和门槛解除状态。
 本次提交不授权push或执行下一功能批次，提交后停止；原始JSON/本地移出材料/.agent不因此获额外备份。
+
+
+### 2026-10-18 规则现行入口补充
+
+本记录中的 AGENTS/WORKFLOW_POLICY 为当时规则落点，历史结果与提交不改写。
+现行合批和测试证据提交条款已迁至 [CRP 执行流程](../workflow/README.md#batching)及其[证据范围](../workflow/README.md#test-artifacts)；
+迁移与引用检查见[规则职责维护](../agent-policy-maintenance-20261018/README.md)。后续仍按原唯一队列入口恢复。
