@@ -1,0 +1,6 @@
+# Preserve the reusable PC comparison regression; keep one-off outputs local.
+/*
+!/.gitignore
+!/README.md
+!/harness.c
+!/run.py

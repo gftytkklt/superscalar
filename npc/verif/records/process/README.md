@@ -303,3 +303,11 @@ F0085用户已明确“提交”，确认已报告范围并授权提交；[收�
 F0085修复实际提交`b7391768dd6c3060f455a4b1ab9470ead37b2134`，已获用户确认；一次性测试代码/生成证据未入库，保留本地。
 当前进度见[CURRENT_STATE](../../../../.agent/CURRENT_STATE.md)，完成历史见[CHANGELOG_AGENT](../../../../.agent/CHANGELOG_AGENT.md)，
 后续只沿上方唯一CRP Next；原FINAL_FINDINGS保留审阅时截面，不用其历史“未修复”行判断当前修复进度。
+
+2026-10-18 [CRP既往测试精简与批次组织维护](code_correctness_review/repair-maintenance-20261018/README.md)：
+用户明确授权定向处理既往冗余测试；16份中保留4份可重复回归源，12份共434行移出索引且本地原字节保留。
+四项生产修复及验收保持；合批规则已明确，逐问题验收/共享回归，未来范围只沿[唯一CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。
+本轮维护Completed待确认/commit，无新功能修复或产品测试，未commit/push。
+
+本轮维护已获用户“提交”确认和提交授权，技术收尾复用；[维护报告附记](code_correctness_review/repair-maintenance-20261018/README.md)
+及本地closeout/.agent记录实际提交。12份移出材料全部本地保留，4份必要测试继续跟踪；后续仍只沿唯一CRP Next，本次不启动功能修复或push。

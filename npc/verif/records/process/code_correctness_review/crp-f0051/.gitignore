@@ -1,0 +1,5 @@
+# Preserve the minimal generator regression and report; keep evidence local.
+/*
+!/.gitignore
+!/README.md
+!/implementation/

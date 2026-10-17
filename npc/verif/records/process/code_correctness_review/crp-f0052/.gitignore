@@ -1,0 +1,5 @@
+# Preserve the bounded result-classification regression; keep outputs local.
+/*
+!/.gitignore
+!/README.md
+!/check.py

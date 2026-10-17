@@ -115,3 +115,8 @@ cache 失败，整体退出 2、零案例执行；后续改用现有 `/usr/bin/g
 （正例PASS、明确负例XFAIL），RT update/run后到msh，nanos update/run后验证现有
 pal/nterm/nslider三前台F1–F3切换及后台hello。无GUI不能用host stub代替guest执行；
 具体统一要求见[后续回归契约](../crp-f0052/README.md#product-regression-contract-20261017)。
+
+## 2026-10-18 测试跟踪范围维护（不重开修复）
+
+用户明确要求直接处理既往同类冗余测试提交。保留harness.c/run.py两份可重复的PC/调用链回归源；本批build快照、日志和其他临时输出统一本地忽略，未改变测试源或原验收。
+分类、原字节/索引核对和范围见[维护报告](../repair-maintenance-20261018/README.md)。本次不重跑产品回归、不改写历史完成/提交快照；本轮维护尚未提交，旧修复的确认/提交保持。
