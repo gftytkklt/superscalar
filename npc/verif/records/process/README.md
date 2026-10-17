@@ -237,6 +237,8 @@
 CRP当前：[首批CCR-F0015修复与局部回归](code_correctness_review/crp-f0015/README.md)。准备文档已提交2f11b08；首批Completed；用户已确认本次收尾并授权按F0015独立提交。生产一行PC比较；原版43例36通过/7预期失败，修复后43/43通过，4项判据故障正确拒绝。仅host局部闭环，完整Spike/NPC/guest未运行；其他118项仍未解决，本批结束停下，不推进M2。
 
 
+CRP最新：[CCR-F0052最小判据修复](code_correctness_review/crp-f0052/README.md)已确认闭合：am-kernels生产提交c1ba0bb；F0015根提交f5825fd。两批隔离局部证据保持，未宣称真实CPU/guest回归通过。[后续功能修复回归要求](code_correctness_review/crp-f0052/README.md#product-regression-contract-20261017)：真实CPU-tests全集、RT update/run到msh、nanos update/run后pal/nterm/nslider三前台切换及后台hello；无GUI不豁免真实程序回归。用户确认保留历史嵌套差异，仅清根及本轮修改。
+
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
 | [CODE_CORRECTNESS_REVIEW_PLANNING.md](CODE_CORRECTNESS_REVIEW_PLANNING.md) | PROCESS | CCR-P0最小摸底、计划/范围S01–S05与批准/提交回执 | ✅ P0历史完成；47b6c78已提交；当前阶段见P10行 |
