@@ -29,7 +29,7 @@
 
 ## 工具链状态（B3/E1 相关，全部就绪）
 
-独立CCR：[P9审阅/Final Gate](process/code_correctness_review/P9.md) **Completed（跨层审阅）**；L01–L09共135字段，受控RV64启动/文件/计时/exec/exit与故障路径留证；4项新问题，累计119未修。[跨层表](process/code_correctness_review/CROSS_LAYER_P9.md)、[证据](process/code_correctness_review/p9/README.md)、[覆盖](process/code_correctness_review/COVERAGE.md)。P8 Partial已按用户豁免提交`5f88749`，两缺源暂缓；P9未提交，P10未开始；生产源码与M2未改。
+独立CCR：[P10最终报告](process/code_correctness_review/FINAL_REPORT.md) **Completed（按用户两缺源验收豁免闭合）**；12,663/12,665身份按声明深度已审，2项缺源仍未审，未解释差集0。119问题未修（H13/M79/L27、5CQ）；[最终问题](process/code_correctness_review/FINAL_FINDINGS.md)、[覆盖](process/code_correctness_review/COVERAGE.md)、[证据](process/code_correctness_review/EVIDENCE_INDEX.md)、[修复/回归建议](process/code_correctness_review/REPAIR_AND_REGRESSION.md)。当前后续优先修复已完成工作的问题；未决项按正式Linux M阶段实际需求再落档。[P10收尾/提交回执](process/code_correctness_review/P10.md#p10-final-approval-20261017)；生产源码与M2未改。
 
 
 | 项 | 状态 | 说明 |
