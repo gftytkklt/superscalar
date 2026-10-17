@@ -234,10 +234,10 @@
 
 2026-10-17后续方案已确定：[执行差异与首批范围](code_correctness_review/REPAIR_AND_REGRESSION.md#repair-readiness-20261017)、[用户确认回执](code_correctness_review/REPAIR_AND_REGRESSION.md#repair-plan-approval-20261017)。首批仅CCR-F0015，范围/host局部验收已确认；用户最新“提交后继续实施”授权提交现有准备文档后实施该单项修复。本文档提交时修复尚未开始；本批结束即停，不改变CCR收尾或M2状态。
 
-CRP当前：[首批CCR-F0015修复与局部回归](code_correctness_review/crp-f0015/README.md)。准备文档已提交2f11b08；首批Completed；用户已确认本次收尾并授权按F0015独立提交。生产一行PC比较；原版43例36通过/7预期失败，修复后43/43通过，4项判据故障正确拒绝。仅host局部闭环，完整Spike/NPC/guest未运行；其他118项仍未解决，本批结束停下，不推进M2。
+CRP历史：[首批CCR-F0015修复与局部回归](code_correctness_review/crp-f0015/README.md)。准备文档已提交2f11b08；首批Completed；用户已确认本次收尾并授权按F0015独立提交。生产一行PC比较；原版43例36通过/7预期失败，修复后43/43通过，4项判据故障正确拒绝。仅host局部闭环，完整Spike/NPC/guest未运行；其他118项仍未解决，本批结束停下，不推进M2。
 
 
-CRP最新：[CCR-F0052最小判据修复](code_correctness_review/crp-f0052/README.md)已确认闭合：am-kernels生产提交c1ba0bb；F0015根提交f5825fd。两批隔离局部证据保持，未宣称真实CPU/guest回归通过。[后续功能修复回归要求](code_correctness_review/crp-f0052/README.md#product-regression-contract-20261017)：真实CPU-tests全集、RT update/run到msh、nanos update/run后pal/nterm/nslider三前台切换及后台hello；无GUI不豁免真实程序回归。用户确认保留历史嵌套差异，仅清根及本轮修改。
+CRP最新：[CCR-F0052最小判据修复](code_correctness_review/crp-f0052/README.md)已确认闭合：am-kernels生产提交c1ba0bb；F0015根提交f5825fd。两批隔离局部证据保持，未宣称真实CPU/guest回归通过。[后续功能修复回归要求](code_correctness_review/crp-f0052/README.md#product-regression-contract-20261017)：按修改模块及依赖影响选择对应回归（CPU-tests全集、RT到msh、nanos三前台切换及hello），不是每批全部执行；无GUI不豁免受影响功能的真实程序回归。用户确认保留历史嵌套差异，仅清根及本轮修改。
 
 | 文档 | 类型 | 主题/要点 | 状态 |
 |---|---|---|---|
@@ -255,3 +255,7 @@ CRP最新：[CCR-F0052最小判据修复](code_correctness_review/crp-f0052/READ
 | [code_correctness_review/P8.md](code_correctness_review/P8.md) | PROCESS | CCR-P8 [NDL/SDL](code_correctness_review/SERVICE_RUNTIME.md)、[媒体](code_correctness_review/MEDIA_RUNTIME.md)、[应用调用](code_correctness_review/APP_OS_CALLS.md)、[逐文件边界](code_correctness_review/BOUNDARIES_P8.md)、[证据](code_correctness_review/p8/README.md) | ⏸ Partial / Final Gate未通过；2项保留缺源；26新问题累计115；P8 Partial已提交5f88749；用户暂缓两缺源并豁免P9前置完成门槛 |
 | [code_correctness_review/P9.md](code_correctness_review/P9.md) | PROCESS | CCR-P9 L01–L09逐15字段/故障路径；[跨层](code_correctness_review/CROSS_LAYER_P9.md)、[证据](code_correctness_review/p9/README.md) | ✅ Completed（审阅）；4新问题累计119；受控target与host seam验证分开；P9已确认/提交4c25408；最终交付见P10，两缺源仍保留 |
 | [code_correctness_review/P10.md](code_correctness_review/P10.md) | PROCESS | CCR-P10 [FINAL_REPORT](code_correctness_review/FINAL_REPORT.md)、[最终问题](code_correctness_review/FINAL_FINDINGS.md)、[覆盖](code_correctness_review/COVERAGE.md)、[接口](code_correctness_review/INTERFACES.md)、[证据](code_correctness_review/EVIDENCE_INDEX.md)、[限制/决策](code_correctness_review/LIMITATIONS_AND_DECISIONS.md)、[修复/回归](code_correctness_review/REPAIR_AND_REGRESSION.md)、[本轮审计](code_correctness_review/p10/README.md) | ✅ Completed，按用户两缺源验收豁免闭合；12663/12665，未解释差集0，119问题未修；已获收尾/提交授权，回执见P10；当前后续优先存量问题修复，未决项按正式Linux M阶段需求落档，停 |
+
+CRP本轮承接：[F0052收尾复核](code_correctness_review/crp-f0052/README.md#handoff-closeout-20261017)；唯一下一任务及门槛见[现有TASK_QUEUE / CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。根AGENTS.md固化“继续”执行规则，本轮只更新文档，未启动下一项、未commit/push。
+
+CRP本批确认：[用户确认及文档提交授权](code_correctness_review/crp-f0052/README.md#handoff-approval-20261017)已落档；本批三份tracked文档独立提交，实际提交回执见本地REPAIR_AND_REGRESSION及.agent。唯一下一入口仍为上方TASK_QUEUE链接；不启动下一批、不push，ignored资料沿用本地持久化。

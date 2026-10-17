@@ -47,6 +47,15 @@
 
 恢复 Current Milestone、Current Phase、Current Objective、Last Completed Action、Next Action、Known Risks / Blockers；只读取继续任务必需的代码/文档。通常只读，不修改 `.agent`。输出简短 **Project Resume Report**，随后按已有明确授权继续；无待执行授权则等待。
 
+### “继续” — 已批准主线的一个工作单元
+
+1. 同一工作区收到“继续”，先执行 Project Resume / State Consistency Guard；从 `CURRENT_STATE` 恢复**当前交互主线**，沿其 Next Action 找到 `TASK_QUEUE` 的唯一下一入口。业务 Milestone 与独立修复并存时，不因业务表排在前面而切换主线；保留各自状态。
+2. 在用户已批准的修复主线内，agent负责拆分任务、确定执行顺序和每轮最小范围，并在收尾时维护上述唯一入口（范围、必读资料、依赖/门槛、验收及停点）。其他索引只引用该入口，不复制另一份Next，不重排全量问题或另建调度系统。
+3. “继续”授权执行该已落档入口的**一个工作单元**，无需用户重复编号或详细Prompt。前置条件、范围和既有授权满足时直接实施；不人为增加仅产出报告/启动Prompt的准备阶段。
+4. 真实未决策略先作必要分析并提出最少裁决问题；确认/提交或既有持久化门槛未满足时只处理或报告该阻塞，不越过门槛。“继续”“落档”均不自动授权commit/push。某项的阻塞只作用于依赖它的任务，不扩大为所有独立修复的前置条件。
+5. 单元完成后按既有完成/留档规则记录真实结果、准备唯一下一入口并停止，等待用户确认；不自动串行进入下一批。用户负责结果确认及必要策略裁决，授权范围内的日常拆分、排序与实现细节由agent承担。
+6. 验证采用少量有区分力的正常/失败场景，重点拦截错误与虚假PASS，不扩展为通用runner或庞大协议。真实回归按修改模块和依赖影响选择；未受影响部分可不测，host/fake不能替代受影响功能的真实guest验证。
+
 ### Phase Start
 
 1. 用 `Mx-Py` 定位 `TASK_QUEUE` 的目标 Phase、Goal、Tasks、依赖和相关计划；队列是摘要时沿链接补齐该 Phase 的验收与停点，不重新规划整个 Milestone。
@@ -113,6 +122,7 @@ context compression 本身不触发恢复、Completion 或 Handoff。若 Milesto
 
 | 操作 | 用户短指令 |
 |---|---|
+| 继续当前交互主线 | `继续`（按上述规则恢复并执行唯一入口的一个工作单元） |
 | Project Resume | `接管当前项目。执行 Project Resume。` |
 | Phase Start | `开始 Mx-Py。执行 Phase Start。` |
 | Phase Completion（未提交） | `Mx-Py 已完成，修改尚未 commit。执行 Phase Completion。` |

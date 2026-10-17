@@ -120,6 +120,8 @@ baseline 中的启动状态、生产源码哈希及关联依赖终检见 protect
 <a id="product-regression-contract-20261017"></a>
 ## 2026-10-17 用户确认：后续功能修复的真实回归要求
 
+> 适用范围以文末[按模块影响范围选择回归的澄清](#regression-impact-scope-20261017)为准：以下是各类受影响模块的回归要求，不是每批必须全部执行的清单。
+
 用户要求后续nemu/AM/nanos/navy/RT等自研代码的功能修复仍以真实程序回归验收，
 并澄清nanos为**现有三个前台加后台hello**，不新增第四个可切换前台。
 
@@ -160,3 +162,48 @@ F0052仅修CPU-tests判据，不把其GOOD/BAD TRAP终止规则套到长期运�
 提交前复核原F0015/F0052证据manifest均零差异；本次README附记属于新增批准及后续
 回归要求，不重写原manifest。增量核对与收尾回执保存在closeout-20261017/。
 本轮不push、不运行自动Git构建钩子、不处理其他CCR-F、不推进业务M2/M2-P1。
+
+
+<a id="regression-impact-scope-20261017"></a>
+## 2026-10-17 补充澄清：按模块影响范围选择回归
+
+用户明确：“对应模块的功能修复完成后，必须执行涉及对应模块的验证。完全没有修改的
+部分可以不验证，例如修改nanos-lite无需验证rt，因为nanos-lite的代码不影响rt的运行。”
+据此澄清前述回归要求及其索引/状态摘要：**按实际修改和依赖影响选择回归，不要求每批
+同时执行CPU-tests、RT和nanos全部项目。**
+
+- 仅修改nanos-lite且不影响RT：执行nanos相关真实guest回归，无需执行RT回归。
+- 仅修改RT且不影响nanos：执行RT相关真实guest回归，无需执行nanos回归。
+- 修改NEMU、AM或共享库：沿调用和构建依赖确定影响范围，执行实际受影响程序的回归；
+  消费端即使没有直接改代码，只要受到共享修改影响，也不能按“未修改”免测。
+- CPU-tests全集、RT update/run到msh、nanos前台切换及后台hello，分别作为涉及相应
+  功能时的回归要求；完全未受影响的部分可不验证，不扩大本批功能范围。
+- 每批简要记录修改模块、依赖影响、选测项目及未测理由。对选定的受影响功能，
+  无GUI不免除真实guest验证，host/fake不能替代；无法完成时明确NotRun与恢复条件。
+
+本附记只澄清后续回归适用范围，不改历史验证结果、不重新打开F0015/F0052，
+不启动新修复或业务阶段。
+
+<a id="handoff-closeout-20261017"></a>
+## 2026-10-17 收尾复核与续作承接
+
+- **完成 / 确认 / 提交分开核对**：F0052生产修复及本批host/fake验收已完成，用户已有条件确认和提交授权已履行。生产提交为am-kernels `c1ba0bb884eaefc75925401759c9fbdfa6f86124`，根报告/验证脚本提交为`7d99a8daa14ff2b14705bba1cf238118e6a7bd96`；F0015独立提交`f5825fd`，不夹带本轮文档。
+- **本轮只读复核**：当前Makefile与check.py哈希仍匹配final/results.json；生产diff仍为单文件41增14删。历史28/28定向结果、原版22个错误成功及closeout-20261017/receipt.json可追溯。本轮未重跑测试；原manifest的641个文件中仅README因后续批准/澄清附记变化，实际测试证据保持，未重写历史manifest。
+- **未验证范围不变**：真实CPU-tests全集、NEMU/NPC/RT/nanos guest等仍NotRun。F0052只闭合测试判据的局部验收；后续功能修复按上文实际模块及依赖影响选测，无GUI及host/fake均不替代受影响功能的真实guest验证。
+- **工作流承接**：根AGENTS.md新增“继续”规则，WORKFLOW_POLICY同步最小执行/决策边界；CURRENT_STATE明确当前交互为独立CRP，业务M2保持。唯一下一任务、范围、必读资料、门槛和停点统一在[现有TASK_QUEUE / CRP Next](../../../../../../.agent/TASK_QUEUE.md#crp-next)，其他导航仅引用，不另建启动Prompt。
+- **新增文档门槛**：上一轮回归范围澄清与本轮工作流/收尾附记尚未获结果确认、尚未commit；原提交授权已履行，本次“落档”不增加commit/push授权。tracked增量仅AGENTS.md、本README及records/process/README.md；WORKFLOW_POLICY、修复计划和.agent为ignored本地资产，沿用本地持久化，不force-add，不声称Git已备份。后续启动先核对确认及提交/明确持久化豁免。
+
+本轮未修改生产源码或Makefile、未开始下一修复、未清理历史嵌套差异、未推进业务阶段。
+
+<a id="handoff-approval-20261017"></a>
+## 2026-10-17 用户确认及本批文档提交授权
+
+用户明确：“确认本批已报告通过的范围。按既定规则落档并提交本批归属明确的改动，
+准备下一入口后停止，不启动下一批，不 push。”据此确认上述收尾复核、按影响范围回归
+及最小工作流承接；授权本批AGENTS.md、records/process/README.md及本README独立提交。
+前文文档确认/提交Pending是此次授权前的历史截面，实际提交回执记入本地修复计划及.agent。
+WORKFLOW_POLICY、修复计划和.agent沿用既有本地持久化，不force-add，不视为已获Git备份。
+
+本次仅核对文档差异、链接及提交范围，不新增CPU/guest或host/fake测试结果。
+唯一下一入口保持[TASK_QUEUE / CRP Next](../../../../../../.agent/TASK_QUEUE.md#crp-next)，
+F0051发布策略仍待下一单元分析裁决；本次确认不代替该裁决，不启动该单元，不推进M2。
