@@ -29,7 +29,7 @@
 
 ## 工具链状态（B3/E1 相关，全部就绪）
 
-独立CCR：[P6审阅/Final Gate](process/code_correctness_review/P6.md) Completed；70文件/91条件，新增14 Confirmed、5 Robustness，累计75项未修。[OS矩阵](process/code_correctness_review/OS_RUNTIME.md)、[跨层链](process/code_correctness_review/CROSS_LAYER_P6.md)、[问题](process/code_correctness_review/FINDINGS.md)、[证据](process/code_correctness_review/p6/README.md)、[覆盖](process/code_correctness_review/COVERAGE.md)。P5已确认/提交`632b843`；P6结果已获用户确认，本次授权提交；P7已获授权，提交后开始；生产源码与M2未改。
+独立CCR：[P7审阅/Final Gate](process/code_correctness_review/P7.md) Completed；2624保留文件入口、8322条件导航，65个native资产按S06排除；新增11 Confirmed/3 Robustness，累计89项未修。[用户运行时](process/code_correctness_review/USER_RUNTIME.md)、[syscall/ABI](process/code_correctness_review/SYSCALL_ABI.md)、[第三方边界](process/code_correctness_review/THIRD_PARTY_P7.md)、[问题](process/code_correctness_review/FINDINGS.md)、[证据](process/code_correctness_review/p7/README.md)、[覆盖](process/code_correctness_review/COVERAGE.md)。P6已确认/提交`bdc02a3`；P7结果确认/commit Pending，P8未开始；生产源码与M2未改。
 
 
 | 项 | 状态 | 说明 |
