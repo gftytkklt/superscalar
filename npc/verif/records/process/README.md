@@ -259,3 +259,23 @@ CRP最新：[CCR-F0052最小判据修复](code_correctness_review/crp-f0052/READ
 CRP本轮承接：[F0052收尾复核](code_correctness_review/crp-f0052/README.md#handoff-closeout-20261017)；唯一下一任务及门槛见[现有TASK_QUEUE / CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。根AGENTS.md固化“继续”执行规则，本轮只更新文档，未启动下一项、未commit/push。
 
 CRP本批确认：[用户确认及文档提交授权](code_correctness_review/crp-f0052/README.md#handoff-approval-20261017)已落档；本批三份tracked文档独立提交，实际提交回执见本地REPAIR_AND_REGRESSION及.agent。唯一下一入口仍为上方TASK_QUEUE链接；不启动下一批、不push，ignored资料沿用本地持久化。
+
+2026-10-17 CRP当前：[CCR-F0051失败传播与发布边界分析](code_correctness_review/crp-f0051/README.md)
+已按本轮“继续”完成，仅分析/隔离补证，生产修复未开始。make/nm/objcopy失败仍exit0、
+复制异常部分发布及缺mk静默省略集成均有原版观察；不是修复或真实guest PASS。
+本轮结果确认、发布策略和commit Pending；F0015/F0052与9402822既有提交保持。
+唯一后续动作/门槛见[现有CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)，未决时不默认实施，M2不变。
+
+F0051补充：[用户已选A及update语义澄清](code_correctness_review/crp-f0051/README.md#f0051-a-approval-20261017)。
+正确性修复保留既有Make入口/流程；RT已有集成update与nanos的ramdisk update各自独立，
+不将update增加为RT日常run的必经步骤。未新增动态结果，生产修复和提交仍未开始。
+
+CRP最新：[F0051 A修复及验收](code_correctness_review/crp-f0051/README.md#f0051-implementation-20261017)
+Completed，结果确认/commit Pending。仅生产集成脚本修改，Make接口/流程不变；最终13/13定向通过，
+真实四应用生成/链接、NPC difftest ON到msh通过，help列出四集成命令；180秒受控停止，
+未宣称四应用运行通过。生产脚本仍受Git忽略，原build保持，未commit/push。
+后续仅沿[现有CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)，本批结束停止，M2不变。
+
+2026-10-18：[F0051用户确认与提交收尾](code_correctness_review/crp-f0051/README.md#f0051-submit-20261018)。
+用户已确认本批报告范围并授权提交；上一轮已完成技术收尾，本次复用，未重跑13项/真实RT。
+生产脚本按授权精确纳入跟踪，原始本地证据及.agent沿用既有持久化；实际提交回执见本地记录。
