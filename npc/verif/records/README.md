@@ -29,7 +29,7 @@
 
 ## 工具链状态（B3/E1 相关，全部就绪）
 
-独立代码审阅：[P0历史](process/CODE_CORRECTNESS_REVIEW_PLANNING.md)、[计划v0.3](../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)、[P1基线](process/code_correctness_review/P1.md)、[P2审阅/Final Gate](process/code_correctness_review/P2.md)。P2 Completed，29入口RV64 CPU/类型责任闭合；[8项问题](process/code_correctness_review/FINDINGS.md)、[证据](process/code_correctness_review/p2/README.md)；确认/commit Pending，P3未开始。
+独立代码审阅：[P0历史](process/CODE_CORRECTNESS_REVIEW_PLANNING.md)、[计划v0.3](../docs/CODE_CORRECTNESS_REVIEW_PLAN.md)、[P1基线](process/code_correctness_review/P1.md)、[P2](process/code_correctness_review/P2.md)已确认/提交`9918989`、[P3审阅/Final Gate](process/code_correctness_review/P3.md) Completed并已确认/提交。P3 RV64运行支撑静态审阅新增14项，[问题台账](process/code_correctness_review/FINDINGS.md)、[证据](process/code_correctness_review/p3/README.md)；P4未开始。
 
 
 | 项 | 状态 | 说明 |
