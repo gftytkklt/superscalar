@@ -19,7 +19,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 ## 1. 目录结构
 
-独立CCR：[P8审阅/Final Gate](verif/records/process/code_correctness_review/P8.md) **Partial**；6,434文件入口/13,629条件导航，2项缺源未审；新增12 Confirmed/14 Robustness，累计115项未修。[NDL/SDL](verif/records/process/code_correctness_review/SERVICE_RUNTIME.md)、[媒体](verif/records/process/code_correctness_review/MEDIA_RUNTIME.md)、[应用调用](verif/records/process/code_correctness_review/APP_OS_CALLS.md)、[逐文件边界](verif/records/process/code_correctness_review/BOUNDARIES_P8.md)、[证据](verif/records/process/code_correctness_review/p8/README.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)。P7已确认/提交`679cc16`；P8未提交、不标Completed，P9未开始；生产源码与M2未改。
+独立CCR：[P9审阅/Final Gate](verif/records/process/code_correctness_review/P9.md) **Completed（跨层审阅）**；L01–L09共135字段，受控RV64启动/文件/计时/exec/exit与故障路径留证；4项新问题，累计119未修。[跨层表](verif/records/process/code_correctness_review/CROSS_LAYER_P9.md)、[证据](verif/records/process/code_correctness_review/p9/README.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)。P8 Partial已按用户豁免提交`5f88749`，两缺源暂缓；P9未提交，P10未开始；生产源码与M2未改。
 
 
 ```

@@ -3,7 +3,7 @@
 > 本目录包含：**验证/性能/形式化/综合资产**（代码，§1）与**文档区**（`docs/` 活跃 + `records/` 归档，§5）。
 > 入口链：根 `README.md` → `npc/README.md` → 本文件 → [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md)。
 
-独立CCR：[P8审阅/Final Gate](records/process/code_correctness_review/P8.md) **Partial**；6,434文件入口/13,629条件导航，2项缺源未审；新增12 Confirmed/14 Robustness，累计115项未修。[NDL/SDL](records/process/code_correctness_review/SERVICE_RUNTIME.md)、[媒体](records/process/code_correctness_review/MEDIA_RUNTIME.md)、[应用调用](records/process/code_correctness_review/APP_OS_CALLS.md)、[逐文件边界](records/process/code_correctness_review/BOUNDARIES_P8.md)、[证据](records/process/code_correctness_review/p8/README.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)。P7已确认/提交`679cc16`；P8未提交、不标Completed，P9未开始；生产源码与M2未改。
+独立CCR：[P9审阅/Final Gate](records/process/code_correctness_review/P9.md) **Completed（跨层审阅）**；L01–L09共135字段，受控RV64启动/文件/计时/exec/exit与故障路径留证；4项新问题，累计119未修。[跨层表](records/process/code_correctness_review/CROSS_LAYER_P9.md)、[证据](records/process/code_correctness_review/p9/README.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)。P8 Partial已按用户豁免提交`5f88749`，两缺源暂缓；P9未提交，P10未开始；生产源码与M2未改。
 
 > **想用某个工具/流程时先查 §3「调试技术目录」**：每项给出用途、精确用法、产物与详见文档；
 > 常用输出行见 §4，使用约定（gitignore/生成物/超时）见 §6。
