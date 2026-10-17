@@ -299,3 +299,7 @@ Completed，修复结果确认/commit Pending。navy Makefile两行；10/10同�
 
 F0085用户已明确“提交”，确认已报告范围并授权提交；[收尾范围](code_correctness_review/crp-f0085/README.md#f0085-submit-20261018)
 复用现有验收。生产修复/报告/本批忽略规则入库，一次性测试代码与生成证据留本地；新增“测试代码只提交必要部分或不提交”规则落AGENTS，验证要求不减少。实际提交回执随后补充；不push、不启动下一项。
+
+F0085修复实际提交`b7391768dd6c3060f455a4b1ab9470ead37b2134`，已获用户确认；一次性测试代码/生成证据未入库，保留本地。
+当前进度见[CURRENT_STATE](../../../../.agent/CURRENT_STATE.md)，完成历史见[CHANGELOG_AGENT](../../../../.agent/CHANGELOG_AGENT.md)，
+后续只沿上方唯一CRP Next；原FINAL_FINDINGS保留审阅时截面，不用其历史“未修复”行判断当前修复进度。

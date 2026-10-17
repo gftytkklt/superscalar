@@ -213,3 +213,7 @@ Working tree contains uncommitted CRP repair/documentation changes；根HEAD仍8
 后续任务只从[现有CRP Next](../../../../../../.agent/TASK_QUEUE.md#crp-next)恢复，具体问题/契约依据仍为
 原FINAL_FINDINGS和REPAIR_AND_REGRESSION，不回填原审阅台账的历史“未修复”截面。
 原始证据及.agent仍本地保存，提交报告不等于备份全部资产。
+
+实际F0085修复提交：`b7391768dd6c3060f455a4b1ab9470ead37b2134`，4文件236增2删，仅上述四份文件，无测试代码/生成证据入库。
+全局流程规则另行提交；实际回执见本地closeout-20261018。原10/10、真实nanos与保护证据本轮复用，
+只补当前确认和提交事实；F0085 Completed/用户已确认/修复已提交，未push。
