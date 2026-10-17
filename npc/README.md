@@ -19,7 +19,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 ## 1. 目录结构
 
-独立任务：[整体正确性审阅计划v0.3](verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)；[CCR-P2](verif/records/process/code_correctness_review/P2.md)已确认/提交`9918989`；[CCR-P3](verif/records/process/code_correctness_review/P3.md) Completed、已确认并提交，RV64运行支撑静态审阅、[问题台账](verif/records/process/code_correctness_review/FINDINGS.md)累计22项、[覆盖矩阵](verif/records/process/code_correctness_review/COVERAGE.md)。生产源码未改，P4未开始，不推进M2。
+独立CCR：[P4审阅/Final Gate](verif/records/process/code_correctness_review/P4.md) Completed，结果已获用户确认，本次提交归档；120文件/78条件，新增5项Confirmed、2项Robustness、3项ContractQuestion。[问题台账](verif/records/process/code_correctness_review/FINDINGS.md)累计32项，[证据](verif/records/process/code_correctness_review/p4/README.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)。P3已确认/提交`1d76133`；P5未开始，生产源码与业务M2未改。
 
 
 ```

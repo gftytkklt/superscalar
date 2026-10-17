@@ -100,7 +100,7 @@ bash init.sh subproject-name
 
 ## 分支说明（本地）
 
-独立审阅（2026-10-17）：[整体计划v0.3](npc/verif/docs/CODE_CORRECTNESS_REVIEW_PLAN.md)；[CCR-P2](npc/verif/records/process/code_correctness_review/P2.md)已确认/提交`9918989`；[CCR-P3审阅与Final Gate](npc/verif/records/process/code_correctness_review/P3.md) Completed、已确认并提交，[问题台账](npc/verif/records/process/code_correctness_review/FINDINGS.md)累计22项（P3新增14项）。生产源码未改；P4未开始；业务M2不变。
+独立CCR：[P4审阅/Final Gate](npc/verif/records/process/code_correctness_review/P4.md) Completed，结果已获用户确认，本次提交归档；120文件/78条件，新增5项Confirmed、2项Robustness、3项ContractQuestion。[问题台账](npc/verif/records/process/code_correctness_review/FINDINGS.md)累计32项，[证据](npc/verif/records/process/code_correctness_review/p4/README.md)、[覆盖](npc/verif/records/process/code_correctness_review/COVERAGE.md)。P3已确认/提交`1d76133`；P5未开始，生产源码与业务M2未改。
 
 boot_linux（当前分支）: M1 Linux native首启与REF已完成/Handoff，P9 `14179a3`、收尾`6bf7ba2`；[启动配方](npc/verif/linux/boot/README.md)。2026-10-11 [M2 NPC A扩展计划](npc/verif/docs/LINUX_M2_PLAN.md)已落盘自审待用户确认，P1未Start；采用人工RTL/验证、AI设计与审查模式。
 new_world: PA4.5选做部分分支，npc验证环境与用例搭建
