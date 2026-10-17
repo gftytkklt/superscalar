@@ -3,7 +3,7 @@
 > 本目录包含：**验证/性能/形式化/综合资产**（代码，§1）与**文档区**（`docs/` 活跃 + `records/` 归档，§5）。
 > 入口链：根 `README.md` → `npc/README.md` → 本文件 → [`docs/PROJECT_OVERVIEW.md`](./docs/PROJECT_OVERVIEW.md)。
 
-独立CCR：[P4审阅/Final Gate](records/process/code_correctness_review/P4.md) Completed，结果已获用户确认，本次提交归档；120文件/78条件，新增5项Confirmed、2项Robustness、3项ContractQuestion。[问题台账](records/process/code_correctness_review/FINDINGS.md)累计32项，[证据](records/process/code_correctness_review/p4/README.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)。P3已确认/提交`1d76133`；P5未开始，生产源码与业务M2未改。
+独立CCR：[P5审阅/Final Gate](records/process/code_correctness_review/P5.md) Completed；2,537文件/1,213条件，新增19 Confirmed、3 Robustness、2 ContractQuestion。[AM/klib/API](records/process/code_correctness_review/AM_RUNTIME.md)、[问题](records/process/code_correctness_review/FINDINGS.md)累计56项、[证据](records/process/code_correctness_review/p5/README.md)、[覆盖](records/process/code_correctness_review/COVERAGE.md)。P4已确认/提交`a419cea`；P5结果已获用户确认，本次授权提交；P6已获授权，提交后开始；生产源码与M2未改。
 
 > **想用某个工具/流程时先查 §3「调试技术目录」**：每项给出用途、精确用法、产物与详见文档；
 > 常用输出行见 §4，使用约定（gitignore/生成物/超时）见 §6。
