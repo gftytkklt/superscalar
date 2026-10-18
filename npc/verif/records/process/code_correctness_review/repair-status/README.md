@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复34（31项已确认提交；本组F0025/F0027/F0028 Completed，结果确认/commit Pending）；未修完85，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复34（原功能修复34项均已确认提交；F0052终态归属补充已确认，生产已提交22791cf，根记录本轮提交）；未修完85，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -62,10 +62,10 @@
 | CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) |
 | CCR-F0023 | Confirmed / High | 已修 / 已确认提交c9be898 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
 | CCR-F0024 | Confirmed / Medium | 已修 / 已确认提交fc7835e | [双页表嵌套切走恢复/真实回归及回执](../crp-f0024/README.md#approval-submit-20261018) |
-| CCR-F0025 | Confirmed / Medium | 已修 / Completed，待确认提交 | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
+| CCR-F0025 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0026 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0026) |
-| CCR-F0027 | Confirmed / Medium | 已修 / Completed，待确认提交 | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
-| CCR-F0028 | Robustness / Low | 已修 / Completed，待确认提交 | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
+| CCR-F0027 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
+| CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0029 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0029) |
 | CCR-F0030 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0030) |
 | CCR-F0031 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0031) |
@@ -89,7 +89,7 @@
 | CCR-F0049 | Confirmed / Medium | 已修 / 已提交 | d9a3d42；[报告](../crp-f0049/README.md) |
 | CCR-F0050 | Confirmed / Medium | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
 | CCR-F0051 | Confirmed / Medium | 已修 / 已提交 | 4ab9f3f；[报告](../crp-f0051/README.md) |
-| CCR-F0052 | Confirmed / Medium | 已修 / 已提交 | am-kernels c1ba0bb / root 7d99a8d；[报告](../crp-f0052/README.md) |
+| CCR-F0052 | Confirmed / Medium | 已修 / 终态补充已确认提交22791cf | am-kernels c1ba0bb；[原报告](../crp-f0052/README.md)、[双平台真实补充](../crp-f0052-ref-terminal/README.md) |
 | CCR-F0053 | Confirmed / Low | 已修 / 已提交 | am-kernels 6dc302a / root e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0054 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0054) |
 | CCR-F0055 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0055) |
@@ -240,3 +240,5 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 2026-10-18 用户“提交”确认F0024已报告范围并授权提交；545条文件清单无漂移、21项验收/生产patch保持，复用原验收。实际回执以包含本附记的commit及.agent为准；本轮不Start下一组，不push。3,958为F0023逐文件清单条目（含大量源树输入），不是测试数量，详见本组报告澄清。
 
 2026-10-18 F0025/F0027/F0028修复三项Completed：原3BSS/5rodata真实失败、最终35NPC启动/20heap边界/CPU36PASS+1XFAIL/RT当前模型到msh通过。现有CPU汇总计入REF附加终态会假失败，保留失败并独立重判/重跑；后续F0052补充仅TASK_QUEUE维护。本组三项待确认提交；F0026与五CQ不变。
+
+2026-10-18 前组F0025/F0027/F0028已确认提交f3a5d0c；F0052终态归属补充Completed：原两假失败/一REF-only假通过，最终42/42及真实NPC/NEMU全集各36PASS+1XFAIL、make exit0，补充待确认提交。同一F0052不重复加计，34已修/85未修完保持。

@@ -450,3 +450,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 用户确认并授权F0024提交：545条文件清单/原21项验收及生产patch保持；[提交及计数澄清](code_correctness_review/crp-f0024/README.md#approval-submit-20261018)说明F0023的3,958条是源树/产物/日志等文件SHA条目，非测试用例数量。本轮仅提交已完成批次，不启动后组。
 
 2026-10-18 [CRP F0025/F0027/F0028 NPC启动布局](code_correctness_review/crp-f0025-f0027-f0028/README.md)：七脚本BSS实际对齐/完整边界、五搬运模式text与rodata逐节LMA/VMA/end、四可调heap容量/回绕拒绝。原8真实反例及13控制、最终35NPC启动/20heap边界、当前模型CPU36PASS+1XFAIL及RT四应用update/image/msh通过；旧执行器MRET分歧/现有CPU汇总假失败保留，最终重跑使用已核对当前源码模型。34已修/85未修完，本组三项Completed待确认提交，F0026/五CQ/M2保持。
+
+2026-10-18 [CRP F0052终态归属补充](code_correctness_review/crp-f0052-ref-terminal/README.md)：前组13文件已确认提交f3a5d0c；仅改嵌套cpu-tests Makefile，按ARCH区分主终态，修复REF附加终态假ERROR与REF-only假PASS。定向42/42、真实NPC DIFF=1/NEMU全集各36PASS+1XFAIL且make exit0，当前模型先核身份；NEMU沿用_heap_end兼容配置。Completed待确认提交，不新增问题计数，M2保持。
