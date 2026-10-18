@@ -28,3 +28,8 @@ F0045 Completed，按用户连续提交预授权交付；代理验收不记作�
 `local/`保留baseline、两份before源、host.local/前后124项及原UB日志、guest.c、prepare.local、12份实际ELF/BIN/反汇编、guests.local/原始日志/6例结果、故障注入初始及补充结果、RT/nanos runner/日志/帧、direction-consumers、prior-evidence-preservation、verify.local/validation、repair.patch、tested-identity、manifest。源码/模型身份与前组一致，测试副本继续使用 `/tmp/crp-ioe-t400f090`；前组实际绑定产物及源码保留在其独立artifacts，未覆写旧证据。
 
 模型/解释器/REF的完整SHA见local/tested-identity.json及[前组报告](../crp-f0041-f0042-f0053/README.md)。正常API只验证在ioe_init后且缓冲区满足契约的调用；没有增加NULL缓冲检查、并发初始化或新设备。无安装/push/M2推进；本地ignored证据与.agent不随commit备份。根实际提交回执由后续状态记录补齐；本轮收尾冻结[人工启动guard](../repair-status/README.md#manual-start-guard)后停止。
+
+<a id="submit-20261018"></a>
+## 实际提交回执（2026-10-18）
+
+按本轮连续预授权提交：root f4e3c0cf840c0edeff5a3fbef1f3d75ce8283745（6文件84增9删）。提交后root/index干净，nested既有untracked保留；复用本组已完成验收，未无故重跑，未push。整体收尾冻结的[人工guard](../repair-status/README.md#manual-start-guard)须下一次Start前明确决定或豁免。

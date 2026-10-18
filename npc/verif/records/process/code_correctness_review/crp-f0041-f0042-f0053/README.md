@@ -33,3 +33,8 @@
 本地 `local/`（不入库）包含host.local、run.local、npc-guest.local、npc-f0042.local、rt/nanos runner、verify.local；host-before/after、各build/run日志与JSON、checker-faults/validation、patch、artifacts及manifest。`guest-f0053-tested.c`是实际跑过的原包装器，`caps.c`为实际独立能力测试；当前guest.c的宏修正不冒充已运行的组合测试。
 
 使用模型SHA256 `1ced513005f8e30df4d1b9b7ebcd7f2be9290dcae32304ef3f4cf971a582f208`，NEMU解释器 `455a618de1da2d0c8b69562750640dbc977668b3acfab03f8000eb111929eb35`，REF `ea44e661db1b9ef12612ef6d07449bc9c5efa920c8267149801d45f4a134ee62`。artifacts绑定三份最终源码和实际ELF/BIN。manifest在收尾生成，ignored资料不随commit备份；am-kernels既有五类untracked资产保持原状。无安装/push/业务M2推进。
+
+<a id="submit-20261018"></a>
+## 实际提交回执（2026-10-18）
+
+按本轮连续预授权提交：root e83df62d7b7b3d0b37e42ab2cdbecce27bc0e278（6文件62增9删）；am-kernels 6dc302a117ae282c7f3f50a593b46134f77b2b86（单一devscan.c21增）。提交后root/index干净，nested既有untracked保留；复用本组已完成验收，未无故重跑，未push。整体收尾冻结的[人工guard](../repair-status/README.md#manual-start-guard)须下一次Start前明确决定或豁免。
