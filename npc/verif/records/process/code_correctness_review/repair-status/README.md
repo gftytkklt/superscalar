@@ -34,18 +34,18 @@
 
 ## 当前逐项状态
 
-全部已有功能修复35（34项已确认提交；F0019 Completed，结果确认/新commit Pending；F0052补充已分仓提交22791cf/f3d0252）；未修完84，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复38（F0019已确认提交522bed7；本组F0004/F0008新修复未提交，F0005既有bc7a110补验闭合，本组三项结果待确认）；未修完81，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
 | CCR-F0001 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0001) |
 | CCR-F0002 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0002) |
 | CCR-F0003 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0003) |
-| CCR-F0004 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0004) |
-| CCR-F0005 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0005) |
+| CCR-F0004 | Confirmed / Medium | 已修 / Completed，本组结果待确认提交 | [非对齐/别名安全与共享真实回归](../crp-f0004-f0005-f0008/README.md) |
+| CCR-F0005 | Confirmed / Medium | 已修 / Completed，本组结果待确认，代码已有bc7a110 | [既有bc7a110修复/本组补验](../crp-f0004-f0005-f0008/README.md) |
 | CCR-F0006 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0006) |
 | CCR-F0007 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0007) |
-| CCR-F0008 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0008) |
+| CCR-F0008 | Confirmed / Medium | 已修 / Completed，本组结果待确认提交 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) |
 | CCR-F0009 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0009) |
 | CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
@@ -56,7 +56,7 @@
 | CCR-F0016 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0016) |
 | CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
 | CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
-| CCR-F0019 | Confirmed / Low | 已修 / Completed，待确认提交 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) |
+| CCR-F0019 | Confirmed / Low | 已修 / 已确认提交522bed7 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) |
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
 | CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
 | CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) |
@@ -244,3 +244,5 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 2026-10-18 前组F0025/F0027/F0028已确认提交f3a5d0c；F0052终态归属补充Completed：原两假失败/一REF-only假通过，最终42/42及真实NPC/NEMU全集各36PASS+1XFAIL、make exit0，补充待确认提交。同一F0052不重复加计，34已修/85未修完保持。
 
 2026-10-18 F0052补充已确认分仓提交22791cf/f3d0252；F0019工具修复Completed待确认提交：原请求3/输出0/exit0精确失败，128独立oracle/真实CLI、10,000 sanitizer生成/3边界树、输入/子进程/IO失败及并发通过，17项终检。35已修/84未修完；仅工具修改，未冒充CPU/RT/nanos重测。
+
+2026-10-19 F0004/F0008新增修复及F0005补验闭合Completed：F0005原代码已随F0022/bc7a110提交，原清单漏镜像，本次按证据补齐不重复修改。宿主181×6检查、实际static/malloc/REF/AM、双CPU全集、RT新REF到msh及nanos8点通过；本组三项待确认，新代码未提交。38已修/81未修完，原历史计数不回写。

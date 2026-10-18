@@ -44,3 +44,7 @@ NEMU沿用此前真实CPU测试兼容配置：`--eval=export LDFLAGS += --defsym
 ## 用户确认及分仓提交（2026-10-18）
 
 用户“提交，然后继续修复”确认本补充已报告范围/测试配置/限制并授权分仓提交后继续F0019一个单元。648条文件清单及生产Makefile无漂移，复用12项核对/42定向和两平台真实全集；未重跑、未重复Completion。am-kernels实际提交`22791cfe514a5302b17a9ede62fb27fb77576996`，仅一个Makefile11增5删，暂存/实际集合一致，历史未跟踪项保留；根记录提交回执见local/submit-receipt.json与.agent。无push，新F0019修改不自动提交。
+
+## 2026-10-19 测试符号依赖原因勘误
+
+上文NEMU CPU测试附加_heap_end的实际消费者是am-kernels/tests/cpu-tests/tests/mem-test.c的extern声明；malloc读取AM的heap Area，不依赖该链接符号。此前“共享malloc所需”的原因表述不准确，原测试配置/命令/结果仍成立；本次仅纠正原因，不重写旧证据或重跑该单元。

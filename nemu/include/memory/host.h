@@ -18,22 +18,23 @@
 
 #include <common.h>
 
+// Local integer objects avoid alignment and effective-type assumptions on RAM.
 static inline word_t host_read(void *addr, int len) {
   switch (len) {
-    case 1: return *(uint8_t  *)addr;
-    case 2: return *(uint16_t *)addr;
-    case 4: return *(uint32_t *)addr;
-    IFDEF(CONFIG_ISA64, case 8: return *(uint64_t *)addr);
+    case 1: { uint8_t data; memcpy(&data, addr, 1); return data; }
+    case 2: { uint16_t data; memcpy(&data, addr, 2); return data; }
+    case 4: { uint32_t data; memcpy(&data, addr, 4); return data; }
+    IFDEF(CONFIG_ISA64, case 8: { uint64_t data; memcpy(&data, addr, 8); return data; });
     default: MUXDEF(CONFIG_RT_CHECK, assert(0), return 0);
   }
 }
 
 static inline void host_write(void *addr, int len, word_t data) {
   switch (len) {
-    case 1: *(uint8_t  *)addr = data; return;
-    case 2: *(uint16_t *)addr = data; return;
-    case 4: *(uint32_t *)addr = data; return;
-    IFDEF(CONFIG_ISA64, case 8: *(uint64_t *)addr = data; return);
+    case 1: { uint8_t value = data; memcpy(addr, &value, 1); return; }
+    case 2: { uint16_t value = data; memcpy(addr, &value, 2); return; }
+    case 4: { uint32_t value = data; memcpy(addr, &value, 4); return; }
+    IFDEF(CONFIG_ISA64, case 8: { uint64_t value = data; memcpy(addr, &value, 8); return; });
     IFDEF(CONFIG_RT_CHECK, default: assert(0));
   }
 }

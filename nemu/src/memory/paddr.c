@@ -77,7 +77,7 @@ static MemRegion* find_mem_region(paddr_t addr) {
   return NULL;
 }
 
-uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
+uint8_t* guest_to_host(paddr_t paddr) { return pmem + (paddr - CONFIG_MBASE); }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 uint8_t* addr_to_soc(paddr_t addr) {
   MemRegion *r = find_mem_region(addr);
@@ -102,10 +102,8 @@ void init_mem() {
 #endif
   mem_regions[0].mem = pmem;   // pmem 指针（malloc 或静态数组）运行时确定
 #ifdef CONFIG_MEM_RANDOM
-  uint32_t *p = (uint32_t *)pmem;
-  int i;
-  for (i = 0; i < (int) (CONFIG_MSIZE / sizeof(p[0])); i ++) {
-    p[i] = rand();
+  for (size_t i = 0; i < CONFIG_MSIZE / sizeof(uint32_t); i++) {
+    host_write(pmem + i * sizeof(uint32_t), sizeof(uint32_t), rand());
   }
 #endif
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
