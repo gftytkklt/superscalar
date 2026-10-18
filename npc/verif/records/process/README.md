@@ -346,3 +346,16 @@ Completed，结果确认Pending、commit Pending；生产仅string.c，测试源
 2026-10-18 F0033/F0056已获用户“提交”确认及提交授权；复用既有技术收尾，252份本地证据/7份文档、生产SHA/patch无漂移。
 [提交附记](code_correctness_review/crp-f0033-f0056/README.md#f0033-f0056-submit-20261018)及本地submit-20261018/.agent保存实际回执。
 仅最小修复/报告/索引/局部忽略，未提交一次性测试/生成证据，未重跑产品测试；提交后停止，不push或启动下一批。
+
+
+<a id="crp-f0034-f0035-f0036-20261018"></a>
+2026-10-18 [CRP F0034/F0035/F0036 klib整数格式化修复](code_correctness_review/crp-f0034-f0035-f0036/README.md)：
+转换属性/变参类型及无符号幅值/内部数字buffer与符号前缀补零已修；原43例30失败，修复后host sanitizer与真实RV64各43/43。
+私有helper四radix与P5原反例通过；CPU全集36 PASS+1 XFAIL（既有测试兼容配置）、RT真实NPC msh/difftest ON、nanos三前台+hello及108extent一致通过。
+Completed，结果确认Pending、commit Pending；仅stdio.c生产修复，测试源/原始证据本地保留，累计已修11/剩余108含5CQ，M2保持。
+本批停止，未来范围/门槛只见[唯一CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。
+
+
+2026-10-18 F0034/F0035/F0036已获用户“提交”确认及提交授权；复用既有收尾，239份本地证据/7份文档及生产SHA/patch无漂移。
+[提交附记](code_correctness_review/crp-f0034-f0035-f0036/README.md#f0034-f0035-f0036-submit-20261018)及本地submit-20261018/.agent保存实际回执。
+仅最小修复/报告/索引/局部忽略；一次性测试/生成证据未入库，未重跑产品测试；提交后停止，不push或启动F0046。

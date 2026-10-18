@@ -2,6 +2,8 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <limits.h>
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 enum {INVALID_TYPE, STR, NUMBER, CHAR, };
@@ -40,7 +42,8 @@ static int decode_fmt(const char* fmt, formatinfo* info){
   if(*tmp == 'l') {info->islong = true; tmp++;}
   // as behavior of invalid fmt as %lp/%ls is UB, deal them with valid info is OK
   // info in struct formatinfo is invalid when meet inv fmt above
-  switch (*tmp++) {
+  char conversion = *tmp++;
+  switch (conversion) {
     case 'c':
       info->argtype = CHAR;
       break;
@@ -56,7 +59,7 @@ static int decode_fmt(const char* fmt, formatinfo* info){
     case 'd': case 'i': case 'u':
       info->argtype = NUMBER;
       info->radix = 10;
-      info->issigned = (*tmp == 'u') ? false : true;
+      info->issigned = (conversion != 'u');
       break;
     case 'o':
       info->argtype = NUMBER;
@@ -65,7 +68,7 @@ static int decode_fmt(const char* fmt, formatinfo* info){
     case 'x': case 'X':
       info->argtype = NUMBER;
       info->radix = 16;
-      info->isupperdigit = (*tmp == 'X') ? true : false;
+      info->isupperdigit = (conversion == 'X');
       break;
     default:
       info->argtype = INVALID_TYPE;// as a result, invalid fmt will be ignored
@@ -75,18 +78,18 @@ static int decode_fmt(const char* fmt, formatinfo* info){
 }
 // get str of number
 // e.g, -123456 -> "-123456"
-static void num2str(char* dst, long val, bool issigned, bool isupper, bool ispointer, int radix){
+static void num2str(char* dst, unsigned long val, bool negative, bool isupper, bool ispointer, int radix){
   assert(radix != 0);
   const char* lowerstr = "0123456789abcdef";
   const char* upperstr = "0123456789ABCDEF";
   const char* usestr = isupper ? upperstr : lowerstr;
   char *tmp = dst;
   if (val == 0){*tmp++ = '0';*tmp = '\0';return;}
-  else if(issigned && (val < 0)){*tmp++ = '-';}
+  else if(negative){*tmp++ = '-';}
   else if(ispointer){*tmp++ = '0';*tmp++ = 'x';}
   // tmp points to lsb digit, p points to wr pos
   char *p = tmp;
-  unsigned long val_abs = (unsigned long) val;
+  unsigned long val_abs = val;
   while(val_abs != 0){
     *p++ = usestr[val_abs % radix];
     val_abs /= radix;
@@ -138,14 +141,30 @@ static void vformat(emit_f emit, void *arg, const char *fmt, va_list ap) {
         break;
       }
       case NUMBER:{
-        long val_num = info.islong ? va_arg(ap, long) : (long) va_arg(ap, int);
-        char numstr[21] = {0};
+        unsigned long val_num;
+        bool negative = false;
+        if (info.ispointer) {
+          val_num = (uintptr_t)va_arg(ap, void *);
+        } else if (info.issigned) {
+          long val = info.islong ? va_arg(ap, long) : (long)va_arg(ap, int);
+          negative = val < 0;
+          val_num = negative ? 0UL - (unsigned long)val : (unsigned long)val;
+        } else {
+          val_num = info.islong ? va_arg(ap, unsigned long) : (unsigned long)va_arg(ap, unsigned int);
+        }
+        // One character per bit, a sign or pointer prefix, and the terminator.
+        char numstr[sizeof(unsigned long) * CHAR_BIT + 3];
         char padding = info.zeropad ? '0' : ' ';
-        num2str(numstr, val_num, info.issigned, info.isupperdigit, info.ispointer, info.radix);
-        for(int i=strlen(numstr);i<info.width;i++){
+        num2str(numstr, val_num, negative, info.isupperdigit, info.ispointer, info.radix);
+        int len = strlen(numstr);
+        char *p = numstr;
+        if (info.zeropad) {
+          int prefix = negative ? 1 : (info.ispointer && val_num != 0 ? 2 : 0);
+          while (prefix-- > 0) emit(arg, *p++);
+        }
+        for(int i=len;i<info.width;i++){
           emit(arg, padding);
         }
-        char *p = numstr;
         while(*p){
           emit(arg, *p++);
         }
