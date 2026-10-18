@@ -26,21 +26,20 @@ static void copy_bytes(char *dst, const char *src, size_t n) {
 }
 
 // 由 linker 提供：LMA(flash) / VMA(目标区) 边界。
-extern char _text_lma[], _text_vma[], _sidata[], _sdata[], _edata[];
+extern char _text_lma[], _text_vma[], _text_end[];
+extern char _rodata_lma[], _rodata_vma[], _rodata_end[];
+extern char _sidata[], _sdata[], _edata[];
 extern char _bss_start[], _bss_end[];
 extern void _trm_init();
 
 __attribute__((section(".bootloader")))
 void _boot_loader() {
-  char *dst, *src;
+  char *dst;
   long n;
 
-  // 搬 .text+.rodata: flash[_text_lma .. _sidata) -> VMA[_text_vma .. _sdata)
-  // 注意 LMA 与 VMA 区间长度一致（链接器保证段连续）。
-  src = _text_lma;
-  dst = _text_vma;
-  n   = _sdata - _text_vma;
-  if (n > 0) copy_bytes(dst, src, (size_t)n);
+  // Each output section can have a different LMA/VMA alignment gap.
+  copy_bytes(_text_vma, _text_lma, (uintptr_t)_text_end - (uintptr_t)_text_vma);
+  copy_bytes(_rodata_vma, _rodata_lma, (uintptr_t)_rodata_end - (uintptr_t)_rodata_vma);
 
   // 搬 .data: flash[_sidata .. +len) -> VMA[_sdata .. _edata)
   n = _edata - _sdata;

@@ -448,3 +448,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0024 trap地址空间确定性保存](code_correctness_review/crp-f0024/README.md)：F0023已确认提交c9be898；生产仅vme.c删除读未初始化槽的条件跳过，保留kcontext初始NULL/借用接口。原零槽真实A→B→A页表恢复失败、非零正常；修复零/非零/VME-off三guest GOOD TRAP，双私有VA/用户syscall嵌套及内核线程恢复、RT补充测试链接配置msh+am_hello、nanos8点/hello1483→6787、21终检通过。前组3,958证据保持；31已修/88未修完，本组Completed待确认提交，M2不变。
 
 2026-10-18 用户确认并授权F0024提交：545条文件清单/原21项验收及生产patch保持；[提交及计数澄清](code_correctness_review/crp-f0024/README.md#approval-submit-20261018)说明F0023的3,958条是源树/产物/日志等文件SHA条目，非测试用例数量。本轮仅提交已完成批次，不启动后组。
+
+2026-10-18 [CRP F0025/F0027/F0028 NPC启动布局](code_correctness_review/crp-f0025-f0027-f0028/README.md)：七脚本BSS实际对齐/完整边界、五搬运模式text与rodata逐节LMA/VMA/end、四可调heap容量/回绕拒绝。原8真实反例及13控制、最终35NPC启动/20heap边界、当前模型CPU36PASS+1XFAIL及RT四应用update/image/msh通过；旧执行器MRET分歧/现有CPU汇总假失败保留，最终重跑使用已核对当前源码模型。34已修/85未修完，本组三项Completed待确认提交，F0026/五CQ/M2保持。

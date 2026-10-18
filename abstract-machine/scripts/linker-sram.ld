@@ -2,6 +2,7 @@ ENTRY(_start)
 
 MEMORY {
   sram (rwx) : ORIGIN = 0x0f000000, LENGTH = 8K
+  psram (rw) : ORIGIN = 0x80000000, LENGTH = 4M
   flash (rx) : ORIGIN = 0x30000000, LENGTH = 16M
 }
 
@@ -25,12 +26,16 @@ SECTIONS {
   } > sram AT> flash
   _text_vma = ADDR(.text);
   _text_lma = LOADADDR(.text);
+  _text_end = ADDR(.text) + SIZEOF(.text);
   etext = .;
   _etext = .;
   .rodata : ALIGN(0x8) {
     *(.rodata*)
     *(.srodata*)
   } > sram AT> flash
+  _rodata_vma = ADDR(.rodata);
+  _rodata_lma = LOADADDR(.rodata);
+  _rodata_end = ADDR(.rodata) + SIZEOF(.rodata);
   .data : ALIGN(0x8) {
     _sdata = .;
     *(.data*)
@@ -39,8 +44,8 @@ SECTIONS {
   } > sram AT> flash
   _sidata = LOADADDR(.data);
   _sidata_end = LOADADDR(.data) + SIZEOF(.data);
-  .bss : {
-    _bss_start = ALIGN(0x0008);
+  .bss : ALIGN(0x8) {
+    _bss_start = .;
     *(.bss*)
     *(.sbss*)
     *(.scommon)
@@ -52,7 +57,10 @@ SECTIONS {
 
   /* 堆区：PSRAM（可缓存 4MB），大小由 --defsym=_heap_size 指定。 */
   . = _stack_pointer;
-  _heap_start = 0x80000000;
+  _heap_start = ORIGIN(psram);
+  /* Check the size before addition so a wrapped end cannot pass the bound. */
+  ASSERT(_heap_start <= ORIGIN(psram) + LENGTH(psram), "heap start exceeds psram")
+  ASSERT(_heap_size <= ORIGIN(psram) + LENGTH(psram) - _heap_start, "heap size exceeds psram")
   _heap_end = _heap_start + _heap_size;
   end = .;
   _end = .;

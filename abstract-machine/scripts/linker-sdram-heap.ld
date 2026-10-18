@@ -28,8 +28,8 @@ SECTIONS {
     *(.sdata*)
     _edata = .;
   } > sram AT> flash
-  .bss : {
-    _bss_start = ALIGN(0x0008);
+  .bss : ALIGN(0x8) {
+    _bss_start = .;
     *(.bss*)
     *(.sbss*)
     *(.scommon)
@@ -39,8 +39,11 @@ SECTIONS {
   _sidata_end = LOADADDR(.data) + SIZEOF(.data);
   _stack_pointer = _sram_start + _stack_offt;
   . = _stack_pointer;
-  /* 堆区：SDRAM（0xa0000000 起，可缓存 16MB），大小 = HEAP_SIZE（默认 32KB）。 */
-  _heap_start = 0xa0000000;
+  /* 堆区：SDRAM（0xa0000000 起，可缓存 128MB），大小 = HEAP_SIZE（默认 32KB）。 */
+  _heap_start = ORIGIN(sdram);
+  /* Check the size before addition so a wrapped end cannot pass the bound. */
+  ASSERT(_heap_start <= ORIGIN(sdram) + LENGTH(sdram), "heap start exceeds sdram")
+  ASSERT(_heap_size <= ORIGIN(sdram) + LENGTH(sdram) - _heap_start, "heap size exceeds sdram")
   _heap_end = _heap_start + _heap_size;
   end = .;
   _end = .;

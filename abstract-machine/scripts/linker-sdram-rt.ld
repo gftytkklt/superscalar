@@ -28,12 +28,16 @@ SECTIONS {
   } > sdram AT> flash
   _text_vma = ADDR(.text);
   _text_lma = LOADADDR(.text);
+  _text_end = ADDR(.text) + SIZEOF(.text);
   etext = .;
   _etext = .;
   .rodata : ALIGN(0x8) {
     *(.rodata*)
     *(.srodata*)
   } > sdram AT> flash
+  _rodata_vma = ADDR(.rodata);
+  _rodata_lma = LOADADDR(.rodata);
+  _rodata_end = ADDR(.rodata) + SIZEOF(.rodata);
   .data : ALIGN(0x8) {
     _sdata = .;
     *(.data*)
@@ -65,8 +69,8 @@ SECTIONS {
   } > sdram AT> flash
   _sidata = LOADADDR(.data);
   _sidata_end = LOADADDR(.data) + SIZEOF(.data);
-  .bss : {
-    _bss_start = ALIGN(0x0008);
+  .bss : ALIGN(0x8) {
+    _bss_start = .;
     *(.bss*)
     *(.sbss*)
     *(.scommon)
