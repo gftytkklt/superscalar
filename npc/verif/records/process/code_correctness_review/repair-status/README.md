@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复26（此前25已提交，F0014 Completed、用户已确认，纳入本次提交）；未修完93，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复27（此前26已提交，F0018 Completed、用户已确认，纳入本次提交）；未修完92，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -51,11 +51,11 @@
 | CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0012 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
 | CCR-F0013 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
-| CCR-F0014 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) |
+| CCR-F0014 | Confirmed / Medium | 已修 / 已确认提交194d2c0 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) |
 | CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
 | CCR-F0016 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0016) |
 | CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
-| CCR-F0018 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0018) |
+| CCR-F0018 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0019) |
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
 | CCR-F0021 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0021) |
@@ -187,3 +187,15 @@ WR为AM写接口、不提供读回契约；前兼容性单元实际提交1603f88
 26已修/93未修完含5CQ/F0040Partial，未push/M2；唯一下一入口仍TASK_QUEUE。
 
 2026-10-18 用户“提交，继续”确认F0014已报告结果并授权提交后执行下一单元；146条manifest无漂移，原17项validation通过，复用动态验收。[确认回执](../crp-f0014/README.md#approval-submit-20261018)。
+
+
+## 2026-10-18 F0018完成及F0014实际提交
+
+用户“提交，继续”确认F0014，实际提交194d2c0，提交后root/index干净。独立F0018
+已Completed，待本组结果确认/commit；[报告](../crp-f0018/README.md)保存暂存读取/失败
+清理、原3失败见证、修复ASan/UBSan16场景/124断言、真实128MiB CLI10次失败保持/
+完整恢复及GOOD TRAP，21项真实判据/14项最终核对通过。LSan环境失败单列，不冒称通过。
+27已修/92未修完含5CQ/F0040Partial；额外128MiB临时内存/原raw非全机恢复限制保留。
+无新安装/commit/push/M2；当前停等确认提交，下一入口只见TASK_QUEUE。
+
+2026-10-18 用户确认F0018并授权提交及独立大型临时资产清理；45条manifest/原14项validation核对通过，复用原验收。[提交授权回执](../crp-f0018/README.md#approval-submit-20261018)，不Start F0021。

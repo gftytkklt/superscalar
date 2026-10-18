@@ -116,3 +116,9 @@ headers/NPC原binary未改变；不会将本次验证副本产物冒称根NPC已
 process索引、repair-status及前组实际提交回执；local/.agent沿用本地持久化，
 commit不代表备份。实际提交以包含本节的Git提交及local回执为准，不预记成功；
 不授权push或扩大未测能力。
+
+
+2026-10-18 实际提交回执：`194d2c0eb3a5dbdb63143a55e2f0141001e89946`，8文件165增10删，
+精确匹配已核对暂存清单，提交后root/index干净、未push。提交前146条manifest及原17项
+validation复核通过，复用原验收；local/submit-precheck.json、submit-receipt.json保存回执。
+原Pending为提交前截面，不重复Completion。依用户同条“继续”授权开始独立F0018单元。

@@ -177,10 +177,25 @@ static int cmd_load(char *args) {
   if (path == NULL) { printf("usage: load [path]\n"); return 0; }
   FILE *fp = fopen(path, "rb");
   if (fp == NULL) { printf("can not open file '%s'\n", path); return 0; }
-  size_t n1 = fread(&cpu, sizeof(CPU_state), 1, fp);
-  size_t n2 = fread(guest_to_host(CONFIG_MBASE), CONFIG_MSIZE, 1, fp);
-  fclose(fp);
-  if (n1 != 1 || n2 != 1) { printf("failed to load '%s'\n", path); return 0; }
+  CPU_state new_cpu;
+  uint8_t *new_mem = malloc(CONFIG_MSIZE);
+  if (new_mem == NULL) {
+    fclose(fp);
+    printf("failed to allocate snapshot memory\n");
+    return 0;
+  }
+  size_t n1 = fread(&new_cpu, sizeof(new_cpu), 1, fp);
+  size_t n2 = fread(new_mem, CONFIG_MSIZE, 1, fp);
+  bool failed = n1 != 1 || n2 != 1 || ferror(fp);
+  if (fclose(fp) != 0) { failed = true; }
+  if (failed) {
+    free(new_mem);
+    printf("failed to load '%s'\n", path);
+    return 0;
+  }
+  memcpy(&cpu, &new_cpu, sizeof(cpu));
+  memcpy(guest_to_host(CONFIG_MBASE), new_mem, CONFIG_MSIZE);
+  free(new_mem);
   printf("CPU state and memory loaded from '%s'\n", path);
   return 0;
 }
