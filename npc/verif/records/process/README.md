@@ -392,3 +392,5 @@ RT update/image、完整navy update/nanos image成功；65个消费者ELF无修�
 F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只分析、待正式需求裁决，生产未修。F0039 Completed，结果确认/commit Pending；累计已修16/剩余103含5CQ。未来只沿TASK_QUEUE，不推进M2。
 
 2026-10-18 用户确认并授权F0039提交及后续连续批次；[回执](code_correctness_review/crp-f0039-f0040/README.md#submit-20261018)保存114份证据/源码无漂移、复用验收及授权边界。实际提交见本地回执/.agent，未push。
+
+2026-10-18 [CRP逐项修复镜像与人工启动guard](code_correctness_review/repair-status/README.md)以原119项和16项已提交报告逐一对齐，计数按行维护；未来顺序仍只沿TASK_QUEUE。用户已授权当前CRP连续验证/留档/提交及开新组，非依赖未决集中汇总，结束冻结人工启动guard；见[授权规则](code_correctness_review/workflow/README.md#continuous-authorization-20261018)。不授权push或其他业务阶段。
