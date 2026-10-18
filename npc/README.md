@@ -35,9 +35,9 @@ npc/
 │   ├── Makefile             # 裸核微验证：make / run T=/fst T=/assert/assert-cache/formal/ptest/pboot/bins
 │   ├── tb_main.cpp          # 裸核 AXI4 内存模型 + 时钟/复位 harness（断言失败返回非 0）
 │   ├── tb_axiburst.cpp      # axiburst 专用 tb（配合 formal/axiburst.sby）
-│   ├── tests/               # 汇编微测试 13 例：bug2_csr/bug3_div/bug4_fencei/cache_data/cache_region/
+│   ├── tests/               # 汇编微测试 14 例：bug2_csr/bug3_div/bug4_fencei/cache_data/cache_region/
 │   │                        #   fencei_cache/fencei_pipeline/lduse_fwd/partial_store/pmem_stress/
-│   │                        #   psram_burst/residual_mret/shift_fwd
+│   │                        #   psram_burst/residual_mret/mret_status/shift_fwd
 │   ├── assert/              # bind 注入仿真期断言：cache_bypass_check/csr_hazard_check/
 │   │                        #   div_zero_check/axi_protocol_check
 │   ├── formal/              # SymbiYosys 形式化四件：div.sby(z3,100)/axiburst.sby(z3,35)/
@@ -150,6 +150,13 @@ ysyx_22040750 (vsrc/ysyx_22040750.v)
 - `EX_MEM_reg.mem_rd_en` 时序上的"多余读"：实测 `mem_rd_en` 在请求拍（IDLE 且 `mem_ready=1`）
   即经 `rd_handshake` 清零，数据返回前早已复位，load→store 事务日志中无多余 AR → 不成立。
 
+<a id="csr-mret-mpp-20261018"></a>
+### 3.5 MRET / trap 的 MPP 状态更新（2026-10-18）
+
+F0046恢复时发现：DUT的MRET保留MPP，REF清MPP，随后读mstatus使difftest失败。已修复MRET清MPP、恢复MIE/置MPIE，并在旧MPP非M时清MPRV；当前M态trap保存MPP=M，保证连续trap/return一致。
+这是[F0046的DUT依赖修复](verif/records/process/code_correctness_review/crp-f0046-f0048-f0050/README.md#dut-repair-20261018)，未找到对应的独立既有缺陷编号；与bug2_csr、residual_mret的前递根因不同。新增mret_status微测试覆盖，原反例及8次trap/return均通过SoC difftest。
+本次只补状态字段更新，未实现低特权执行/权限检查，不代表M3或Linux启动能力完成；原三项缺陷的编号与历史验收不变。
+
 ## 4. 仿真执行方法
 
 ### 4.1 全系统仿真（SoC + difftest，推荐回归路径）
@@ -194,7 +201,7 @@ rvalid、wdata 接收后延迟一拍再给 bvalid，全部握手驱动、无启�
 
 ```bash
 cd npc/verif
-make             # 编译模型并跑全部 tests/*.S（当前 13/13 全 PASS）
+make             # 编译模型并跑全部 tests/*.S（当前普通微测试 14/14 全 PASS）
 make run  T=bug2_csr  # 只跑某个用例
 make fst  T=bug2_csr  # 跑并保留 build/bug2_csr.fst 波形
 make clean
@@ -202,9 +209,9 @@ make clean
 
 - 用例机制：映像放到 Flash `0x30000000`（复位 PC `0x2ffffffc` → `snpc=pc+4` 自然引导）；
   程序把结果写入 SRAM `0x0f000000` 后 `ebreak` 结束；harness 打印 SRAM 区与 AXI 事务日志。
-- 现有用例（13 个，见 `VERIF_TESTS.md` §1）：`bug2_csr`(CSR 冒险)、`bug3_div`(除零)、
+- 现有用例（14 个，见 `VERIF_TESTS.md` §1）：`bug2_csr`(CSR 冒险)、`bug3_div`(除零)、
   `bug4_fencei`(fence.i)、`cache_data`/`cache_region`/`fencei_cache`/`partial_store`/
-  `pmem_stress`(缓存路径)、`psram_burst`(PSRAM 32B burst)、`residual_mret`(mret)、
+  `pmem_stress`(缓存路径)、`psram_burst`(PSRAM 32B burst)、`residual_mret`(MEPC 前递)、`mret_status`(MPP/MIE 状态栈)、
   `fencei_pipeline`(SMC+fence.i 反例)、`lduse_fwd`(load→use 前递)、`shift_fwd`(移位结果消费)。
 
 ### 4.3 调试辅助

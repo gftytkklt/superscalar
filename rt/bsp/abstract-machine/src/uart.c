@@ -40,6 +40,9 @@ static int _uart_getc(struct rt_serial_device *serial) {
   // 阶段 F/G 演示：先自动执行预置命令串；跑完后读 AM_UART_RX（NVBoard 终端键入，阶段 J2）。
   static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\nam_hello\n";
   if (*p != '\0') return *(p ++);
+  AM_UART_CONFIG_T cfg;
+  ioe_read(AM_UART_CONFIG, &cfg);
+  if (!cfg.present) return -1;
   AM_UART_RX_T rx;
   ioe_read(AM_UART_RX, &rx);
   return (rx.data == 0xff) ? -1 : rx.data;
@@ -70,11 +73,10 @@ int rt_hw_uart_init(void) {
   uart->hw_base = (rt_ubase_t)uart0_base;
   uart->irqno = 0x0a;
 
-  rt_hw_serial_register(serial,
+  return rt_hw_serial_register(serial,
       RT_CONSOLE_DEVICE_NAME,
       RT_DEVICE_FLAG_STREAM | RT_DEVICE_FLAG_RDWR,
       uart);
-  return 0;
 }
 
 /* WEAK for SDK 0.5.6 */

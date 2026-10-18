@@ -1528,7 +1528,10 @@ module ysyx_22040750_csr(
             endcase
         else if(csr_intr_wr) begin
             satp <= satp;
-            mstatus <= {mstatus[63:8],mstatus_mie,mstatus[6:4],1'b0,mstatus[2:0]};
+            // The current core executes in M-mode only: trap entry saves M in MPP.
+            // This must also hold after an earlier mret has cleared MPP.
+            mstatus <= (mstatus & ~64'h1888) | 64'h1800 |
+                       (mstatus_mie ? 64'h80 : 64'h0);
             mie <= mie;
             mtvec <= mtvec;
             mepc <= {32'b0, I_intr_pc};
@@ -1538,7 +1541,11 @@ module ysyx_22040750_csr(
         end
         else if(csr_mret_wr) begin
             satp <= satp;
-            mstatus <= {mstatus[63:8],1'b1,mstatus[6:4],mstatus_mpie,mstatus[2:0]};
+            // Match the RV64 M/S/U status-stack convention; this does not add
+            // lower-privilege execution support to the current M-mode core.
+            mstatus <= (mstatus & ~(64'h1888 |
+                        ((mstatus[12:11] != 2'b11) ? 64'h20000 : 64'h0))) |
+                       64'h80 | (mstatus_mpie ? 64'h8 : 64'h0);
             mie <= mie;
             mtvec <= mtvec;
             mepc <= mepc;

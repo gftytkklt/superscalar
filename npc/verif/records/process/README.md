@@ -359,3 +359,18 @@ Completed，结果确认Pending、commit Pending；仅stdio.c生产修复，测�
 2026-10-18 F0034/F0035/F0036已获用户“提交”确认及提交授权；复用既有收尾，239份本地证据/7份文档及生产SHA/patch无漂移。
 [提交附记](code_correctness_review/crp-f0034-f0035-f0036/README.md#f0034-f0035-f0036-submit-20261018)及本地submit-20261018/.agent保存实际回执。
 仅最小修复/报告/索引/局部忽略；一次性测试/生成证据未入库，未重跑产品测试；提交后停止，不push或启动F0046。
+
+
+<a id="crp-f0046-f0048-f0050-20261018"></a>
+2026-10-18 [CRP自适应修复组F0046/F0048/F0050](code_correctness_review/crp-f0046-f0048-f0050/README.md)：
+[流程](code_correctness_review/workflow/README.md#batching)已按本轮授权改为逐项验证/组末确认/同对话续作；[原维护附记](code_correctness_review/agent-policy-maintenance-20261018/README.md#adaptive-groups-20261018)保留规则检查结果。
+本组Partial：F0048堆实际长度与F0050 UART错误/能力检查Completed，最终host8/8、NEMU/NPC UART真实guest、RT NPC到msh/difftest ON及实际2MiB分配范围通过。
+F0046候选host/NEMU通过，但RT/NPC读mstatus遇MPP差异DIFF ABORT；候选已撤回，保留失败镜像/日志，未修复。不得写整组PASS。
+规则/两项修复结果确认Pending、commit Pending；累计已修13/剩余106含5CQ。仅两份生产源码及文档，测试与生成证据本地保存；后续仅见[唯一CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)，M2保持。
+
+2026-10-18 [F0046阻塞定位补充](code_correctness_review/crp-f0046-f0048-f0050/README.md#mret-diagnosis-20261018)：相同初值及显式共同写入后，mret导致REF清MPP、DUT保留MPP；原运行器14指令精确复现。仅分析，F0046仍撤回阻塞，本批确认/commit门槛不变。
+
+2026-10-18 [F0046 DUT依赖修复与恢复补充](code_correctness_review/crp-f0046-f0048-f0050/README.md#dut-repair-20261018)：按用户明确授权修复MRET/trap MPP状态更新，恢复中断保存/恢复接口；未找到另一个同根因NPC编号。CSR24组合、SoC原反例/8次trap、裸核14/14、CPU36 PASS+1 XFAIL、双平台MIE及最终RT/NPC difftest到msh/精确2MiB堆通过，29项证据核对通过。本组三项均Completed、确认/commit Pending；累计已修14/剩余105含5CQ。原Partial/失败证据保留，不推定完整特权或Linux完成；下一入口仅见TASK_QUEUE。
+
+2026-10-18 用户“提交现有改动后继续CRP修复任务”确认本组及规则维护并授权提交后续作；
+[收尾回执](code_correctness_review/crp-f0046-f0048-f0050/README.md#submit-20261018)记录346条证据及7个身份无漂移，复用原验收；实际提交见本地回执/.agent。未push；下一单元仅沿TASK_QUEUE。

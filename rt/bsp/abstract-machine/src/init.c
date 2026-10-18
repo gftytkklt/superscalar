@@ -12,7 +12,8 @@ uint8_t * am_apps_data_content = NULL;
 
 void rt_hw_board_init() {
   int rt_hw_uart_init(void);
-  rt_hw_uart_init();
+  int uart_result = rt_hw_uart_init();
+  assert(uart_result == RT_EOK);
 
 #ifdef RT_USING_HEAP
   /* initialize memory system */
@@ -21,7 +22,11 @@ void rt_hw_board_init() {
 
   uint32_t size = AM_APPS_HEAP_SIZE;
   void *p = NULL;
-  for (; p == NULL && size != 0; size /= 2) { p = rt_malloc(size); }
+  for (; size != 0; size /= 2) {
+    p = rt_malloc(size);
+    if (p != NULL) break;
+  }
+  assert(p != NULL);
   am_apps_heap = RANGE(p, p + size);
 
   extern char __am_apps_data_start, __am_apps_data_end;

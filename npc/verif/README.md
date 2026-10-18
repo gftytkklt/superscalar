@@ -15,7 +15,7 @@
 | `Makefile` | 裸核微验证构建入口。主要目标：`make [all]`（跑全部 `tests/*.S`）、`make run T=xxx`、`make fst T=xxx`（FST 波形）、`make ptest/pfst T=xxx`（**主存模式** `NPC_PMEM_BOOT`，复位 `0x7ffffffc`→首取 `0x80000000`，验证可缓存区 I/D cache）、`make pboot`（PSRAM memtest 探针，`PB_N=<字节数>`）、`make assert`/`assert-cache`、`make axiburst`（AXI burst 专用 tb）、`make formal`（SymbiYosys）、`make bins`、`make clean`。源文件/断言变更由 `.deps_*` 指纹自动触发重建，**不需要手删 `build/`** |
 | `tb_main.cpp` | Verilator testbench：AXI4 从端内存模型 + 时钟/复位 harness；按 `a0` 打印 `HIT GOOD/BAD TRAP`，断言失败返回非 0（CI 友好）；`VTB_MAXT` 周期看门狗（默认 400000，出波形时 30000） |
 | `tb_axiburst.cpp` | AXI burst 行为专用 testbench（配合 `formal/axiburst.sby` 与 `make axiburst`） |
-| `tests/` | **汇编微测试 13 例**（`make all`）：`bug2_csr`（CSR 冒险）、`bug3_div`（有符号除零）、`bug4_fencei`、`cache_data`、`cache_region`、`fencei_cache`、`fencei_pipeline`（SMC+fence.i 反例）、`lduse_fwd`（load→use 前递）、`partial_store`（WR merge 字节保留）、`pmem_stress`（>4KB 伪随机写读）、`psram_burst`（32B/边界）、`residual_mret`、`shift_fwd`（移位结果下一条消费） |
+| `tests/` | **汇编微测试 14 例**（`make all`）：`bug2_csr`（CSR 冒险）、`bug3_div`（有符号除零）、`bug4_fencei`、`cache_data`、`cache_region`、`fencei_cache`、`fencei_pipeline`（SMC+fence.i 反例）、`lduse_fwd`（load→use 前递）、`partial_store`（WR merge 字节保留）、`pmem_stress`（>4KB 伪随机写读）、`psram_burst`（32B/边界）、`residual_mret`、`mret_status`（MPP/MIE 状态栈）、`shift_fwd`（移位结果下一条消费） |
 | `assert/` | 仿真期断言 **12 文件 57 条**（`bind` 注入，`$error` 报错，`make assert` 全绿）。历史 4 件：`cache_bypass_check`（可 `CACHE_CHECK_OFF`）/`csr_hazard_check`/`div_zero_check`/`axi_protocol_check`；**RTL 标准模型化新增 8 件 48 条**：`dcache_write_check`（B 单一 ack/pend 纪律）、`pc_fetch_check`（取指槽契约）、`mdu_pair_check`（mul/div 对拍）、`hazard_forward_check`（match 五要素/前递优先级）、`ex_mem_check`（响应门复合语义）、`slave_crossbar_check`（owner 纪律）、`csr_intr_check`（CSR 互斥/中断提交）、`axi_crossbar_check`（仲裁纪律） |
 | `formal/` | 形式化 **4 件**：`div.sby`（depth 100, z3）、`axiburst.sby`（35, z3）、`icache.sby`（20, boolector）、`pipeline.sby`（12, boolector；深探 `depth 20`）；`trim_rtl.py` 裁剪 RTL 并注入 46 个 `PROBE_*` 探针；`props_dcache.sv` 为无 sby 的历史残留 |
 | `perf/` | 性能探针 10 个（`perf_counters.sv` + `dcache_stats/icache_stats/apbdly_check/axidly_check/axiwatch/sdramprobe/sdramcore_probe/pmem_probe/dcache_axi_probe.sv`，经 `npc/Makefile` 的 `VSRC` 注入全系统 SoC 仿真）与分析脚本 7 个（`amat_report.py`/`ctr_trace_plot.py`/`trace_locality.py`/`trace_compress.py`/`branchsim.py`/`b4_quant_eval.py`/`store_path_analysis.py`）。**不接入本 Makefile**（裸核仿真不出 `PERF`） |
@@ -33,7 +33,7 @@
 
 ```bash
 make run T=cache_data        # 裸核单例（自校验，失败非 0）
-make                         # 裸核全部 13 例
+make                         # 裸核全部 14 例
 make fst T=cache_data        # 裸核 + FST 波形
 make ptest T=cache_data      # 主存模式（0x80000000 boot）
 make assert                  # 断言回归（12 监视器；assert-cache 含 bug1 检查）
@@ -46,7 +46,7 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
 ## 3. 调试技术目录（用途 / 用法 / 产物 / 详见）
 
 1. **裸核微验证（flash 模式）** —— 不编译 SoC/NEMU，最快定位核内功能缺陷。
-   用法：`make run T=<name>`（单例）/ `make`（13 例）/ `VTB_MAXT=<cyc>` 改超时。
+   用法：`make run T=<name>`（单例）/ `make`（14 例）/ `VTB_MAXT=<cyc>` 改超时。
    产物：`RESULT: PASS/FAIL` + SRAM dump + AXI 事务日志；模型 `build/obj_dir/Vnpc`。
    详见：`docs/VERIF_TESTS.md` §1。
 
@@ -127,7 +127,7 @@ cd sdram && ./run.sh         # SDRAM AXI 定向回归
     开关：`DIFF / WAVE(+WAVE_ON/WAVE_FILE/WAVE_START/END/DIV) / WITH_TRACE / WITH_SDL / PERF / PERF_R45 /
     PERF_R426 / DEBUG_APBDLY / DEBUG_AXIDLY`、AM 侧 `BOOT_MODE / HEAP_SIZE / LDS / BOOT_S`；构建开关与源文件变化由
     `npc/build/.build_cfg` 与 `.deps_*` 指纹自动重建（无需手删 `build/`）。
-    定向用例：正式 13 例见 §1（其中 `fencei_pipeline`=SMC 反例、`lduse_fwd`=load-use 前递、`shift_fwd`=移位自依赖）；
+    定向用例：正式 14 例见 §1（其中 `fencei_pipeline`=SMC 反例、`lduse_fwd`=load-use 前递、`shift_fwd`=移位自依赖）；
     历史 `tmp/*.S`（`divuw_dbg.S`、`jalr_raw.S`、`jalr_seq.S`）与 records 内嵌反例（如 R-5b 远目标行边界用例）。
     详见：`docs/RUN_GUIDE.md`、`docs/DEBUG_WORKFLOW.md` §2。
 
