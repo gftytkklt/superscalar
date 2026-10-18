@@ -452,3 +452,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0025/F0027/F0028 NPC启动布局](code_correctness_review/crp-f0025-f0027-f0028/README.md)：七脚本BSS实际对齐/完整边界、五搬运模式text与rodata逐节LMA/VMA/end、四可调heap容量/回绕拒绝。原8真实反例及13控制、最终35NPC启动/20heap边界、当前模型CPU36PASS+1XFAIL及RT四应用update/image/msh通过；旧执行器MRET分歧/现有CPU汇总假失败保留，最终重跑使用已核对当前源码模型。34已修/85未修完，本组三项Completed待确认提交，F0026/五CQ/M2保持。
 
 2026-10-18 [CRP F0052终态归属补充](code_correctness_review/crp-f0052-ref-terminal/README.md)：前组13文件已确认提交f3a5d0c；仅改嵌套cpu-tests Makefile，按ARCH区分主终态，修复REF附加终态假ERROR与REF-only假PASS。定向42/42、真实NPC DIFF=1/NEMU全集各36PASS+1XFAIL且make exit0，当前模型先核身份；NEMU沿用_heap_end兼容配置。Completed待确认提交，不新增问题计数，M2保持。
+
+2026-10-18 [CRP F0019表达式生成工具](code_correctness_review/crp-f0019/README.md)：前组F0052补充已确认分仓提交22791cf/f3d0252；仅gen-expr.c实现有界有效四则生成、独立C oracle/失败传播/私有临时目录。原空输出exit0见证，128条三方结果/真实CLI、10,000 sanitizer/3边界树、8输入/9oracle/3IO故障及并发通过，17项终检。明确非负INT_MAX域/29-token上限及未测边界；35已修/84未修完，本组Completed待确认提交，M2不变。
