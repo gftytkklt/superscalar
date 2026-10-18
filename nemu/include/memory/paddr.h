@@ -31,6 +31,8 @@ uint8_t* guest_to_host(paddr_t paddr);
 paddr_t host_to_guest(uint8_t *haddr);
 /* convert the addr to soc memory pointer */
 uint8_t* addr_to_soc(paddr_t addr);
+/* Validate a complete span within one registered memory region. */
+uint8_t* addr_to_soc_range(paddr_t addr, size_t n);
 
 static inline bool in_pmem(paddr_t addr) {
   return addr - CONFIG_MBASE < CONFIG_MSIZE;

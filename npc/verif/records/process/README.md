@@ -416,3 +416,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0012/F0013 monitor输入与watchpoint边界](code_correctness_review/crp-f0012-f0013/README.md)：token有界拷贝/空输入、文本长度/完整保存及池耗尽恢复已修；原版6失败/1对照通过，修复host ASan/UBSan 332检查，真实native默认/监视点CLI及真实PC触发37/37、三次内置guest GOOD TRAP，最终13项核对通过。25已修/94未修完含5CQ/F0040Partial，本组Completed待确认/提交；下一入口仅TASK_QUEUE，未推进M2。
 
 2026-10-18 用户“提交，继续”确认F0012/F0013并授权本次提交及下一单元；[确认回执](code_correctness_review/crp-f0012-f0013/README.md#approval-submit-20261018)复用原332/37验收，51条manifest无漂移。
+
+
+2026-10-18 [CRP F0014 REF整段内存复制边界](code_correctness_review/crp-f0014/README.md)：F0012/F0013已确认实际提交77a9471；本组范围检查/size_t循环/64位入口防高位别名已修。原3反例失败，修复ASan/UBSan3030断言、真实REF77/77、原ABI执行、CPU全集36PASS+1XFAIL、真实RT141.57秒到msh/对拍ON通过；RT ANSI判据误判保留并以日志复核及3负例校正，17项最终核对通过。默认REF已替换、旧产物本地备份；26已修/93未修完含5CQ/F0040Partial，本组Completed待确认/提交，未推进M2。
+
+2026-10-18 用户“提交，继续”确认F0014并授权提交及后续一个单元；[回执](code_correctness_review/crp-f0014/README.md#approval-submit-20261018)复用原验收，146条manifest无漂移。

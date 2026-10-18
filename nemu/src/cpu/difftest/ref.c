@@ -42,18 +42,23 @@
 // }
 
 uint64_t cur_pc;
-__EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
-  //assert(0);
-  uint8_t* addr_pt = addr_to_soc(addr); // addr pt of nemu
+__EXPORT void difftest_memcpy(uint64_t addr, void *buf, size_t n, bool direction) {
+  if (n == 0) return;
+  // NPC passes a 64-bit address even when this REF uses a narrower paddr_t.
+  uint8_t* addr_pt = addr <= (paddr_t)-1 ? addr_to_soc_range((paddr_t)addr, n) : NULL;
+  if (addr_pt == NULL) {
+    panic("difftest_memcpy range out of bounds: addr=0x%016" PRIx64 ", n=%zu", addr, n);
+    return;
+  }
   uint8_t* tmp = (uint8_t*) buf; // addr pt of npc
   if(direction == DIFFTEST_TO_DUT){
-    for (int i=0;i<n;i++){
+    for (size_t i=0;i<n;i++){
       tmp[i] = addr_pt[i];
     }
     //tmp[32] = cpu.pc;
   }
   else{
-    for (int i=0;i<n;i++){
+    for (size_t i=0;i<n;i++){
       addr_pt[i] = tmp[i];
     }
     //cpu.pc = tmp[32];

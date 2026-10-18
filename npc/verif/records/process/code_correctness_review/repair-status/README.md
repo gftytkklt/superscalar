@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复25（此前23已提交，本组F0012/F0013 Completed、用户已确认，纳入本次提交）；未修完94，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复26（此前25已提交，F0014 Completed、用户已确认，纳入本次提交）；未修完93，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -49,9 +49,9 @@
 | CCR-F0009 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0009) |
 | CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
-| CCR-F0012 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
-| CCR-F0013 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
-| CCR-F0014 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0014) |
+| CCR-F0012 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
+| CCR-F0013 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
+| CCR-F0014 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) |
 | CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
 | CCR-F0016 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0016) |
 | CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
@@ -175,3 +175,15 @@ WR为AM写接口、不提供读回契约；前兼容性单元实际提交1603f88
 用户“继续CRP修复”授权已落档独立单元；依前组确认/提交12afa58及现行Next的非依赖边界继续，旧连续提交授权不在本轮复用。两项Completed，结果确认/commit Pending；[报告](../crp-f0012-f0013/README.md)保存host332检查、真实CLI37检查/内置guest及限制。25已修/94未修完含5CQ及F0040Partial。原冻结表保留相关风险，不推定其获裁决；下一步只沿TASK_QUEUE，当前停等确认提交，未push/M2。
 
 2026-10-18 用户“提交，继续”确认F0012/F0013已报告范围并授权本次提交及随后一个单元。51条manifest与原13项validation复核通过，复用原动态验收；实际提交见本组报告/本地回执。
+
+
+## 2026-10-18 F0014完成及前组实际提交
+
+用户“提交，继续”确认F0012/F0013，实际提交77a9471，提交后root/index干净。
+随后授权的独立F0014已Completed、待结果确认/commit；[报告](../crp-f0014/README.md)
+保存整段范围、size_t与64位入口高地址拒绝、原三反例、host3030断言、真实REF77场景/
+原ABI执行、CPU全集36PASS+1XFAIL及真实RT到msh/无分歧。RT原ANSI判据误判已保留并
+通过日志复核/3负例更正，不重跑guest。17项最终核对通过，默认REF已更新且旧产物保留。
+26已修/93未修完含5CQ/F0040Partial，未push/M2；唯一下一入口仍TASK_QUEUE。
+
+2026-10-18 用户“提交，继续”确认F0014已报告结果并授权提交后执行下一单元；146条manifest无漂移，原17项validation通过，复用动态验收。[确认回执](../crp-f0014/README.md#approval-submit-20261018)。

@@ -84,6 +84,12 @@ uint8_t* addr_to_soc(paddr_t addr) {
   return r ? r->mem + (addr - r->base) : NULL;
 }
 
+uint8_t* addr_to_soc_range(paddr_t addr, size_t n) {
+  MemRegion *r = find_mem_region(addr);
+  if (r == NULL || r->mem == NULL || n > r->size - (addr - r->base)) return NULL;
+  return r->mem + (addr - r->base);
+}
+
 static void out_of_bound(paddr_t addr) {
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
       addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);

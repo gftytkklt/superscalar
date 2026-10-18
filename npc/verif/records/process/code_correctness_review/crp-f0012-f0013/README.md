@@ -111,3 +111,9 @@ CPU-tests 全集、RT update/msh、nanos 三前台/hello、NPC 不调用本次�
 本报告/局部ignore、repair-status与process索引；local测试/日志/binary和.agent
 沿用本地持久化，不纳入提交。实际commit以包含本节的Git提交及local提交回执为准，
 不将尚未执行的Git操作写成已完成。确认不扩大未测范围，不授权push或其他业务M2。
+
+
+2026-10-18 实际提交回执：`77a9471d6da2ccbee3a5180b39852bedbe9189c5`，6文件156增20删；
+精确匹配已核对的暂存清单，提交后root/index干净、未push。提交前51条manifest无漂移，
+复用已报告验收。local/submit-precheck.json和submit-receipt.json保存回执；原Pending
+为提交前截面，不重做Completion。按用户同条指令，提交后开始独立F0014单元。
