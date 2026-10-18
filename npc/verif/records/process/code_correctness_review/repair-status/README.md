@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复29（均已确认提交，F0022 bc7a110）；未修完90，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复30（29项已确认提交，F0023 Completed待确认提交）；未修完89，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -60,7 +60,7 @@
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
 | CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
 | CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) |
-| CCR-F0023 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0023) |
+| CCR-F0023 | Confirmed / High | 已修 / Completed，待确认提交 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
 | CCR-F0024 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0024) |
 | CCR-F0025 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0025) |
 | CCR-F0026 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0026) |
@@ -232,3 +232,5 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 2026-10-18 用户明确确认F0022并授权提交，687条manifest无漂移，复用原验收；同时授权只读盘点CRP存档构建资产，未授权启动下一修复单元。实际提交回执以包含本附记的commit及.agent为准。
 
 2026-10-18 F0022实际提交bc7a110，index/工作树在提交检查点干净。其后独立CRP存档盘点完成，未删除资产，维护说明未提交；本次未Start F0023，未来仍沿TASK_QUEUE唯一入口。
+
+2026-10-18 用户“提交修改，并继续CRP修复”确认存档盘点说明，三份维护文档实际提交47063cd；随后按唯一入口完成F0023。生产仅NEMU cte.c，原三模式精确失败、最终三guest GOOD TRAP、M/U改栈/嵌套/真实MTIMER/线程切换、RT测试链接配置下msh及am_hello、nanos稳定8观察点与hello递增、18项终检通过。无效/失败夹具及RT链接限制见报告；30已修/89未修完，本组确认/commit Pending，不从本轮继续推定自动提交/串行下一组。

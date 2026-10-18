@@ -442,3 +442,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 用户确认F0022并授权提交，同时要求检查所有CRP存档目录的独立构建资产；[提交回执](code_correctness_review/crp-f0022/README.md#approval-submit-20261018)复用原验收，687条manifest无漂移，不开始F0023。
 
 2026-10-18 [CRP存档构建资产逐目录盘点](workspace-storage-cleanup-20261018/README.md#crp-build-audit-20261018)：F0022已确认提交bc7a110；19个任务共206.99MiB，产物约38.21MiB、截图117.75MiB。7个有NEMU/REF副本，只有F0022有隔离NEMU/AM必要源码与build树；18个有编译产物或镜像，F0052无。逐目录内容/路径清单已留档，本次未删除资产，不Start F0023/M2；维护说明未提交。
+
+2026-10-18 [CRP F0023 NEMU trap来源及mscratch栈约定](code_correctness_review/crp-f0023/README.md)：维护说明已确认提交47063cd；生产仅cte.c按保存MPP分类/入口与内核返回清scratch/用户返回按Context推栈顶/初始化。原3模式失败，最终3guest GOOD TRAP（16M yield/9嵌套/真实MTIMER/2U trap/线程切换）、RT隔离链接配置到msh及am_hello、nanos8观察点与hello1440→6648、18项终检通过。失效夹具与RT链接条件明列，不宣称默认RT/NEMU链接或F0024已修；30已修/89未修完，本组Completed待确认提交，M2保持。

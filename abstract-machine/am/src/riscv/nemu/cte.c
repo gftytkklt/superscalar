@@ -1,24 +1,18 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
-#define CONTEXT_SIZE 288
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
-  uintptr_t ksp = 0;
+  // trap.S leaves the interrupted sp in mscratch for both M and U traps.
+  // The saved MPP, rather than that exchanged pointer, identifies the source.
+  c->np = ((c->mstatus >> 11) & 3) == MODE_M ? KERNEL_MODE : USER_MODE;
+  asm volatile("csrw mscratch, zero"); // kernel execution, including nested CTE
   // record the current address space into the context
   __am_get_cur_as(c);
 
   if (user_handler) {
     Event ev = {0};
-    // Determine the next privilege (np): trap.S swapped mscratch into sp, so
-    // mscratch now holds the original sp. It is non-zero for a user trap and
-    // 0 for a kernel trap (kernel threads never have mscratch armed).
-    asm volatile("csrr %0, mscratch" : "=r"(ksp));
-    c->np = (ksp == 0) ? KERNEL_MODE : USER_MODE;
-    ksp = 0;
-    asm volatile("csrw mscratch, %0" : : "r"(ksp)); // support re-entry of CTE
-
     switch (c->mcause) {
       case 0x0b: case 0x8: c->mepc += 4;ev.event = (c->gpr[17] == -1) ? EVENT_YIELD : EVENT_SYSCALL; break;
       case 0x8000000000000007: ev.event = EVENT_IRQ_TIMER; break;
@@ -34,10 +28,8 @@ Context* __am_irq_handle(Context *c) {
 
   // Before returning to a user context, arm mscratch with that context's kernel
   // stack top, so the next user trap can switch to the kernel stack.
-  if (c->np == USER_MODE) {
-    ksp = (uintptr_t)c + CONTEXT_SIZE;
-    asm volatile("csrw mscratch, %0" : : "r"(ksp));
-  }
+  uintptr_t ksp = c->np == USER_MODE ? (uintptr_t)(c + 1) : 0;
+  asm volatile("csrw mscratch, %0" : : "r"(ksp));
 
   return c;
 }
@@ -45,6 +37,7 @@ Context* __am_irq_handle(Context *c) {
 extern void __am_asm_trap(void);
 
 bool cte_init(Context*(*handler)(Event, Context*)) {
+  asm volatile("csrw mscratch, zero"); // establish the initial kernel-stack rule
   // initialize exception entry
   asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));
 
