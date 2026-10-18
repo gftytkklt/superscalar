@@ -374,3 +374,12 @@ F0046候选host/NEMU通过，但RT/NPC读mstatus遇MPP差异DIFF ABORT；候选�
 
 2026-10-18 用户“提交现有改动后继续CRP修复任务”确认本组及规则维护并授权提交后续作；
 [收尾回执](code_correctness_review/crp-f0046-f0048-f0050/README.md#submit-20261018)记录346条证据及7个身份无漂移，复用原验收；实际提交见本地回执/.agent。未push；下一单元仅沿TASK_QUEUE。
+
+
+<a id="crp-f0049-20261018"></a>
+2026-10-18 [CRP F0049 AM应用线程启动数据生命周期](code_correctness_review/crp-f0049/README.md)：前组三项/DUT依赖/规则已按用户指令确认提交e9a71f3后，执行唯一入口本单元。
+生成模板改用RT自有启动记录/参数副本和idle cleanup；分配/create/startup失败及正常返回/主动exit/入口前后delete清理通过。
+host ASan/UBSan 8/8；真实NPC RT update/run、11生命周期场景、实际生成am_hello参数输出、75分配/75释放live0、difftest ON及msh通过。
+本项Completed，确认/commit Pending；累计已修15/剩余104含5CQ。一次性测试/证据本地保存，F0051发布逻辑未变；CPU/nanos不受影响未重跑。未来只沿TASK_QUEUE，M2保持。
+
+2026-10-18 F0049已获用户“提交后继续”确认及提交授权；[收尾回执](code_correctness_review/crp-f0049/README.md#submit-20261018)记录101份证据/源码无漂移并复用既有验收，实际提交见本地回执/.agent。后续按唯一入口执行一个单元，未push。

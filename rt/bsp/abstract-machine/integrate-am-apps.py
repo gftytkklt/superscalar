@@ -89,18 +89,43 @@ AM_APP_C = """#include <am.h>
 #include <rtthread.h>
 extern Area am_apps_heap, am_apps_data, am_apps_bss;
 extern uint8_t * am_apps_data_content;
-static void am_app_start_thread(void *args) {
-  void (*fn)(const char *mainargs) = ((void **)args)[0];
-  const char *mainargs = ((void **)args)[1];
-  fn(mainargs);
+struct am_app_args {
+  int (*main)(const char *);
+  char mainargs[];
+};
+static void am_app_cleanup(struct rt_thread *thread) {
+  rt_free(thread->parameter);
+  thread->parameter = RT_NULL;
 }
-static void am_app_start_wrapper(const char *app_name, void *app_main, int argc, char *argv[]) {
+static void am_app_start_thread(void *parameter) {
+  struct am_app_args *args = parameter;
+  args->main(args->mainargs);
+}
+static void am_app_start_wrapper(const char *app_name, int (*app_main)(const char *), int argc, char *argv[]) {
+  const char *mainargs = (argc >= 2 ? argv[1] : "");
+  rt_size_t size = rt_strlen(mainargs) + 1;
+  struct am_app_args *args = rt_malloc(sizeof(*args) + size);
+  if (args == RT_NULL) {
+    rt_kprintf("AM app %s: no memory for arguments\\n", app_name);
+    return;
+  }
+  args->main = app_main;
+  rt_memcpy(args->mainargs, mainargs, size);
+  rt_thread_t tid = rt_thread_create(app_name, am_app_start_thread, args, 0x4000, 0, 20);
+  if (tid == RT_NULL) {
+    rt_free(args);
+    rt_kprintf("AM app %s: thread creation failed\\n", app_name);
+    return;
+  }
+  // RT's idle cleanup owns the record, including exit/delete before entry.
+  tid->cleanup = am_app_cleanup;
   memcpy(am_apps_data.start, am_apps_data_content, am_apps_data.end - am_apps_data.start);
   memset(am_apps_bss.start, 0, am_apps_bss.end - am_apps_bss.start);
   heap = am_apps_heap;
-  void *args[2] = { app_main, (argc >= 2 ? argv[1] : "") };
-  rt_thread_t tid = rt_thread_create(app_name, am_app_start_thread, args, 0x4000, 0, 20);
-  rt_thread_startup(tid);
+  if (rt_thread_startup(tid) != RT_EOK) {
+    rt_thread_delete(tid);
+    rt_kprintf("AM app %s: thread startup failed\\n", app_name);
+  }
 }
 bool __dummy_ioe_init() { return true; }
 bool __dummy_cte_init(Context *(*handler)(Event ev, Context *ctx)) { return true; }
