@@ -56,6 +56,15 @@ static void *lut[128] = {
   [AM_NET_CONFIG  ] = __am_net_config,
 };
 
+// Direction follows the WR declarations in amdev.h; all other known registers are RD.
+static const bool write_only[LENGTH(lut)] = {
+  [AM_UART_TX] = true,
+  [AM_GPU_FBDRAW] = true, [AM_GPU_MEMCPY] = true, [AM_GPU_RENDER] = true,
+  [AM_AUDIO_CTRL] = true, [AM_AUDIO_PLAY] = true,
+  [AM_DISK_BLKIO] = true,
+  [AM_NET_TX] = true, [AM_NET_RX] = true,
+};
+
 static void fail(void *buf) { panic("access nonexist register"); }
 
 bool ioe_init() {
@@ -65,5 +74,17 @@ bool ioe_init() {
   return true;
 }
 
-void ioe_read (int reg, void *buf) { ((handler_t)lut[reg])(buf); }
-void ioe_write(int reg, void *buf) { ((handler_t)lut[reg])(buf); }
+void ioe_read(int reg, void *buf) {
+  if (reg < 1 || reg >= (int)LENGTH(lut) || write_only[reg]) {
+    fail(buf);
+    return;
+  }
+  ((handler_t)lut[reg])(buf);
+}
+void ioe_write(int reg, void *buf) {
+  if (reg < 1 || reg >= (int)LENGTH(lut) || !write_only[reg]) {
+    fail(buf);
+    return;
+  }
+  ((handler_t)lut[reg])(buf);
+}

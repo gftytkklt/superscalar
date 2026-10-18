@@ -396,3 +396,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP逐项修复镜像与人工启动guard](code_correctness_review/repair-status/README.md)以原119项和16项已提交报告逐一对齐，计数按行维护；未来顺序仍只沿TASK_QUEUE。用户已授权当前CRP连续验证/留档/提交及开新组，非依赖未决集中汇总，结束冻结人工启动guard；见[授权规则](code_correctness_review/workflow/README.md#continuous-authorization-20261018)。不授权push或其他业务阶段。
 
 2026-10-18 [CRP F0041/F0042/F0053](code_correctness_review/crp-f0041-f0042-f0053/README.md)：GPU写后sync、NPC缺设备CONFIG/UART TX及devscan能力检查；host8/8、双平台实际子测试、RT约161秒msh及nanos八状态通过，17项核对/6种判据负例通过。F0053独立am-kernels提交6dc302a，根提交按连续授权执行；原组合测试宏错误及分项补验证留档，累计已修19/剩余100含5CQ。未来只沿唯一CRP Next。
+
+2026-10-18 [CRP F0045双平台IOE校验](code_correctness_review/crp-f0045/README.md)：124/124 host、双平台各6例真实合法/非法输入、RT约150秒msh及nanos八状态通过，20项核对、14种判据故障拒绝；严格方向兼容性对未启用NEMU-on-AM音频分支的影响留档。Completed，按连续预授权提交，累计20已修/99剩余含5CQ；本轮最后统一冻结人工启动guard。
