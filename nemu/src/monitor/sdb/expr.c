@@ -101,7 +101,6 @@ static bool make_token(char *e) {
       if (regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
         char *substr_start = e + position;
         int substr_len = pmatch.rm_eo;
-        if (substr_len > 32){printf("too long element!\n");return false;}
 
         //Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
         //    i, rules[i].regex, position, substr_len, substr_len, substr_start);
@@ -112,15 +111,26 @@ static bool make_token(char *e) {
          * to record the token in the array `tokens'. For certain types
          * of tokens, some extra actions should be performed.
          */
-        bool save_data = true;
+        if (rules[i].token_type == TK_NOTYPE) { break; }
+        if (nr_token >= ARRLEN(tokens)) {
+          printf("too many tokens!\n");
+          return false;
+        }
+        int prefix_len = 0;
         switch (rules[i].token_type) {
-          case TK_NOTYPE: save_data = false;break;
-          case TK_NUM: sscanf(substr_start, "%[0-9]s", tokens[nr_token].str);break;
-          case TK_HEX: sscanf(substr_start, "%*[^x]x%[0-9a-fA-F]", tokens[nr_token].str);break;
-          case TK_REG: sscanf(substr_start, "%*1[$]%3[$0-9a-z]", tokens[nr_token].str);break;
+          case TK_HEX: prefix_len = 2; break;
+          case TK_REG: prefix_len = 1; break;
           default: break;
         }
-        if(save_data){tokens[nr_token].type = rules[i].token_type; nr_token++;}
+        int data_len = substr_len - prefix_len;
+        if (data_len >= sizeof(tokens[nr_token].str)) {
+          printf("too long element!\n");
+          return false;
+        }
+        memcpy(tokens[nr_token].str, substr_start + prefix_len, data_len);
+        tokens[nr_token].str[data_len] = '\0';
+        tokens[nr_token].type = rules[i].token_type;
+        nr_token++;
         break;
       }
     }
@@ -250,7 +260,7 @@ static word_t eval(int p, int q, bool *success) {
 }
 
 word_t expr(char *e, bool *success) {
-  if (!make_token(e)) {
+  if (e == NULL || !make_token(e) || nr_token == 0) {
     *success = false;
     return 0;
   }

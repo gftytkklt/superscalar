@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复23（此前21已提交，F0010/F0011纳入本次提交）；未修完96，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复25（此前23已提交，本组F0012/F0013 Completed、用户已确认，纳入本次提交）；未修完94，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -47,10 +47,10 @@
 | CCR-F0007 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0007) |
 | CCR-F0008 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0008) |
 | CCR-F0009 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0009) |
-| CCR-F0010 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
-| CCR-F0011 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
-| CCR-F0012 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0012) |
-| CCR-F0013 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0013) |
+| CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
+| CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
+| CCR-F0012 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
+| CCR-F0013 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
 | CCR-F0014 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0014) |
 | CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
 | CCR-F0016 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0016) |
@@ -169,3 +169,9 @@ WR为AM写接口、不提供读回契约；前兼容性单元实际提交1603f88
 2026-10-18 [PAL启动卡顿补查](../crp-f0010-f0011/README.md#performance-review-20261018)：11个真实PulseAudio测量、真实窗口旧/新对照和AM回退均已完成；Open/参数/宿主回调与容量等待无异常，旧/新均大量欠载，PAL填音/轮询供给不足。没有生产新改动或性能问题修复声明，不能以旧功能PASS关闭用户反馈；本组保持Reopened，不推进后组。
 
 2026-10-18 [用户确认重新闭合/提交](../crp-f0010-f0011/README.md#closeout-approval-20261018)：本组Completed，用户已确认并授权本次commit，原性能Reopen停点解除；PAL供给不足/新增退化因果和F0043仍保留风险，不记性能修复。全部23项功能修复纳入提交，96项未修完不变；实际提交身份以包含本附记的Git提交及本地回执为准。下一组只沿TASK_QUEUE，当前未Start。
+
+## 2026-10-18 F0012/F0013完成
+
+用户“继续CRP修复”授权已落档独立单元；依前组确认/提交12afa58及现行Next的非依赖边界继续，旧连续提交授权不在本轮复用。两项Completed，结果确认/commit Pending；[报告](../crp-f0012-f0013/README.md)保存host332检查、真实CLI37检查/内置guest及限制。25已修/94未修完含5CQ及F0040Partial。原冻结表保留相关风险，不推定其获裁决；下一步只沿TASK_QUEUE，当前停等确认提交，未push/M2。
+
+2026-10-18 用户“提交，继续”确认F0012/F0013已报告范围并授权本次提交及随后一个单元。51条manifest与原13项validation复核通过，复用原动态验收；实际提交见本组报告/本地回执。

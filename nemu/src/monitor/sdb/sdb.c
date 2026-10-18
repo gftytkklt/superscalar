@@ -26,7 +26,6 @@ static int is_batch_mode = false;
 
 void init_regex();
 //void init_wp_pool();
-WP *wp;
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -122,16 +121,19 @@ static int cmd_p(char *args) {
 }
 
 static int cmd_w(char *args) {
-  char *arg = strtok(NULL, "");
+  if (args == NULL || strlen(args) >= sizeof(((WP *)0)->expr_str)) {
+    printf("watchpoint expression missing or too long!\n");
+    return 0;
+  }
   bool success = true;
-  unsigned long result = expr(arg, &success);
+  unsigned long result = expr(args, &success);
   if(!success) {return 0;}
-  //struct WP *wp;
-  wp = new_wp();
+  WP *wp = new_wp();
+  if (wp == NULL) { return 0; }
   wp->expr_value = result;
-  sscanf(arg, "%[^n]", wp->expr_str);
+  memcpy(wp->expr_str, args, strlen(args) + 1);
+  wp->triggered_time = 0;
   printf("watch point NO%d of %s added\n",wp->NO, wp->expr_str);
-  return 0;
   return 0;
 }
 

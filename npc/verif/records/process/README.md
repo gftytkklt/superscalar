@@ -412,3 +412,7 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [F0010/F0011 PAL启动卡顿补查](code_correctness_review/crp-f0010-f0011/README.md#performance-review-20261018)：按用户要求Reopen，覆盖全音频链、共享修改与真实音频/窗口、AM回退。11有效测量显示旧新均供给不足，未见重开/变频/容量忙等；用户新增退化未闭合，生产无新修改，原组保持Reopened、未提交，不开始下一组。
 
 2026-10-18 [F0010/F0011用户确认闭合及提交](code_correctness_review/crp-f0010-f0011/README.md#closeout-approval-20261018)：用户确认已报告范围和限制，本组重新Completed，F0010/F0011修复及相关记录纳入本次commit；旧199+199项及补查113项证据无漂移，复用已验收测试。PAL供给不足/性能因果与F0043保留风险；提交后停止，F0012/F0013只设Next未Start。
+
+2026-10-18 [CRP F0012/F0013 monitor输入与watchpoint边界](code_correctness_review/crp-f0012-f0013/README.md)：token有界拷贝/空输入、文本长度/完整保存及池耗尽恢复已修；原版6失败/1对照通过，修复host ASan/UBSan 332检查，真实native默认/监视点CLI及真实PC触发37/37、三次内置guest GOOD TRAP，最终13项核对通过。25已修/94未修完含5CQ/F0040Partial，本组Completed待确认/提交；下一入口仅TASK_QUEUE，未推进M2。
+
+2026-10-18 用户“提交，继续”确认F0012/F0013并授权本次提交及下一单元；[确认回执](code_correctness_review/crp-f0012-f0013/README.md#approval-submit-20261018)复用原332/37验收，51条manifest无漂移。
