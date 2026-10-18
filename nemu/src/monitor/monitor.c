@@ -164,125 +164,119 @@ typedef struct elf_func{
 }func;
 static func *func_pool = NULL;
 
-void buf_assignment(FILE *fp, unsigned long offset, int base, char* buf, unsigned len) {
-  fseek(fp,offset,base);
-  if(fread(buf, 1, len, fp) != len){printf("read error at %ld\n", offset);}
+#include <elf.h>
+#include <limits.h>
+
+static bool elf_range(uint64_t file_size, uint64_t offset, uint64_t size) {
+  return offset <= file_size && size <= file_size - offset;
+}
+
+static bool elf_read(FILE *fp, uint64_t file_size, uint64_t offset, void *buf, size_t size) {
+  return elf_range(file_size, offset, size) &&
+    fseek(fp, (long)offset, SEEK_SET) == 0 &&
+    fread(buf, 1, size, fp) == size && !ferror(fp);
+}
+
+static bool load_elf_funcs(const char *path) {
+  FILE *fp = fopen(path, "rb");
+  Elf64_Shdr *sections = NULL;
+  char *strings = NULL;
+  const char *error = "cannot open file";
+  bool ok = false;
+  if (fp == NULL) goto out;
+  error = "cannot read file size";
+  if (fseek(fp, 0, SEEK_END) != 0) goto out;
+  long file_end = ftell(fp);
+  if (file_end < 0) goto out;
+  uint64_t file_size = file_end;
+  Elf64_Ehdr header;
+  error = "invalid or unsupported ELF64 header";
+  if (!elf_read(fp, file_size, 0, &header, sizeof(header)) ||
+      memcmp(header.e_ident, ELFMAG, SELFMAG) != 0 ||
+      header.e_ident[EI_CLASS] != ELFCLASS64 ||
+      header.e_ident[EI_DATA] != ELFDATA2LSB ||
+      header.e_ident[EI_VERSION] != EV_CURRENT || header.e_version != EV_CURRENT ||
+      header.e_ehsize != sizeof(header) || header.e_shentsize != sizeof(Elf64_Shdr) ||
+      header.e_shnum == 0 || header.e_shnum >= SHN_LORESERVE ||
+      header.e_shstrndx >= header.e_shnum) goto out;
+
+  size_t section_bytes = (size_t)header.e_shnum * sizeof(*sections);
+  error = "invalid section table";
+  if (!elf_range(file_size, header.e_shoff, section_bytes)) goto out;
+  sections = malloc(section_bytes);
+  if (sections == NULL || !elf_read(fp, file_size, header.e_shoff, sections, section_bytes)) goto out;
+  if (sections[0].sh_type != SHT_NULL ||
+      (header.e_shstrndx != SHN_UNDEF && sections[header.e_shstrndx].sh_type != SHT_STRTAB)) goto out;
+  int sym_index = -1;
+  for (int i = 1; i < header.e_shnum; i++) {
+    Elf64_Shdr *sh = &sections[i];
+    if (sh->sh_type != SHT_NULL && sh->sh_type != SHT_NOBITS &&
+        !elf_range(file_size, sh->sh_offset, sh->sh_size)) goto out;
+    if (sh->sh_type == SHT_SYMTAB) sym_index = i;
+  }
+  error = "missing or invalid symbol table";
+  if (sym_index < 0) goto out;
+  Elf64_Shdr *symtab = &sections[sym_index];
+  if (symtab->sh_entsize != sizeof(Elf64_Sym) ||
+      symtab->sh_size % sizeof(Elf64_Sym) != 0 || symtab->sh_size == 0 ||
+      symtab->sh_link >= header.e_shnum) goto out;
+  Elf64_Shdr *strtab = &sections[symtab->sh_link];
+  error = "invalid symbol string table";
+  if (strtab->sh_type != SHT_STRTAB || strtab->sh_size == 0 ||
+      (uint64_t)(size_t)strtab->sh_size != strtab->sh_size) goto out;
+  strings = malloc((size_t)strtab->sh_size);
+  if (strings == NULL || !elf_read(fp, file_size, strtab->sh_offset, strings, strtab->sh_size) ||
+      strings[0] != '\0' || strings[strtab->sh_size - 1] != '\0') goto out;
+
+  error = "invalid symbol or function range";
+  uint64_t sym_count = symtab->sh_size / sizeof(Elf64_Sym);
+  for (uint64_t i = 0; i < sym_count; i++) {
+    Elf64_Sym sym;
+    if (!elf_read(fp, file_size, symtab->sh_offset + i * sizeof(sym), &sym, sizeof(sym)) ||
+        sym.st_name >= strtab->sh_size || sym.st_shndx == SHN_XINDEX ||
+        (sym.st_shndx < SHN_LORESERVE && sym.st_shndx >= header.e_shnum)) goto out;
+    char *name = strings + sym.st_name;
+    char *end = memchr(name, '\0', strtab->sh_size - sym.st_name);
+    if (end == NULL) goto out;
+    // Preserve the existing GLOBAL/FUNC filter; undefined symbols have no entry.
+    if (sym.st_info != ELF64_ST_INFO(STB_GLOBAL, STT_FUNC) || sym.st_shndx == SHN_UNDEF) continue;
+    if (sym.st_value > ULONG_MAX || sym.st_size > ULONG_MAX - sym.st_value) goto out;
+    if (func_idx == func_num) {
+      error = "function table allocation failed";
+      if (func_num > INT_MAX - 32 || (size_t)(func_num + 32) > SIZE_MAX / sizeof(func)) goto out;
+      func *tmp = realloc(func_pool, (size_t)(func_num + 32) * sizeof(func));
+      if (tmp == NULL) goto out;
+      func_pool = tmp;
+      func_num += 32;
+      error = "invalid symbol or function range";
+    }
+    func record = {};
+    size_t name_len = end - name;
+    if (name_len >= sizeof(record.func_name)) name_len = sizeof(record.func_name) - 1;
+    memcpy(record.func_name, name, name_len);
+    record.entry_addr = sym.st_value;
+    record.func_size = sym.st_size;
+    func_pool[func_idx++] = record;
+  }
+  ok = true;
+out:
+  free(strings);
+  free(sections);
+  if (fp != NULL && fclose(fp) != 0) { ok = false; error = "file close failed"; }
+  if (!ok) fprintf(stderr, "FTRACE: rejected ELF '%s': %s\n", path, error);
+  return ok;
 }
 
 static void init_elf() {
-  #define SHINFO_OFFT 40 // section header info offset
-  #define SHLEN_OFFT 58 // section header len offset
-  #define SHNUM_OFFT 60 // section header num offset
-  #define SHSTRNEX_OFFT 62
-  #define SHTYPE_OFFT 4// section type addr relative to each section header
-  #define SHOFFT_OFFT 24// section offset addr relative to each section header
-  #define SHSIZE_OFFT 32// section size addr relative to each section header
-  #define SHENTSIZE_OFFT 56// section entsize addr relative to each section header
-  #define SYMTAB 0x00000002// indicate sh_type SYMTAB
-  #define STRTAB 0x00000003
-  #define STNAME_OFFT 0// symtable name offt relative to strtab/symtab
-  #define STINFO_OFFT 4// symtable type offt relative to strtab/symtab
-  #define STADDR_OFFT 8// symtable addr offt relative to strtab/symtab
-  #define STSIZE_OFFT 16// // symtable size offt relative to strtab/symtab
-  #define FUNC 0x12// type FUNC
-  func_pool = malloc(func_num * sizeof(func));
+  func_pool = malloc((size_t)func_num * sizeof(func));
   Assert(func_pool, "malloc func_pool failed");
-  for (int i=0;i<elf_num;i++){
+  for (int i = 0; i < elf_num; i++) {
     Log("elf file %d: %s", i, elf_file[i]);
-  }
-  for (int elf_idx=0;elf_idx<elf_num;elf_idx++){
-    FILE* elf_fp = fopen(elf_file[elf_idx],"rb");
-    Assert(elf_fp, "Can not open %s", elf_file[elf_idx]);
-    char buf[BUF_SIZE] = {'\0'};
-    unsigned long shofft = 0;// section header offt
-    uint16_t shlen = 0;// each section header len
-    uint16_t shnum = 0;// section header num
-    uint16_t shstrndx = 0;// index of section head strtab
-    //unsigned long shstrofft = 0;// section head strtab offt
-    unsigned long strofft = 0;// strtab offt
-    unsigned long symofft = 0;// symtable offt
-    unsigned long symsize = 0;// symtable size
-    unsigned long symentsize = 0;// symtable entity size
-    
-    // get section header offset
-    buf_assignment(elf_fp, SHINFO_OFFT, SEEK_SET, buf, sizeof(unsigned long));
-    shofft = *((unsigned long*) buf);
-    // get section header size
-    buf_assignment(elf_fp, SHLEN_OFFT, SEEK_SET, buf, sizeof(uint16_t));
-    shlen = *((uint16_t*) buf);
-    // get section head num
-    buf_assignment(elf_fp, SHNUM_OFFT, SEEK_SET, buf, sizeof(uint16_t));
-    shnum = *((uint16_t*) buf);
-    // get section head strtab index
-    buf_assignment(elf_fp, SHSTRNEX_OFFT, SEEK_SET, buf, sizeof(uint16_t));
-    shstrndx = *((uint16_t*) buf);
-    
-    // find symtab offt and extract parameters
-    int i;
-    for (i=0;i<shnum;i++){
-      // get each section head type
-      buf_assignment(elf_fp, (shofft+i*shlen+SHTYPE_OFFT), SEEK_SET, buf, sizeof(uint32_t));
-      uint32_t shtype = *((uint32_t*) buf);
-      if (shtype == SYMTAB) {
-        // get symtab offset
-        buf_assignment(elf_fp, (shofft+i*shlen+SHOFFT_OFFT), SEEK_SET, buf, sizeof(unsigned long));
-        symofft = *((unsigned long*) buf);
-        // get symtab size
-        buf_assignment(elf_fp, (shofft+i*shlen+SHSIZE_OFFT), SEEK_SET, buf, sizeof(unsigned long));
-        symsize = *((unsigned long*) buf);
-        // get symtab entity size
-        buf_assignment(elf_fp, (shofft+i*shlen+SHENTSIZE_OFFT), SEEK_SET, buf, sizeof(unsigned long));
-        symentsize = *((unsigned long*) buf);
-        //break;
-      }
-      // find section head strtable
-      else if(shtype == STRTAB){
-        // get strtab offset
-        buf_assignment(elf_fp, (shofft+i*shlen+SHOFFT_OFFT), SEEK_SET, buf, sizeof(unsigned long));
-        // set value to section head strtab offt or strtab offt
-        if (i == shstrndx){
-          //shstrofft = *((unsigned long*) buf);
-          continue;
-        }
-        else {
-          strofft = *((unsigned long*) buf);
-        }
-      }
-    }
-    // extract func name and entry addr
-    unsigned long symnum = symsize / symentsize;
-    unsigned symname_offt = 0;
-    unsigned char symtype = 0;
-    for (i=0;i<symnum;i++){
-      // get symtype
-      buf_assignment(elf_fp, (symofft+i*symentsize+STINFO_OFFT), SEEK_SET, buf, sizeof(unsigned char));
-      symtype = *((unsigned char*) buf);
-      if (symtype == FUNC) {
-        // get func entry addr
-        buf_assignment(elf_fp, (symofft+i*symentsize+STADDR_OFFT), SEEK_SET, buf, sizeof(unsigned long));
-        func_pool[func_idx].entry_addr = *((unsigned long*) buf);
-        // get func size
-        buf_assignment(elf_fp, (symofft+i*symentsize+STSIZE_OFFT), SEEK_SET, buf, sizeof(unsigned long));
-        func_pool[func_idx].func_size = *((unsigned long*) buf);
-        
-        // get func symname
-        buf_assignment(elf_fp, (symofft+i*symentsize+STNAME_OFFT), SEEK_SET, buf, sizeof(unsigned));
-        symname_offt = *((unsigned*) buf);
-        if(symname_offt != 0) {
-          buf_assignment(elf_fp, (strofft+symname_offt), SEEK_SET, buf, BUF_SIZE-1);
-          buf[BUF_SIZE-1] = '\0';                          // fread 不写 NUL，手动补上
-          strncpy(func_pool[func_idx].func_name, buf, BUF_SIZE-1);
-          func_pool[func_idx].func_name[BUF_SIZE-1] = '\0'; // 确保目标以 NUL 结尾
-        }
-        //printf("%d %s %lx\n",func_idx, func_pool[func_idx].func_name, func_pool[func_idx].entry_addr);
-        func_idx++;
-        if(func_idx >= func_num) {
-          func_num += 32;
-          func *tmp = (func *)realloc(func_pool, func_num * sizeof(func));
-          Assert(tmp, "realloc func_pool failed");
-          func_pool = tmp;
-        }
-      }
+    if (!load_elf_funcs(elf_file[i])) {
+      free(func_pool);
+      func_pool = NULL;
+      func_idx = 0;
+      exit(EXIT_FAILURE);
     }
   }
 }

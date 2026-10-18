@@ -87,3 +87,9 @@ local/protected-before.json记录868项保护哈希，local/result.json和du-bef
 CRP唯一入口F0021。复用已有删除/保护验证，提交前29删除路径仍缺失，原10项
 final-validation全部通过；不重复删除、重建缓存或重跑已验收guest。实际commit
 以包含本节的Git提交及local回执为准；不授权push或扩大为后续修复自动提交。
+
+
+2026-10-18 实际提交回执：`485548c30d5e5238c7bcdf050de50fa6913dec36`，9文件148增2删，
+暂存/实际范围一致，提交后root/index干净、未push；复用清理核对、未重复删除。
+local/submit-precheck.json、submit-receipt.json保存回执。用户同条授权恢复CRP，
+本轮随后执行F0021；原Pending为维护提交前截面。

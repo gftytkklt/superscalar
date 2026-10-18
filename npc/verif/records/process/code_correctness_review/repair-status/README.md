@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复27（此前26已提交，F0018 Completed、用户已确认提交37b3195）；未修完92，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复28（此前27已提交，本组F0021 Completed待确认/提交）；未修完91，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -58,7 +58,7 @@
 | CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0019) |
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
-| CCR-F0021 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0021) |
+| CCR-F0021 | Confirmed / Medium | 已修 / Completed，待确认提交 | [ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
 | CCR-F0022 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0022) |
 | CCR-F0023 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0023) |
 | CCR-F0024 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0024) |
@@ -209,3 +209,13 @@ F0018已确认实际提交37b3195，原Pending为提交前截面；27已修/92�
 F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整raw原字节
 已按授权删除，原报告追加说明、原命令/验证/哈希保留；历史manifest缺失需对照删除清单，
 不伪称旧产物仍存在或已备份。维护说明/索引尚未提交，当前停点及未来入口只见TASK_QUEUE。
+
+
+## 2026-10-18 F0021完成与维护实际提交
+
+用户“提交后继续CRP”确认空间维护并授权提交485548c后执行本单元。F0021已Completed，
+待结果确认/commit；[报告](../crp-f0021/README.md)保存原3反例、最终ASan/UBSan32场景、
+8清理控制、39真实native含实际call/ret/GOOD TRAP及默认关闭对照、16项终检。
+仅改monitor.c的ELF解析/失败清理，原GLOBAL/FUNC与名称截断/最后SYMTAB策略保持，
+非完整ELF验证器。28已修/91未修完含5CQ/F0040Partial，未推进M2或其他未决能力；
+空间清理已删字节事实保持，测试资料约1.5MiB，不自动提交新修复。唯一Next仍TASK_QUEUE。

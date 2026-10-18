@@ -431,3 +431,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [工作区大型临时资产清理](workspace-storage-cleanup-20261018/README.md)：F0018已确认提交37b3195；用户明确要求直接删除大型临时存档，精确删除29份未跟踪文件（Yosys详细日志、.gch缓存、4份归档ramdisk、3份完整raw快照及2份resources.o）。工作区8.12GB→5.08GB，净减少3.05GB；868份受保护文件哈希不变，保留源码/PDK/当前运行产物/核心审查及STA报告。原SHA/删除清单/持久化影响已记录；维护Completed未提交，不Start F0021/M2。
 
 2026-10-18 用户“提交后继续CRP”确认空间维护结果并授权提交说明/索引后恢复F0021；[确认回执](workspace-storage-cleanup-20261018/README.md#approval-submit-20261018)复用原验证，未重复删除。
+
+
+2026-10-18 [CRP F0021 FTRACE ELF输入边界](code_correctness_review/crp-f0021/README.md)：维护已确认提交485548c；本组修复header/section/symbol/string尺寸与索引/区间检查、关联字符串表及错误清理。原3反例失败，最终ASan/UBSan32场景、8资源控制、真实native39场景及实际call/ret/GOOD TRAP、16项终检通过；仅改monitor.c既有解析路径，约1.5MiB测试资料。28已修/91未修完含5CQ/F0040Partial，本组Completed待确认/提交，不推进M2或扩展ELF能力。
+
+2026-10-18 用户“提交，继续”确认F0021并授权提交及下一单元；[回执](code_correctness_review/crp-f0021/README.md#approval-submit-20261018)复用原32/8/39验收，226条manifest无漂移。
