@@ -321,3 +321,14 @@ CRP 专用接口、合批、真实回归和测试证据提交规则已迁至[修
 当前检查点见[CURRENT_STATE](../../../../.agent/CURRENT_STATE.md#agent-policy-maintenance-20261018)，后续仍只沿[唯一 CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。
 
 2026-10-18 本轮规则维护已获用户“提交当前改动，并且继续CRP修复任务”确认及提交授权；技术收尾复用。实际回执见维护目录本地 commit-receipt.json/.agent；另行授权提交后执行唯一 CRP Next 的一个批次，无 push 授权。
+
+
+<a id="crp-f0037-f0038-20261018"></a>
+2026-10-18 [CRP F0037/F0038 klib stdlib修复](code_correctness_review/crp-f0037-f0038/README.md)：
+malloc对齐/容量/溢出与失败游标、atoi六类空白/单一符号/INT_MIN已修；原版21/41失败，修复后host sanitizer及RV64 guest均41/41通过。
+CPU-tests在记录的32KiB测试兼容符号/-j1配置下36 PASS+1 XFAIL（原始NEMU缺_heap_end链接缺口保留）；RT真实NPC到msh/difftest ON；
+nanos真实三前台继续执行+后台hello通过。Completed、结果确认/commit Pending，HEADbc2d2d0；测试代码/原始证据仅本地保留，M2不变。
+未来批次只沿[唯一CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。
+
+2026-10-18 F0037/F0038已获用户“提交”确认及提交授权；复用既有技术收尾，188份证据/生产SHA/patch无漂移。
+[提交附记](code_correctness_review/crp-f0037-f0038/README.md#f0037-f0038-submit-20261018)及本地submit-20261018/.agent保存实际回执；不提交一次性测试/生成证据，不启动下一批或push。
