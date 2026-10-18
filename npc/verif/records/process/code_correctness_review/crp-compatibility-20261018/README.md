@@ -77,3 +77,7 @@ local保留before源、host前后/夹具、guest源码及5镜像/原反例、SDL
 本地native/ioe.c和上游native实现确实把read/write分派到同一handler，AM_DEVREG也丢弃perm；这是未执行方向校验，不能当作WR支持读回的契约。WR handler通常消费输入参数，io_read传入的未初始化结构不提供可靠读回。NEMU设备中的TARGET_AM分支仍按此前配置可达性结论保持原源码，未因WR核对再次删除。
 
 本轮复用28项验收，提交前199份local manifest/生产源码与patch核对无漂移，不无故重跑原guest。F0044已修，F0040仍Partial；仅归属明确的两份生产源码及本批报告/索引/状态/必要历史更正入库，一次性证据本地保存；实际提交回执补记本地状态，未push。
+
+## 实际提交回执（2026-10-18）
+
+WR核对完成后按用户指令实际提交1603f888371578d987925aa296bb26c801a2d163（8文件136增28删），提交后root/index干净，199份既有证据/生产patch无漂移；不重复测试或Completion，未push。随后按同条明确指令开始独立F0010/F0011；F0040仍Partial。local/submit-20261018保存实际回执。

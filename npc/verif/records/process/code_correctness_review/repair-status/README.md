@@ -21,20 +21,20 @@
 
 | 待确认/豁免项 | 当前事实与实际影响 | 建议保留的边界 / 可选裁决 |
 |---|---|---|
-| F0040 C++ guard/DSO | 用户最新条件授权内已修签名/完成字节/DSO与串行初始化，尚未提交；并发初始化仍未实现，整项Partial | 后续明确并发/异常/析构需求再闭合完整项，不能把串行成功当作线程安全 |
+| F0040 C++ guard/DSO | 用户最新条件授权内已修签名/完成字节/DSO与串行初始化，已提交1603f88；并发初始化仍未实现，整项Partial | 后续明确并发/异常/析构需求再闭合完整项，不能把串行成功当作线程安全 |
 | F0029/F0030 VME权限/撤映射/页表回收 | 原五CQ中两项，权限与生命周期教学子集未定；原问题不删除 | 继续留到正式内存管理阶段，或明确权限/撤映射及页表所有权/回收契约 |
 | F0031 NPC VME/MPE能力 | dummy能力仍未闭合，不能从当前RT/IOE通过推定多核/虚存可用 | 延续延期；如纳入新能力，转正式计划，当前CRP不自行推进M阶段 |
 | F0054 free契约 | free空实现是否允许arena教学子集未决定，仍未修 | 延续延期，或明确可回收分配器/单次arena的需求与验收 |
 | F0055 RTC声明 | has_rtc=true与固定日期的能力契约未定；与uptime时基分开 | 延续延期，或明确真实墙钟/不支持声明/占位允许范围 |
 | 上轮F0045的NEMU-on-AM音频边界：已澄清 | Kconfig在!TARGET_AM内才可选HAS_AUDIO，audio.c按HAS_AUDIO参与编译；不是受支持配置的可达兼容性回归。删除MUXDEF候选已撤回 | 不再作为人工启动阻塞；若未来开发AM目标音频再正式规划，不要求本轮额外豁免 |
 
-本轮最新“先确定这些错误是否影响原有入口和测试函数，如果不影响就修复”已明确放行本兼容性单元；可修部分已完成，等待确认/提交。后续保留五CQ及F0040完整并发范围、F0043提交协议的具体裁决，不再把不可达AM音频分支列为前置。本兼容性单元已在原入口中实现容量分片，不修改旧MMIO提交含义；F0043需要协调计数提交协议，具体方案仍须另行明确。唯一任务范围与执行入口仍在TASK_QUEUE，本节不维护第二个队列。
+用户先以条件授权完成兼容性单元，后以“确认WR属性…然后提交并进入下一批修改”确认实际提交1603f88并放行F0010/F0011。本组因PAL启动卡顿反馈Reopen完成定向监测后，用户“我了解了，闭合并提交你做过的相关修改”确认已披露范围并授权重新闭合和提交；本次提交包含F0010/F0011。PAL供给不足与新增退化因果未明保留风险，不宣称性能已修。剩余五CQ、F0040完整并发范围和F0043提交协议仍分别保留具体裁决，不作为独立修复的统一前置；已澄清的不可达AM音频分支不再要求豁免。唯一下一入口仍在TASK_QUEUE，本节不维护第二个队列。
 
 验收限制继续保留：历史RT到msh后SIGTERM；本兼容性单元RT只重新image，未重跑到msh。本轮nanos到观察点后SIGTERM，音频小guest正常GOOD TRAP；未跑四AM应用、实际声音/窗口、全配置及长时调度，CPU按链接闭包未受影响不重跑。两缺源fceux/oslab0仍按原批准暂缓。ignored测试证据/.agent本地保管，commit不代表备份；无新安装或环境阻塞，不要求为未涉及的能力逐一新增豁免。
 
 ## 当前逐项状态
 
-全部已修21（20已提交，F0044本轮未提交）；未修完98，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复23（此前21已提交，F0010/F0011纳入本次提交）；未修完96，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -47,8 +47,8 @@
 | CCR-F0007 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0007) |
 | CCR-F0008 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0008) |
 | CCR-F0009 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0009) |
-| CCR-F0010 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0010) |
-| CCR-F0011 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0011) |
+| CCR-F0010 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
+| CCR-F0011 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0012 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0012) |
 | CCR-F0013 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0013) |
 | CCR-F0014 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0014) |
@@ -77,11 +77,11 @@
 | CCR-F0037 | Confirmed / High | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
 | CCR-F0038 | Confirmed / Low | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
 | CCR-F0039 | Confirmed / Low | 已修 / 已提交 | b2229ef；[报告](../crp-f0039-f0040/README.md) |
-| CCR-F0040 | Confirmed / Low | 未修完 / 部分修复 | [本轮ABI/串行修正，线程同步未闭合](../crp-compatibility-20261018/README.md) |
+| CCR-F0040 | Confirmed / Low | 未修完 / 部分修复 | 1603f88；[本轮ABI/串行修正，线程同步未闭合](../crp-compatibility-20261018/README.md) |
 | CCR-F0041 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0042 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0043 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0043) |
-| CCR-F0044 | Robustness / Low | 已修 / 未提交 | [容量分片及原测试真实验收](../crp-compatibility-20261018/README.md) |
+| CCR-F0044 | Robustness / Low | 已修 / 已提交 | 1603f88；[容量分片及原测试真实验收](../crp-compatibility-20261018/README.md) |
 | CCR-F0045 | Robustness / Low | 已修 / 已提交 | f4e3c0c；[本组报告](../crp-f0045/README.md) |
 | CCR-F0046 | Confirmed / High | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
 | CCR-F0047 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0047) |
@@ -160,4 +160,12 @@
 
 ## 2026-10-18 条件兼容修复补充
 
-[本轮报告](../crp-compatibility-20261018/README.md)保存逐项影响、用户TARGET_AM追问及撤回候选、原入口真实验收；全部已修21/未修完98，F0040仍Partial且含在98中。Completed、结果确认Pending/commit Pending，不擅自恢复上轮连续提交。历史原119项分类不改。
+[本轮报告](../crp-compatibility-20261018/README.md)保存逐项影响、用户TARGET_AM追问及撤回候选、原入口真实验收；全部已修21/未修完98，F0040仍Partial且含在98中。原兼容性单元已确认提交1603f88，随后按明确指令执行F0010/F0011，当前结果见本次报告。历史原119项分类不改。
+
+## 2026-10-18 WR确认、实际提交与F0010/F0011
+
+WR为AM写接口、不提供读回契约；前兼容性单元实际提交1603f88（F0044全部、F0040Partial）。用户明确授权进入下一批，独立F0010/F0011已完成，[真实验收](../crp-f0010-f0011/README.md)；全部已修23/未修完96含5CQ及F0040Partial，本组未确认未提交。F0043协议未决不阻塞其他独立修复；唯一下一入口TASK_QUEUE。
+
+2026-10-18 [PAL启动卡顿补查](../crp-f0010-f0011/README.md#performance-review-20261018)：11个真实PulseAudio测量、真实窗口旧/新对照和AM回退均已完成；Open/参数/宿主回调与容量等待无异常，旧/新均大量欠载，PAL填音/轮询供给不足。没有生产新改动或性能问题修复声明，不能以旧功能PASS关闭用户反馈；本组保持Reopened，不推进后组。
+
+2026-10-18 [用户确认重新闭合/提交](../crp-f0010-f0011/README.md#closeout-approval-20261018)：本组Completed，用户已确认并授权本次commit，原性能Reopen停点解除；PAL供给不足/新增退化因果和F0043仍保留风险，不记性能修复。全部23项功能修复纳入提交，96项未修完不变；实际提交身份以包含本附记的Git提交及本地回执为准。下一组只沿TASK_QUEUE，当前未Start。

@@ -12,6 +12,15 @@
 - 当前状态：[CURRENT_STATE](../../../../../../.agent/CURRENT_STATE.md)；唯一未来批次：[TASK_QUEUE / CRP Next](../../../../../../.agent/TASK_QUEUE.md#crp-next)。本文件不保存第二份 Next。
 - 恢复时先执行全局 Guard，再读取本文件和队列列出的问题/证据；本规则本身不授权实施、提交或改变 CQ。
 
+<a id="reference-materials"></a>
+## 实现背景与讲义参考
+
+来源：用户 2026-10-18 明确说明实现时依赖[一生一芯站点的 ICS-PA 讲义](https://ysyx.oscc.cc/docs/ics-pa/)，要求可读取时用作参考。后续 CRP 分析优先查阅该站对应章节，结合本地实现、原有入口和测试判断问题；ISA、ABI、SDL 等细节按需补充相应原始规范。
+
+2026-10-18 已正常读取目录及[表达式求值](https://ysyx.oscc.cc/docs/ics-pa/1.5.html)、[监视点](https://ysyx.oscc.cc/docs/ics-pa/1.6.html)、[输入输出](https://ysyx.oscc.cc/docs/ics-pa/2.5.html)、[用户程序和系统调用](https://ysyx.oscc.cc/docs/ics-pa/3.3.html)、[超越容量的界限](https://ysyx.oscc.cc/docs/ics-pa/4.3.html)的正文/代码。入口当前标注 2025 版；这是访问时观察到的版本，不推定用户当年使用的版本，也不与历史记录引用的其他版本混同。尚未逐页核验全站，后续按问题读取具体章节并记录链接、访问日期及相关范围说明。
+
+讲义中的必做、选做、允许简化和不作要求须纳入问题定性。例如“输入输出”明确要求声卡回调的剩余缓冲区清零，同时说明共享音频寄存器的并发问题超出课程范围、不要求必须解决；同章“在 NEMU 上运行 NEMU”解释了将 NEMU 编译到 AM 时的 CONFIG_TARGET_AM 场景。后续据此区分实现错误与课程范围外增强，再与项目现行需求对照；本次登记不改变 F0043 等待决项的裁决、已确认验收或提交状态。发现讲义版本、本地代码和现行契约不一致时记录具体差异，按既有裁决规则处理，不改写历史证据。
+
 <a id="build-interface"></a>
 ## 构建接口与用户流程
 

@@ -30,6 +30,9 @@ enum {
 static uint32_t rd_index = 0;
 static uint8_t *sbuf = NULL;
 static uint32_t *audio_base = NULL;
+static bool audio_initialized = false;
+static bool audio_opened = false;
+static bool init_pending = false;
 SDL_AudioSpec s = {};
 
 static uint32_t audio_freq() {
@@ -61,10 +64,7 @@ static void audio_play(void *userdata, uint8_t *stream, int len){
 
   audio_base[reg_count] -= nread;
   if (len > nread) {
-    //memset(stream + nread, 0, len - nread);
-    for(int i=nread;i<len;i++){
-      stream[nread] = 0;
-    }
+    memset(stream + nread, 0, len - nread);
   }
 }
 
@@ -78,18 +78,39 @@ static void SDL_audio_init(){
   s.userdata = NULL;
   //printf("%d %d %d\n",s.freq,s.channels,s.samples);
   //count = 0;
-  int ret = SDL_InitSubSystem(SDL_INIT_AUDIO);
-  if (ret == 0) {
-    SDL_OpenAudio(&s, NULL);
-    SDL_PauseAudio(0);
+  if (!audio_initialized) {
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
+      fprintf(stderr, "audio: SDL_InitSubSystem failed: %s\n", SDL_GetError());
+      return;
+    }
+    audio_initialized = true;
   }
+  if (audio_opened) {
+    SDL_CloseAudio();
+    audio_opened = false;
+  }
+  if (SDL_OpenAudio(&s, NULL) != 0) {
+    fprintf(stderr, "audio: SDL_OpenAudio failed: %s\n", SDL_GetError());
+    return;
+  }
+  audio_opened = true;
+  SDL_PauseAudio(0);
 }
 
 static void audio_io_handler(uint32_t offset, int len, bool is_write) {
-  // call SDL init after config
-  if(offset == 8 && is_write && audio_base[reg_init]) {
+  if (!is_write || len != sizeof(uint32_t)) return;
+  if (offset == reg_init * sizeof(uint32_t)) {
+    init_pending = audio_base[reg_init] != 0;
+  } else if (offset != reg_freq * sizeof(uint32_t) &&
+             offset != reg_channels * sizeof(uint32_t) &&
+             offset != reg_samples * sizeof(uint32_t)) {
+    return;
+  }
+  // Keep the existing AM init-before-CTRL sequence working: an early init
+  // request waits for the configuration, then opens exactly once.
+  if (init_pending && audio_freq() && audio_channels() && audio_samples()) {
+    init_pending = false;
     SDL_audio_init();
-    //assert(0);
   }
 }
 
@@ -105,6 +126,9 @@ void init_audio() {
   sbuf = (uint8_t *)new_space(CONFIG_SB_SIZE);
   add_mmio_map("audio-sbuf", CONFIG_SB_ADDR, sbuf, CONFIG_SB_SIZE, NULL);
   audio_base[reg_sbuf_size] = CONFIG_SB_SIZE;
+  audio_base[reg_freq] = 0;
+  audio_base[reg_channels] = 0;
+  audio_base[reg_samples] = 0;
   audio_base[reg_count] = 0;
   audio_base[reg_init] = 0;
 }

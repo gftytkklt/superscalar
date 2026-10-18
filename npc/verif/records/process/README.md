@@ -404,3 +404,11 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP原入口影响核对与兼容修复](code_correctness_review/crp-compatibility-20261018/README.md)：F0044容量分片已修，F0040 ABI/串行/DSO部分修正；host20/20、真实原audio_test/65537B完整SDL数据/串行CPP、RT/nanos image及nanos八状态、28项核对通过。用户追问后撤回NEMU音频MUXDEF删除候选，Kconfig排除AM音频，不再列作实际回归。全部已修21/未修完98含5CQ及F0040Partial；Completed待确认/提交，唯一下一入口见TASK_QUEUE。
 
 2026-10-18 用户确认WR语义后授权兼容性单元提交及下一批。WR为AM写接口而非RW，native共用handler不等于读回受支持；依据/本批收尾见[回执](code_correctness_review/crp-compatibility-20261018/README.md#wr-submit-20261018)，复用199份证据/28项验收，无生产重测。
+
+2026-10-18 [CRP F0010/F0011声卡初始化与欠载填零](code_correctness_review/crp-f0010-f0011/README.md)：前兼容性组已确认提交1603f88；本组host28/28、真实配置→init/legacy原audio_test/超容量/重init/静音及原版哨兵见证、nanos八状态，26项核对/8判据负例通过。只改NEMU音频设备，TARGET_AM分支/AM/COUNT/Make保持；全部已修23/未修完96含5CQ/F0040Partial，本组待确认提交。
+
+2026-10-18 用户指定[一生一芯 ICS-PA 讲义](https://ysyx.oscc.cc/docs/ics-pa/)为实现参考；目录及抽查的 PA1～PA4 子章节正文/代码可读取，引用与课程范围判定规则已记入[CRP 参考资料](code_correctness_review/workflow/README.md#reference-materials)。本次仅登记参考来源，不推进修复批次或改变待决/提交状态。
+
+2026-10-18 [F0010/F0011 PAL启动卡顿补查](code_correctness_review/crp-f0010-f0011/README.md#performance-review-20261018)：按用户要求Reopen，覆盖全音频链、共享修改与真实音频/窗口、AM回退。11有效测量显示旧新均供给不足，未见重开/变频/容量忙等；用户新增退化未闭合，生产无新修改，原组保持Reopened、未提交，不开始下一组。
+
+2026-10-18 [F0010/F0011用户确认闭合及提交](code_correctness_review/crp-f0010-f0011/README.md#closeout-approval-20261018)：用户确认已报告范围和限制，本组重新Completed，F0010/F0011修复及相关记录纳入本次commit；旧199+199项及补查113项证据无漂移，复用已验收测试。PAL供给不足/性能因果与F0043保留风险；提交后停止，F0012/F0013只设Next未Start。
