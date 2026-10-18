@@ -24,14 +24,14 @@ void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
 }
 
 void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
-  if (ctl->sync) {
-    outl(SYNC_ADDR, 1);
-  }
   int x = ctl->x;
   int y = ctl->y;
   int blk_w = ctl->w;
   int blk_h = ctl->h;
-  if(blk_w == 0 || blk_h == 0) {return;}
+  if(blk_w == 0 || blk_h == 0) {
+    if (ctl->sync) outl(SYNC_ADDR, 1);
+    return;
+  }
   // printf("%d, %d: %d*%d\n", x, y, blk_w, blk_h);
   int *pixels = (int *)ctl->pixels;
   int base = w*y+x;
@@ -49,6 +49,7 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
     }
     // base += w*4;
   }
+  if (ctl->sync) outl(SYNC_ADDR, 1);
 }
 
 void __am_gpu_status(AM_GPU_STATUS_T *status) {

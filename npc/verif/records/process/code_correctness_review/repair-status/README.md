@@ -21,7 +21,7 @@
 
 ## 当前逐项状态
 
-已修16；未修103，其中契约待定5、用户延期1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+已修19；未修100，其中契约待定5、用户延期1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -65,8 +65,8 @@
 | CCR-F0038 | Confirmed / Low | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
 | CCR-F0039 | Confirmed / Low | 已修 / 已提交 | b2229ef；[报告](../crp-f0039-f0040/README.md) |
 | CCR-F0040 | Confirmed / Low | 未修 / 用户延期 | [分析及用户决定](../crp-f0039-f0040/README.md#f0040-analysis) |
-| CCR-F0041 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0041) |
-| CCR-F0042 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0042) |
+| CCR-F0041 | Confirmed / Medium | 已修 / 提交中 | [本组报告](../crp-f0041-f0042-f0053/README.md) |
+| CCR-F0042 | Confirmed / Medium | 已修 / 提交中 | [本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0043 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0043) |
 | CCR-F0044 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0044) |
 | CCR-F0045 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0045) |
@@ -77,7 +77,7 @@
 | CCR-F0050 | Confirmed / Medium | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
 | CCR-F0051 | Confirmed / Medium | 已修 / 已提交 | 4ab9f3f；[报告](../crp-f0051/README.md) |
 | CCR-F0052 | Confirmed / Medium | 已修 / 已提交 | am-kernels c1ba0bb / root 7d99a8d；[报告](../crp-f0052/README.md) |
-| CCR-F0053 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0053) |
+| CCR-F0053 | Confirmed / Low | 已修 / 提交中 | am-kernels 6dc302a；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0054 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0054) |
 | CCR-F0055 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0055) |
 | CCR-F0056 | Robustness / Low | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |

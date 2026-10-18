@@ -18,6 +18,16 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *);
 static void __am_timer_config(AM_TIMER_CONFIG_T *cfg) { cfg->present = true; cfg->has_rtc = true; }
 static void __am_input_config(AM_INPUT_CONFIG_T *cfg) { cfg->present = true; }
 static void __am_uart_config(AM_UART_CONFIG_T *cfg) { cfg->present = true; }
+static void __am_uart_tx(AM_UART_TX_T *tx) { putch(tx->data); }
+static void __am_audio_config(AM_AUDIO_CONFIG_T *cfg) {
+  *cfg = (AM_AUDIO_CONFIG_T) { .present = false, .bufsize = 0 };
+}
+static void __am_disk_config(AM_DISK_CONFIG_T *cfg) {
+  *cfg = (AM_DISK_CONFIG_T) { .present = false, .blksz = 0, .blkcnt = 0 };
+}
+static void __am_net_config(AM_NET_CONFIG_T *cfg) {
+  *cfg = (AM_NET_CONFIG_T) { .present = false };
+}
 
 // AM_UART_RX：读 UART RBR，无数据返回 0xff（AM 规范）。
 static void __am_uart_rx(AM_UART_RX_T *rx) {
@@ -36,10 +46,14 @@ static void *lut[128] = {
   [AM_INPUT_CONFIG] = __am_input_config,
   [AM_INPUT_KEYBRD] = __am_input_keybrd,
   [AM_UART_CONFIG ] = __am_uart_config,
+  [AM_UART_TX     ] = __am_uart_tx,
   [AM_UART_RX     ] = __am_uart_rx,
   [AM_GPU_CONFIG  ] = __am_gpu_config,
   [AM_GPU_STATUS  ] = __am_gpu_status,
   [AM_GPU_FBDRAW  ] = __am_gpu_fbdraw,
+  [AM_AUDIO_CONFIG] = __am_audio_config,
+  [AM_DISK_CONFIG ] = __am_disk_config,
+  [AM_NET_CONFIG  ] = __am_net_config,
 };
 
 static void fail(void *buf) { panic("access nonexist register"); }
