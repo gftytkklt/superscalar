@@ -51,3 +51,5 @@ Navy/生成器未改，nanos复用当前完整`navy-apps/build/ramdisk.img`与he
 ## 用户确认与提交（2026-10-18）
 
 用户在核对MPP/mscratch及sp保存逻辑后，以“提交，然后继续CRP修复”确认本组已报告范围/限制并授权提交。3,958项manifest无漂移，原18项终检及生产patch相同，复用真实验收未重跑。仅提交生产cte.c、本组报告/局部ignore及3份相关索引/维护回执；ignored测试/.agent仍本地，不代表已备份。实际提交回执见local/submit-receipt及.agent；同条明确指令授权提交后执行F0024一个单元，新修复不自动提交，不push/M2。
+
+实际提交补充：F0023已提交c9be8980d76b85f4f517f2c5ac21d8cf9e181def（6文件69增16删），提交检查点root/index干净、未push。随后按同条指令执行F0024；本组原3,958项证据在后组终检仍无漂移。

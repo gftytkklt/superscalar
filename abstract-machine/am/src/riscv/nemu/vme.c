@@ -57,10 +57,9 @@ void unprotect(AddrSpace *as) {
 }
 
 void __am_get_cur_as(Context *c) {
-  // pdir == NULL marks a kernel-thread context (created by kcontext()).
-  // Keep the marker so that __am_switch() does not switch the address space
-  // when resuming a kernel thread (all address spaces share the kernel mapping).
-  if (c->pdir == NULL) return;
+  // This is a fresh trap frame: slot 0 has not been initialized by trap.S.
+  // Save the address space actually used, including by nested kernel traps.
+  // kcontext()'s initial NULL marker is handled only when restoring that context.
   c->pdir = (vme_enable ? (void *)get_satp() : NULL);
 }
 

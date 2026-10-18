@@ -444,3 +444,7 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP存档构建资产逐目录盘点](workspace-storage-cleanup-20261018/README.md#crp-build-audit-20261018)：F0022已确认提交bc7a110；19个任务共206.99MiB，产物约38.21MiB、截图117.75MiB。7个有NEMU/REF副本，只有F0022有隔离NEMU/AM必要源码与build树；18个有编译产物或镜像，F0052无。逐目录内容/路径清单已留档，本次未删除资产，不Start F0023/M2；维护说明未提交。
 
 2026-10-18 [CRP F0023 NEMU trap来源及mscratch栈约定](code_correctness_review/crp-f0023/README.md)：维护说明已确认提交47063cd；生产仅cte.c按保存MPP分类/入口与内核返回清scratch/用户返回按Context推栈顶/初始化。原3模式失败，最终3guest GOOD TRAP（16M yield/9嵌套/真实MTIMER/2U trap/线程切换）、RT隔离链接配置到msh及am_hello、nanos8观察点与hello1440→6648、18项终检通过。失效夹具与RT链接条件明列，不宣称默认RT/NEMU链接或F0024已修；30已修/89未修完，本组Completed待确认提交，M2保持。
+
+2026-10-18 [CRP F0024 trap地址空间确定性保存](code_correctness_review/crp-f0024/README.md)：F0023已确认提交c9be898；生产仅vme.c删除读未初始化槽的条件跳过，保留kcontext初始NULL/借用接口。原零槽真实A→B→A页表恢复失败、非零正常；修复零/非零/VME-off三guest GOOD TRAP，双私有VA/用户syscall嵌套及内核线程恢复、RT补充测试链接配置msh+am_hello、nanos8点/hello1483→6787、21终检通过。前组3,958证据保持；31已修/88未修完，本组Completed待确认提交，M2不变。
+
+2026-10-18 用户确认并授权F0024提交：545条文件清单/原21项验收及生产patch保持；[提交及计数澄清](code_correctness_review/crp-f0024/README.md#approval-submit-20261018)说明F0023的3,958条是源树/产物/日志等文件SHA条目，非测试用例数量。本轮仅提交已完成批次，不启动后组。

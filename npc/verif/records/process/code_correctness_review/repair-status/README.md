@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复30（29项已确认提交，F0023 Completed待确认提交）；未修完89，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复31（F0024本轮获用户确认及提交授权，其余30项已确认提交）；未修完88，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -60,8 +60,8 @@
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
 | CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
 | CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) |
-| CCR-F0023 | Confirmed / High | 已修 / Completed，待确认提交 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
-| CCR-F0024 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0024) |
+| CCR-F0023 | Confirmed / High | 已修 / 已确认提交c9be898 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
+| CCR-F0024 | Confirmed / Medium | 已修 / 用户已确认，本轮提交 | [双页表嵌套切走恢复/真实回归及回执](../crp-f0024/README.md#approval-submit-20261018) |
 | CCR-F0025 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0025) |
 | CCR-F0026 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0026) |
 | CCR-F0027 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0027) |
@@ -234,3 +234,7 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 2026-10-18 F0022实际提交bc7a110，index/工作树在提交检查点干净。其后独立CRP存档盘点完成，未删除资产，维护说明未提交；本次未Start F0023，未来仍沿TASK_QUEUE唯一入口。
 
 2026-10-18 用户“提交修改，并继续CRP修复”确认存档盘点说明，三份维护文档实际提交47063cd；随后按唯一入口完成F0023。生产仅NEMU cte.c，原三模式精确失败、最终三guest GOOD TRAP、M/U改栈/嵌套/真实MTIMER/线程切换、RT测试链接配置下msh及am_hello、nanos稳定8观察点与hello递增、18项终检通过。无效/失败夹具及RT链接限制见报告；30已修/89未修完，本组确认/commit Pending，不从本轮继续推定自动提交/串行下一组。
+
+2026-10-18 用户“提交，然后继续CRP修复”确认F0023，3,958项证据/18项原验收/生产patch无漂移，实际提交c9be898；随后按唯一入口完成F0024。生产仅vme.c删除按旧槽跳过，原零槽真实跨页表恢复失败/非零正常控制、修复后三guest GOOD TRAP（双页表私有VA/嵌套用户与内核现场恢复）、RT测试链接配置msh+am_hello、nanos8点/hello1483→6787及21项终检通过。31已修/88未修完，本组确认/commit Pending，五CQ/权限回收/并发及原性能限制保持，不自动Start下一组。
+
+2026-10-18 用户“提交”确认F0024已报告范围并授权提交；545条文件清单无漂移、21项验收/生产patch保持，复用原验收。实际回执以包含本附记的commit及.agent为准；本轮不Start下一组，不push。3,958为F0023逐文件清单条目（含大量源树输入），不是测试数量，详见本组报告澄清。
