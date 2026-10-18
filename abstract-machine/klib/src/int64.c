@@ -370,12 +370,12 @@ COMPILER_RT_ABI di_int
 __divdi3(di_int a, di_int b)
 {
     const int bits_in_dword_m1 = (int)(sizeof(di_int) * CHAR_BIT) - 1;
-    di_int s_a = a >> bits_in_dword_m1;           /* s_a = a < 0 ? -1 : 0 */
-    di_int s_b = b >> bits_in_dword_m1;           /* s_b = b < 0 ? -1 : 0 */
-    a = (a ^ s_a) - s_a;                         /* negate if s_a == -1 */
-    b = (b ^ s_b) - s_b;                         /* negate if s_b == -1 */
+    du_int s_a = (du_int)(a >> bits_in_dword_m1); /* unsigned sign mask */
+    du_int s_b = (du_int)(b >> bits_in_dword_m1);
+    du_int a_u = ((du_int)a ^ s_a) - s_a;         /* includes magnitude of MIN */
+    du_int b_u = ((du_int)b ^ s_b) - s_b;
     s_a ^= s_b;                                  /*sign of quotient */
-    return (__udivmoddi4(a, b, (du_int*)0) ^ s_a) - s_a;  /* negate if s_a == -1 */
+    return (di_int)((__udivmoddi4(a_u, b_u, (du_int*)0) ^ s_a) - s_a);
 }
 
 /* Returns: a / b, *rem = a % b  */
@@ -384,7 +384,7 @@ COMPILER_RT_ABI di_int
 __divmoddi4(di_int a, di_int b, di_int* rem)
 {
   di_int d = __divdi3(a,b);
-  *rem = a - (d*b);
+  *rem = (di_int)((du_int)a - (du_int)d * (du_int)b);
   return d;
 }
 
@@ -394,13 +394,13 @@ COMPILER_RT_ABI di_int
 __moddi3(di_int a, di_int b)
 {
     const int bits_in_dword_m1 = (int)(sizeof(di_int) * CHAR_BIT) - 1;
-    di_int s = b >> bits_in_dword_m1;  /* s = b < 0 ? -1 : 0 */
-    b = (b ^ s) - s;                   /* negate if s == -1 */
-    s = a >> bits_in_dword_m1;         /* s = a < 0 ? -1 : 0 */
-    a = (a ^ s) - s;                   /* negate if s == -1 */
+    du_int s = (du_int)(b >> bits_in_dword_m1);
+    du_int b_u = ((du_int)b ^ s) - s;
+    s = (du_int)(a >> bits_in_dword_m1);
+    du_int a_u = ((du_int)a ^ s) - s;
     du_int r;
-    __udivmoddi4(a, b, &r);
-    return ((di_int)r ^ s) - s;                /* negate if s == -1 */
+    __udivmoddi4(a_u, b_u, &r);
+    return (di_int)((r ^ s) - s);
 }
 
 /* Returns: a / b */

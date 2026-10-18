@@ -383,3 +383,12 @@ host ASan/UBSan 8/8；真实NPC RT update/run、11生命周期场景、实际生
 本项Completed，确认/commit Pending；累计已修15/剩余104含5CQ。一次性测试/证据本地保存，F0051发布逻辑未变；CPU/nanos不受影响未重跑。未来只沿TASK_QUEUE，M2保持。
 
 2026-10-18 F0049已获用户“提交后继续”确认及提交授权；[收尾回执](code_correctness_review/crp-f0049/README.md#submit-20261018)记录101份证据/源码无漂移并复用既有验收，实际提交见本地回执/.agent。后续按唯一入口执行一个单元，未push。
+
+
+<a id="crp-f0039-f0040-20261018"></a>
+2026-10-18 [CRP F0039 int64修复与F0040契约核对](code_correctness_review/crp-f0039-f0040/README.md)：F0049已按用户“提交后继续”确认提交d9a3d42后执行本单元。
+F0039仅三个signed helper无符号幅值/符号/余数恢复；GCC/Clang UBSan与实际RV64各2427 signed+2428 unsigned向量通过，CPU36 PASS+wrong XFAIL；21项最终核对通过。
+RT update/image、完整navy update/nanos image成功；65个消费者ELF无修改helper，故不重跑不受影响的RT/nanos运行。
+F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只分析、待正式需求裁决，生产未修。F0039 Completed，结果确认/commit Pending；累计已修16/剩余103含5CQ。未来只沿TASK_QUEUE，不推进M2。
+
+2026-10-18 用户确认并授权F0039提交及后续连续批次；[回执](code_correctness_review/crp-f0039-f0040/README.md#submit-20261018)保存114份证据/源码无漂移、复用验收及授权边界。实际提交见本地回执/.agent，未push。
