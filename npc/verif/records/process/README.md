@@ -400,3 +400,7 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0045双平台IOE校验](code_correctness_review/crp-f0045/README.md)：124/124 host、双平台各6例真实合法/非法输入、RT约150秒msh及nanos八状态通过，20项核对、14种判据故障拒绝；严格方向兼容性对未启用NEMU-on-AM音频分支的影响留档。Completed，按连续预授权提交，累计20已修/99剩余含5CQ；本轮最后统一冻结人工启动guard。
 
 2026-10-18 CRP连续授权本轮收尾：F0039 b2229ef、新组三项root e83df62/nested6dc302a、F0045 root f4e3c0c均已提交；20已修/99剩余含5CQ。原始证据与.agent本地保存，未push。下次启动先人工决定/豁免[冻结guard](code_correctness_review/repair-status/README.md#manual-start-guard)，具体下一入口仅见TASK_QUEUE。
+
+2026-10-18 [CRP原入口影响核对与兼容修复](code_correctness_review/crp-compatibility-20261018/README.md)：F0044容量分片已修，F0040 ABI/串行/DSO部分修正；host20/20、真实原audio_test/65537B完整SDL数据/串行CPP、RT/nanos image及nanos八状态、28项核对通过。用户追问后撤回NEMU音频MUXDEF删除候选，Kconfig排除AM音频，不再列作实际回归。全部已修21/未修完98含5CQ及F0040Partial；Completed待确认/提交，唯一下一入口见TASK_QUEUE。
+
+2026-10-18 用户确认WR语义后授权兼容性单元提交及下一批。WR为AM写接口而非RW，native共用handler不等于读回受支持；依据/本批收尾见[回执](code_correctness_review/crp-compatibility-20261018/README.md#wr-submit-20261018)，复用199份证据/28项验收，无生产重测。

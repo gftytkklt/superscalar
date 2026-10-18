@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <klib.h>
 
 #define AUDIO_FREQ_ADDR      (AUDIO_ADDR + 0x00)
 #define AUDIO_CHANNELS_ADDR  (AUDIO_ADDR + 0x04)
@@ -32,20 +33,25 @@ void __am_audio_status(AM_AUDIO_STATUS_T *stat) {
 }
 
 void __am_audio_play(AM_AUDIO_PLAY_T *ctl) {
-  uint32_t len = ctl->buf.end-ctl->buf.start;
-  char *play_buf = (char *)ctl->buf.start;
-  // wait until enough buf len for write
-  //printf("2\n");
-  while(bufsize - inl(AUDIO_COUNT_ADDR) < len);
-  // write audio to buf
-  //printf("3\n");
-  for (uint32_t i=0;i<len;i++) {
-    if (wr_index >= bufsize) {wr_index = wr_index - bufsize;}
-    outb(AUDIO_SBUF_ADDR+wr_index,play_buf[i]);
-    wr_index ++;
+  uintptr_t start = (uintptr_t)ctl->buf.start;
+  uintptr_t end = (uintptr_t)ctl->buf.end;
+  assert(end >= start);
+  size_t remaining = end - start;
+  if (remaining == 0) return;
+  assert(bufsize != 0);
+  const uint8_t *play_buf = ctl->buf.start;
+  while (remaining != 0) {
+    uint32_t len = remaining < bufsize ? remaining : bufsize;
+    while (bufsize - inl(AUDIO_COUNT_ADDR) < len);
+    for (uint32_t i = 0; i < len; i++) {
+      if (wr_index >= bufsize) wr_index -= bufsize;
+      outb(AUDIO_SBUF_ADDR + wr_index, play_buf[i]);
+      wr_index++;
+    }
+    // Preserve the existing count interface; its asynchronous update race is
+    // tracked separately as F0043.
+    outl(AUDIO_COUNT_ADDR, inl(AUDIO_COUNT_ADDR) + len);
+    play_buf += len;
+    remaining -= len;
   }
-  //printf("4\n");
-  // update count
-  outl(AUDIO_COUNT_ADDR,inl(AUDIO_COUNT_ADDR)+len);
-
 }

@@ -33,3 +33,9 @@ F0045 Completed，按用户连续提交预授权交付；代理验收不记作�
 ## 实际提交回执（2026-10-18）
 
 按本轮连续预授权提交：root f4e3c0cf840c0edeff5a3fbef1f3d75ce8283745（6文件84增9删）。提交后root/index干净，nested既有untracked保留；复用本组已完成验收，未无故重跑，未push。整体收尾冻结的[人工guard](../repair-status/README.md#manual-start-guard)须下一次Start前明确决定或豁免。
+
+## 配置可达性勘误（2026-10-18，用户追问后）
+
+前文把CONFIG_TARGET_AM音频三处读WR称作严格检查后会panic的兼容性边界，遗漏Kconfig/filelist门槛：HAS_AUDIO只在!TARGET_AM可选，audio.c仅按HAS_AUDIO编译。TARGET_AM是把NEMU本身作为AM应用运行，不能与运行AM guest混淆。因此原先描述不构成当前受支持配置的可达回归，也不应要求人工确认“是否纳入NEMU-on-AM音频”才能继续。原历史检查/日志不改写；[本轮完整核对](../crp-compatibility-20261018/README.md)记录归因、更正及撤回删除MUXDEF候选，最终NEMU设备音频源码保持原字节。
+
+WR复核补充（2026-10-18）：WR是AM写请求接口，不是RW；native共用handler/丢弃perm不产生读回契约。底层MMIO读写权限另按设备定义。[官方声卡说明](https://nju-projectn.github.io/ics-pa-gitbook/ics2024/2.5.html#声卡)与[本轮回执](../crp-compatibility-20261018/README.md#wr-submit-20261018)保留依据。
