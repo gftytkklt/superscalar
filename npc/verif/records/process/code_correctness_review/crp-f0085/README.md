@@ -217,3 +217,10 @@ Working tree contains uncommitted CRP repair/documentation changes；根HEAD仍8
 实际F0085修复提交：`b7391768dd6c3060f455a4b1ab9470ead37b2134`，4文件236增2删，仅上述四份文件，无测试代码/生成证据入库。
 全局流程规则另行提交；实际回执见本地closeout-20261018。原10/10、真实nanos与保护证据本轮复用，
 只补当前确认和提交事实；F0085 Completed/用户已确认/修复已提交，未push。
+
+
+2026-10-18 空间清理附记：用户明确授权删除工作区大型临时存档。本目录的大型归档
+ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-storage-cleanup-20261018/README.md)
+精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
+结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
+事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。

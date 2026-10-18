@@ -101,3 +101,16 @@ CPU-tests全集、RT update/msh、nanos三前台/hello和NPC/REF不调用此交�
 修复状态及前组实际提交回执；实际commit见包含本节的Git提交及local提交回执。
 本地证据大文件后续若按本轮明确清理授权删除，须记录路径/身份及持久化影响，
 不能从commit推定ignored资产已备份。不push、不自动进入新修复单元。
+
+
+2026-10-18 实际提交回执：`37b3195b0ac0f4504165964d2f1b49aa71f09c82`，6文件149增7删，
+暂存/实际文件集一致，提交后root/index干净、未push；45条manifest/原14项validation
+复核通过，复用原验收。local/submit-precheck.json、submit-receipt.json保留回执。
+用户同条指令转向独立空间清理，不Start F0021；原Pending为提交前截面。
+
+
+2026-10-18 空间清理附记：用户明确授权删除工作区大型临时存档。本目录的大型归档
+ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-storage-cleanup-20261018/README.md)
+精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
+结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
+事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。

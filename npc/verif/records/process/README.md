@@ -426,3 +426,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0018 load失败保留CPU/PMEM](code_correctness_review/crp-f0018/README.md)：前组F0014已确认提交194d2c0；本组暂存读取/IO检查/失败清理已修。原3反例失败，修复ASan/UBSan16场景/124断言、真实128MiB CLI10次失败状态保持/完整恢复及GOOD TRAP，21项判据与14项最终核对通过；LSan环境不支持单列。27已修/92未修完含5CQ/F0040Partial，本组Completed待确认/提交，原raw格式/非全机恢复及额外128MiB临时内存限制保留，未推进M2。
 
 2026-10-18 用户确认F0018并授权提交及独立空间清理；[确认回执](code_correctness_review/crp-f0018/README.md#approval-submit-20261018)复用已报告验收，45条manifest无漂移，不开始后续修复单元。
+
+
+2026-10-18 [工作区大型临时资产清理](workspace-storage-cleanup-20261018/README.md)：F0018已确认提交37b3195；用户明确要求直接删除大型临时存档，精确删除29份未跟踪文件（Yosys详细日志、.gch缓存、4份归档ramdisk、3份完整raw快照及2份resources.o）。工作区8.12GB→5.08GB，净减少3.05GB；868份受保护文件哈希不变，保留源码/PDK/当前运行产物/核心审查及STA报告。原SHA/删除清单/持久化影响已记录；维护Completed未提交，不Start F0021/M2。
+
+2026-10-18 用户“提交后继续CRP”确认空间维护结果并授权提交说明/索引后恢复F0021；[确认回执](workspace-storage-cleanup-20261018/README.md#approval-submit-20261018)复用原验证，未重复删除。

@@ -93,3 +93,10 @@ RT/nanos均由监督器向自有进程组SIGTERM收停，make退出-15不是gues
 实际commit、暂存范围及提交后状态见`local/submit-20261018/receipt.json`和.agent确认/提交回执。
 前文Pending/HEAD5b7a045为本批完成时截面，不扩写CPU兼容配置、受控收停或未测能力。
 提交后停止，不push、不启动F0046或推进M2；普通commit不等于忽略资产已备份。
+
+
+2026-10-18 空间清理附记：用户明确授权删除工作区大型临时存档。本目录的大型归档
+ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-storage-cleanup-20261018/README.md)
+精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
+结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
+事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。

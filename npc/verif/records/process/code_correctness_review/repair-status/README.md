@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复27（此前26已提交，F0018 Completed、用户已确认，纳入本次提交）；未修完92，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复27（此前26已提交，F0018 Completed、用户已确认提交37b3195）；未修完92，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -55,7 +55,7 @@
 | CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
 | CCR-F0016 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0016) |
 | CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
-| CCR-F0018 | Confirmed / Medium | 已修 / 已确认，纳入本次提交 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
+| CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0019) |
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
 | CCR-F0021 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0021) |
@@ -199,3 +199,13 @@ WR为AM写接口、不提供读回契约；前兼容性单元实际提交1603f88
 无新安装/commit/push/M2；当前停等确认提交，下一入口只见TASK_QUEUE。
 
 2026-10-18 用户确认F0018并授权提交及独立大型临时资产清理；45条manifest/原14项validation核对通过，复用原验收。[提交授权回执](../crp-f0018/README.md#approval-submit-20261018)，不Start F0021。
+
+
+## 2026-10-18 F0018实际提交及用户授权空间清理
+
+F0018已确认实际提交37b3195，原Pending为提交前截面；27已修/92未修完不变。
+用户要求直接删除大型临时存档，本轮独立[空间清理](../../workspace-storage-cleanup-20261018/README.md)
+完成：29文件释放约3.05GB，工作区约5.08GB；868项保护哈希不变，未推进F0021/M2。
+F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整raw原字节
+已按授权删除，原报告追加说明、原命令/验证/哈希保留；历史manifest缺失需对照删除清单，
+不伪称旧产物仍存在或已备份。维护说明/索引尚未提交，当前停点及未来入口只见TASK_QUEUE。
