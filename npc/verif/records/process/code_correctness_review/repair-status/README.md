@@ -34,7 +34,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复28（此前27已提交，本组F0021 Completed待确认/提交）；未修完91，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复29（此前28已提交，F0022本组已获用户确认并授权提交）；未修完90，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -58,8 +58,8 @@
 | CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0019) |
 | CCR-F0020 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0020) |
-| CCR-F0021 | Confirmed / Medium | 已修 / Completed，待确认提交 | [ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
-| CCR-F0022 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0022) |
+| CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
+| CCR-F0022 | Confirmed / Medium | 已修 / Completed，待确认提交 | [嵌入镜像/真实AM验收](../crp-f0022/README.md) |
 | CCR-F0023 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0023) |
 | CCR-F0024 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0024) |
 | CCR-F0025 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0025) |
@@ -219,3 +219,14 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 仅改monitor.c的ELF解析/失败清理，原GLOBAL/FUNC与名称截断/最后SYMTAB策略保持，
 非完整ELF验证器。28已修/91未修完含5CQ/F0040Partial，未推进M2或其他未决能力；
 空间清理已删字节事实保持，测试资料约1.5MiB，不自动提交新修复。唯一Next仍TASK_QUEUE。
+
+## 2026-10-18 F0021实际提交与F0022完成
+
+用户“提交，继续”确认F0021，226条manifest无漂移并复用已报告验收，实际提交2a96eb3。
+随后按唯一入口完成F0022：[报告](../crp-f0022/README.md)保留28个host sanitizer边界、
+6个真实AM-native场景、RISC-V内外两层NEMU和默认native成功执行，以及原2反例。
+同时最小修正动态PMEM表初始化的实际C编译阻塞；根配置/REF/NPC保持，未扩AM音频。
+29已修/90未修完含5CQ/F0040Partial，本组结果确认/commit Pending；全部错误全局配置的
+启动安全不属于本组验收，具体init_isa前置限制见报告，不自动推进M2/下一单元。
+
+2026-10-18 用户明确确认F0022并授权提交，687条manifest无漂移，复用原验收；同时授权只读盘点CRP存档构建资产，未授权启动下一修复单元。实际提交回执以包含本附记的commit及.agent为准。

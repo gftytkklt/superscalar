@@ -398,12 +398,25 @@ void init_monitor(int argc, char *argv[]) {
   welcome();
 }
 #else // CONFIG_TARGET_AM
+#include <limits.h>
+
 static long load_img() {
   extern char bin_start, bin_end;
-  size_t size = &bin_end - &bin_start;
-  Log("img size = %ld", size);
+  uintptr_t start = (uintptr_t)&bin_start, end = (uintptr_t)&bin_end;
+  Assert(end >= start, "Invalid embedded image symbol order");
+  uintptr_t size = end - start;
+  Assert(size <= SIZE_MAX && size <= LONG_MAX, "Embedded image size is not representable");
+
+  uint64_t offset = CONFIG_PC_RESET_OFFSET;
+  Assert(offset < (uint64_t)CONFIG_MSIZE &&
+      offset <= (uint64_t)(paddr_t)-1 - PMEM_LEFT,
+      "Embedded image reset vector is outside PMEM");
+  Assert(size <= (uint64_t)CONFIG_MSIZE - offset,
+      "Embedded image exceeds remaining PMEM");
+
+  Log("img size = %ld", (long)size);
   memcpy(guest_to_host(RESET_VECTOR), &bin_start, size);
-  return size;
+  return (long)size;
 }
 
 void am_init_monitor() {

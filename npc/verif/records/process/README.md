@@ -436,3 +436,7 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0021 FTRACE ELF输入边界](code_correctness_review/crp-f0021/README.md)：维护已确认提交485548c；本组修复header/section/symbol/string尺寸与索引/区间检查、关联字符串表及错误清理。原3反例失败，最终ASan/UBSan32场景、8资源控制、真实native39场景及实际call/ret/GOOD TRAP、16项终检通过；仅改monitor.c既有解析路径，约1.5MiB测试资料。28已修/91未修完含5CQ/F0040Partial，本组Completed待确认/提交，不推进M2或扩展ELF能力。
 
 2026-10-18 用户“提交，继续”确认F0021并授权提交及下一单元；[回执](code_correctness_review/crp-f0021/README.md#approval-submit-20261018)复用原32/8/39验收，226条manifest无漂移。
+
+2026-10-18 [CRP F0022 TARGET_AM嵌入镜像边界](code_correctness_review/crp-f0022/README.md)：F0021已确认提交2a96eb3；本组符号/长度/RESET/剩余容量检查及AM动态PMEM静态初始化编译阻塞修正。原2反例失败，ASan/UBSan28/28、真实AM-native6场景、RISC-V内外两层NEMU双GOOD TRAP、默认native构建/guest与判据控制通过。29已修/90未修完含5CQ/F0040Partial，本组Completed待确认提交，不推进M2。
+
+2026-10-18 用户确认F0022并授权提交，同时要求检查所有CRP存档目录的独立构建资产；[提交回执](code_correctness_review/crp-f0022/README.md#approval-submit-20261018)复用原验收，687条manifest无漂移，不开始F0023。

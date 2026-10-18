@@ -59,7 +59,7 @@ static uint8_t sdram[CONFIG_SDRAMSIZE] PG_ALIGN = {};
 // CONFIG_PMEM_GARRAY 时为静态数组地址（编译期可用，difftest 流不调用 init_mem 也有效）；
 // CONFIG_PMEM_MALLOC 时为指针变量（init_mem 里 malloc 后赋值）。
 static MemRegion mem_regions[] = {
-  { "pmem",  CONFIG_MBASE,       CONFIG_MSIZE,       pmem,  mem_read, mem_write },
+  { "pmem",  CONFIG_MBASE,       CONFIG_MSIZE,       MUXDEF(CONFIG_PMEM_MALLOC, NULL, pmem),  mem_read, mem_write },
   { "flash", CONFIG_FLASHBASE,   CONFIG_FLASHSIZE,   flash, mem_read, mem_write },
   { "sram",  CONFIG_SRAMBASE,    CONFIG_SRAMSIZE,    sram,  mem_read, mem_write },
   { "mrom",  CONFIG_MROMBASE,    CONFIG_MROMSIZE,    mrom,  mem_read, mem_write },
