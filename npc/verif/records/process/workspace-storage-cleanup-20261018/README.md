@@ -93,3 +93,70 @@ final-validation全部通过；不重复删除、重建缓存或重跑已验收g
 暂存/实际范围一致，提交后root/index干净、未push；复用清理核对、未重复删除。
 local/submit-precheck.json、submit-receipt.json保存回执。用户同条授权恢复CRP，
 本轮随后执行F0021；原Pending为维护提交前截面。
+
+<a id="crp-build-audit-20261018"></a>
+## CRP存档构建资产盘点（2026-10-18）
+
+计划/授权：用户“提交，检查所有crp任务的存档目录，对每个目录，是否都有独立的nemu等build文件的存档？”；
+F0022已确认提交bc7a110。本维护单元仅盘点records下CRP任务目录，逐一统计隔离源码、
+build/obj目录、ELF/对象/库/镜像及占用，避免将日志或symlink当独立构建。
+不重新运行测试、不开始F0023。交付本节逐目录结果、local/crp-build-audit.json详细清单及过程索引。
+验收：所有顶层CRP任务均有一行、嵌套快照不重复计任务；实际块占用/文件类型有据，
+说明完整源码构建副本、仅二进制/对象和纯文本差异。结果落档后停止。
+
+### 盘点结果
+
+**检查完成，未删除任何资产。** F0022实际提交bc7a110（六份文件，提交范围/空白通过）；
+本轮无产品代码修改，无测试重跑，不Start F0023/M2。
+
+共19个顶层CRP任务目录，总实际块占用217,047,040B，约206.99MiB。
+18个含编译产物/镜像，只有F0052未发现此类产物；13个含名为build或obj-*的目录，
+并不表示保存了完整独立产品构建。7个含实际NEMU执行器或REF副本；只有F0022
+保留隔离NEMU/AM必要源码与实际构建树（也不是整个工作区或完整工具依赖的备份）。
+
+识别出的ELF、ar库、对象、.gch及.bin/.img/.raw镜像共40,062,976B，约38.21MiB，
+截图另计123,473,920B，约117.75MiB；其余约51MiB为源码截面、配置、日志、JSON、
+反汇编及目录开销。故这些CRP目录目前没有GB级独立build副本；较大目录主要由截图
+及文本证据构成，不能从目录总量推定其全是可删除缓存。前轮清理的大镜像/raw/gch已不在本次清单。
+
+下表“占用”包含该任务所有证据；“产物”列仅统计上述二进制/镜像类型的实际块占用，
+不含截图/日志/源码。“NEMU/REF”不把名字带nemu的guest或host夹具当成NEMU本体。
+
+| CRP目录（共同前缀code_correctness_review/） | 占用MiB | 产物MiB | 实际NEMU/REF副本 | 当前构建存档内容 |
+|---|---:|---:|---|---|
+| crp-compatibility-20261018 | 24.88 | 8.89 | 有 | NEMU前/候选/后binary；RT/nanos部分build、host程序 |
+| crp-f0010-f0011 | 26.88 | 8.04 | 有 | NEMU前/后及探针binary；host程序，无整棵build |
+| crp-f0012-f0013 | 1.20 | 0.75 | 有 | nemu-wp及obj-wp对象；host程序 |
+| crp-f0014 | 1.86 | 1.22 | 有 | REF前/后.so；NPC binary/RT bin，无独立NEMU执行器 |
+| crp-f0015 | 3.13 | 0.41 | 无 | build内host测试程序/对象；5份局部source快照，无NEMU构建树 |
+| crp-f0018 | 0.42 | 0.24 | 无 | host测试程序、小型raw反例；大raw快照前轮已清理 |
+| crp-f0021 | 1.50 | 0.76 | 有 | nemu-ftrace及obj-ftrace对象；host程序/ELF用例 |
+| crp-f0022 | 6.47 | 2.82 | 有 | 隔离local/nemu与local/am必要源码、实际build/对象/库/native与RISC-V镜像 |
+| crp-f0033-f0056 | 21.89 | 3.33 | 无 | RT/nanos/string-test/klib部分build；无NEMU执行器副本 |
+| crp-f0034-f0035-f0036 | 19.74 | 1.14 | 无 | RT/nanos/stdio-test/klib部分build；无NEMU执行器副本 |
+| crp-f0037-f0038 | 20.22 | 1.58 | 有 | NEMU native/REF及NPC binary；RT/nanos/stdlib部分build |
+| crp-f0039-f0040 | 5.19 | 2.26 | 无 | RT/nanos/CPP/klib部分build及host程序；无NEMU执行器副本 |
+| crp-f0041-f0042-f0053 | 18.80 | 1.17 | 无 | RT/nanos/NPC用例部分build及host程序；无NEMU执行器副本 |
+| crp-f0045 | 18.35 | 1.28 | 无 | RT/nanos/双平台guest ELF/bin和host程序；host/nemu是局部测试夹具 |
+| crp-f0046-f0048-f0050 | 10.57 | 2.45 | 无 | NPC binary、RT/BSP ELF/bin及部分build；无NEMU执行器副本 |
+| crp-f0049 | 1.70 | 0.78 | 无 | RT部分build及host程序；无NEMU执行器副本 |
+| crp-f0051 | 2.39 | 0.48 | 无 | RT ELF/bin；其余为源码/文本/脚本证据 |
+| crp-f0052 | 3.61 | 0.00 | 无 | 没有ELF、对象、库或raw镜像；fake工具/脚本/文本见证 |
+| crp-f0085 | 18.20 | 0.60 | 无 | nanos ELF/bin、多个小型host程序；无NEMU执行器副本 |
+
+例如用户当前打开的crp-f0034-f0035-f0036：没有独立NEMU执行器或源码build树，
+但local/artifacts下保留nanos-lite/build、navy-apps/build、abstract-machine/klib/build、
+stdio-test/build、rt/bsp/abstract-machine/build的部分产物。总19.74MiB中产物约1.14MiB，
+其余主要是截图与记录。F0022的local/nemu/build约1.33MiB，整个任务约6.47MiB。
+
+核对方式：find定位records下全部crp*目录；把F0015内部5份同名局部source快照计入
+所属任务而非新增任务。os.walk不追随符号链接，检查文件ELF/ar魔数和镜像/对象后缀，
+逐目录du -s -B1核算块占用；记录每份产物的相对路径、逻辑大小/分配字节，以及
+源码/build目录、symlink、最大文件。F0022的riscv64→riscv32 symlink单独登记，未重复计目标。
+嵌套build目录的du数不可再次相加（父目录已包含子目录）；总量只汇总19个互不嵌套任务根。
+
+原始清单：local/crp-build-audit.json；盘点脚本local/crp-build-audit.py。
+二者本地忽略，不从git提交推定已有备份；本段报告/过程索引等维护说明尚未提交。
+本轮不修改CRP既有manifest或重新判定历史验收；“有产物”也不保证完整可复现，
+尤其/tmp测试树不属于这些存档目录，不能将历史外部构建路径视为本地存档备份。
+下一动作仅为用户复核本次盘点结果；未来CRP实施仍只沿TASK_QUEUE唯一入口。

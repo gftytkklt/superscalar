@@ -440,3 +440,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0022 TARGET_AM嵌入镜像边界](code_correctness_review/crp-f0022/README.md)：F0021已确认提交2a96eb3；本组符号/长度/RESET/剩余容量检查及AM动态PMEM静态初始化编译阻塞修正。原2反例失败，ASan/UBSan28/28、真实AM-native6场景、RISC-V内外两层NEMU双GOOD TRAP、默认native构建/guest与判据控制通过。29已修/90未修完含5CQ/F0040Partial，本组Completed待确认提交，不推进M2。
 
 2026-10-18 用户确认F0022并授权提交，同时要求检查所有CRP存档目录的独立构建资产；[提交回执](code_correctness_review/crp-f0022/README.md#approval-submit-20261018)复用原验收，687条manifest无漂移，不开始F0023。
+
+2026-10-18 [CRP存档构建资产逐目录盘点](workspace-storage-cleanup-20261018/README.md#crp-build-audit-20261018)：F0022已确认提交bc7a110；19个任务共206.99MiB，产物约38.21MiB、截图117.75MiB。7个有NEMU/REF副本，只有F0022有隔离NEMU/AM必要源码与build树；18个有编译产物或镜像，F0052无。逐目录内容/路径清单已留档，本次未删除资产，不Start F0023/M2；维护说明未提交。
