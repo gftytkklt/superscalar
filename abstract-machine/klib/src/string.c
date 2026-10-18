@@ -25,15 +25,15 @@ char *strcpy(char *dst, const char *src) {
 }
 
 char *strncpy(char *dst, const char *src, size_t n) {
-  //panic("Not implemented");
   size_t i = 0;
-  while((src[i] != '\0') && (i<n)){
+  while ((i < n) && (src[i] != '\0')) {
     dst[i] = src[i];
     i++;
   }
-  if(i<n){dst[i] = '\0';}
+  while (i < n) {
+    dst[i++] = '\0';
+  }
   return dst;
-  
 }
 
 char *strcat(char *dst, const char *src) {
@@ -84,16 +84,18 @@ void *memset(void *s, int c, size_t n) {
 }
 
 void *memmove(void *dst, const void *src, size_t n) {
-  //panic("Not implemented");
-  char tmp[n];
-  char *pdst = dst;
-  const char *psrc = src;
-  size_t i;
-  for(i=0;i<n;i++){
-    tmp[i]=psrc[i];
-  }
-  for(i=0;i<n;i++){
-    pdst[i]=tmp[i];
+  if (n == 0 || dst == src) return dst;
+  unsigned char *pdst = dst;
+  const unsigned char *psrc = src;
+  if ((uintptr_t)pdst < (uintptr_t)psrc) {
+    for (size_t i = 0; i < n; i++) {
+      pdst[i] = psrc[i];
+    }
+  } else {
+    while (n > 0) {
+      n--;
+      pdst[n] = psrc[n];
+    }
   }
   return dst;
 }

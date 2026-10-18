@@ -332,3 +332,17 @@ nanos真实三前台继续执行+后台hello通过。Completed、结果确认/co
 
 2026-10-18 F0037/F0038已获用户“提交”确认及提交授权；复用既有技术收尾，188份证据/生产SHA/patch无漂移。
 [提交附记](code_correctness_review/crp-f0037-f0038/README.md#f0037-f0038-submit-20261018)及本地submit-20261018/.agent保存实际回执；不提交一次性测试/生成证据，不启动下一批或push。
+
+
+<a id="crp-f0033-f0056-20261018"></a>
+2026-10-18 [CRP F0033/F0056 klib string修复](code_correctness_review/crp-f0033-f0056/README.md)：
+strncpy边界/完整零填充、memmove去VLA且O(1)栈已修；原P5越读/padding/VLA与真实小栈反例重现，
+修复后host 13copy+1092move、RV64 13copy+1093move/4KiB栈哨兵及额外边界全部通过。
+CPU全集36 PASS+1 XFAIL（已记录测试兼容配置），RT真实NPC到msh/difftest ON，nanos真实三前台+hello及108extent一致通过。
+Completed，结果确认Pending、commit Pending；生产仅string.c，测试源/原始证据本地保留；累计已修8/剩余111含5CQ，M2保持。
+本批停止，未来范围/门槛只见[唯一CRP Next](../../../../.agent/TASK_QUEUE.md#crp-next)。
+
+
+2026-10-18 F0033/F0056已获用户“提交”确认及提交授权；复用既有技术收尾，252份本地证据/7份文档、生产SHA/patch无漂移。
+[提交附记](code_correctness_review/crp-f0033-f0056/README.md#f0033-f0056-submit-20261018)及本地submit-20261018/.agent保存实际回执。
+仅最小修复/报告/索引/局部忽略，未提交一次性测试/生成证据，未重跑产品测试；提交后停止，不push或启动下一批。
