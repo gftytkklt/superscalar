@@ -28,6 +28,10 @@ void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 
 #ifdef CONFIG_DIFFTEST
 
+void difftest_sync_memory(paddr_t addr, size_t size) {
+  ref_difftest_memcpy(addr, guest_to_host(addr), size, DIFFTEST_TO_REF);
+}
+
 static bool is_skip_ref = false;
 static int skip_dut_nr_inst = 0;
 
@@ -92,7 +96,7 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
       "If it is not necessary, you can turn it off in menuconfig.", ref_so_file);
 
   ref_difftest_init(port);
-  ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
+  difftest_sync_memory(RESET_VECTOR, img_size);
   ref_difftest_regcpy(&cpu, DIFFTEST_TO_REF);
 }
 

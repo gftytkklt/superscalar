@@ -20,6 +20,7 @@
 #include <difftest-def.h>
 
 #ifdef CONFIG_DIFFTEST
+void difftest_sync_memory(paddr_t addr, size_t size);
 void difftest_skip_ref();
 void difftest_skip_dut(int nr_ref, int nr_dut);
 void difftest_set_patch(void (*fn)(void *arg), void *arg);
@@ -27,6 +28,7 @@ void difftest_step(vaddr_t pc, vaddr_t npc);
 void difftest_detach();
 void difftest_attach();
 #else
+static inline void difftest_sync_memory(paddr_t addr, size_t size) {}
 static inline void difftest_skip_ref() {}
 static inline void difftest_skip_dut(int nr_ref, int nr_dut) {}
 static inline void difftest_set_patch(void (*fn)(void *arg), void *arg) {}

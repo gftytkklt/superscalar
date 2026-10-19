@@ -17,6 +17,7 @@
 #include <device/timer.h>
 #include <device/serial.h>
 #include <memory/paddr.h>
+#include <cpu/difftest.h>
 
 void init_rand();
 void init_log(const char *log_file);
@@ -51,6 +52,11 @@ static int difftest_port = 1234;
 static int elf_num = 0;
 static char **elf_file = NULL;
 
+// Keep the exact ranges loaded by the current single/multi-image loader.
+// init_difftest() synchronizes the first image; the remaining ranges follow it.
+static struct { paddr_t addr; size_t size; } loaded_images[3];
+static size_t loaded_image_count;
+
 static long load_at(const char *file, paddr_t addr, uint64_t limit) {
   FILE *fp = fopen(file, "rb");
   if (!fp) { perror(file); exit(1); }
@@ -63,6 +69,9 @@ static long load_at(const char *file, paddr_t addr, uint64_t limit) {
   rewind(fp);
   if (fread(guest_to_host(addr), 1, size, fp) != (size_t)size) { perror(file); exit(1); }
   fclose(fp);
+  assert(loaded_image_count < ARRLEN(loaded_images));
+  loaded_images[loaded_image_count].addr = addr;
+  loaded_images[loaded_image_count++].size = size;
   Log("Loaded %s: %ld bytes at " FMT_PADDR, file, size, addr);
   return size;
 }
@@ -379,6 +388,9 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Initialize differential testing. */
   init_difftest(diff_so_file, img_size, difftest_port);
+  for (size_t i = 1; i < loaded_image_count; i++) {
+    difftest_sync_memory(loaded_images[i].addr, loaded_images[i].size);
+  }
 
   /* Initialize the simple debugger. */
   init_sdb();

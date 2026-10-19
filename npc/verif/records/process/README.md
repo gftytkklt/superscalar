@@ -490,3 +490,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-19 [F0009 A修复/最终验收与CCR清理](code_correctness_review/crp-f0009/README.md#implementation-result-20261019)：仅disk.c64位整段DMA/盘块边界及失败终止，零块/已知尾块规则，464定向/6初始化/原版负例、最终native-REF/真实MMIO与storage/nanos通过；PAL旧绘制风险保留。44已修/75未修完，本组待结果确认/commit。按用户要求删除18660可再生产物/旧源码副本、14大日志无损gzip，约4.29GiB逻辑减少；[CRP清理规则/agent工具](code_correctness_review/workflow/README.md#artifact-cleanup)已固化，历史manifest需合并清理回执，旧实现按Git版本重建，不依赖保留的旧二进制。
 
 2026-10-19 F0009用户确认补充：用户手工执行确认PAL绘图正常，原短时不完整观察由运行慢导致；已确认本批结果并授权提交。复用既有验收与清理回执，不记性能修复；实际提交见[F0009回执](code_correctness_review/crp-f0009/README.md#approval-submit-20261019)，本轮不push/不启动F0016。
+
+
+## 2026-10-19 CRP F0016与NEMU/nanos性能诊断
+
+[F0016修复与性能实测](code_correctness_review/crp-f0016/README.md)：实际装载三段完整同步golden，旧版真实差异/新版Spike与REF全字节读回、四负例、单镜像/内置/loader/native/REF验收通过。真实nanos约16–18M guest/s，hello后台45.46%、OPL合成27.14%、guest绘图15.14%；host翻译/访存占self样本约61%，关闭host绘制未见提速。性能未优化；45已修/74未修完，本组待确认提交，未来唯一入口TASK_QUEUE#crp-next，M2保持。
