@@ -1,5 +1,7 @@
 # records/process —— 日志型归档（阶段实施/调试过程/任务提示词）
 
+> **2026-10-20 状态导航勘误**：下方按日期追加的计数、待确认/提交、未开始为各批交付当时截面；当前逐项状态见[修复台账](code_correctness_review/repair-status/README.md)。F0018 已确认提交37b3195，旧重复未来入口已[勘误](code_correctness_review/crp-f0069/README.md)，未来只沿 `.agent/TASK_QUEUE.md#crp-next`。
+
 > **按项目推进顺序组织**：访存体系（阶段1–3）→ RT-Thread/SDRAM/外设（阶段F–K）→ B3 性能优化
 > （阶段1–8）→ ONScripter（PA4.5 选做）→ 环境 → **Linux 双端启动（LINUX_PLAN M0~，进行中）**。
 > 每组内按「任务入口（PROMPT/TASKS）→ 计划（PLAN）→ 结果（RECORD）」排列，附件（图/表）列在所属记录行下。
@@ -505,3 +507,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ## 2026-10-19 nanos前台/hello调度99:1与提交收尾
 
 [调度比例与验证/提交回执](code_correctness_review/hello-scheduling-20261019/README.md)：用户明确100次调度仅一次hello，非打印降频。FG_PROCESS每百次99fg/1hello，50000调用/滑动窗口及真实31窗口累计3069fg/31hello/31真实切入通过；纯生产内核3亿指令与三前台/后台进度通过，打印阈值/Navy盘不变。用户条件授权测试后提交F0016/宿主优化/调度三个归属单元，复用旧验收及清理记录，实际SHA见回执；45/74保持，无push/下一任务Start。
+
+
+### 2026-10-20 CRP F0069及过期入口更正
+
+[本组计划/结果](code_correctness_review/crp-f0069/README.md)：F0018已确认提交37b3195，旧重复未来入口作废，相关现行导航及历史勘误同步；119稳定ID核对不重复计数。proc.c修复四种非FG模式空PCB与fallback一致性，FG保持99:1。原四反例拒绝、五配置各50000调用/ASan-UBSan、10内核构建/10真实NEMU运行、默认三前台与hello37→160通过；155预清理身份/结果核对通过。46已修/73未修完，本组待确认/提交；下一入口仅TASK_QUEUE，无自动commit/push/M2推进。

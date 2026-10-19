@@ -1,5 +1,7 @@
 # "一生一芯" 工程项目（ysyx-workbench）
 
+> **CRP 现行导航（2026-10-20）**：审阅阶段的“119项未修”和各日期的 Pending/未开始为历史截面；当前逐项修复与提交见[修复台账](npc/verif/records/process/code_correctness_review/repair-status/README.md)。F0018 已确认提交 `37b3195`，旧重复下一入口已[勘误](npc/verif/records/process/code_correctness_review/crp-f0069/README.md)。后续唯一入口为 `.agent/TASK_QUEUE.md#crp-next`，M2/M3 未推进。
+
 这是"一生一芯"课程的工程工作区，包含软件模拟器、自研处理器 RTL 以及配套的软件栈/OS 实验。通过
 
 ```bash
@@ -100,7 +102,7 @@ bash init.sh subproject-name
 
 ## 分支说明（本地）
 
-独立CCR：[P10最终报告](npc/verif/records/process/code_correctness_review/FINAL_REPORT.md) **Completed（按用户两缺源验收豁免闭合）**；12,663/12,665身份按声明深度已审，2项缺源仍未审，未解释差集0。119问题未修（H13/M79/L27、5CQ）；[最终问题](npc/verif/records/process/code_correctness_review/FINAL_FINDINGS.md)、[覆盖](npc/verif/records/process/code_correctness_review/COVERAGE.md)、[证据](npc/verif/records/process/code_correctness_review/EVIDENCE_INDEX.md)、[修复/回归建议](npc/verif/records/process/code_correctness_review/REPAIR_AND_REGRESSION.md)。当前后续优先修复已完成工作的问题；未决项按正式Linux M阶段实际需求再落档。[P10收尾/提交回执](npc/verif/records/process/code_correctness_review/P10.md#p10-final-approval-20261017)；生产源码与M2未改。
+独立CCR：[P10最终报告](npc/verif/records/process/code_correctness_review/FINAL_REPORT.md) **Completed（按用户两缺源验收豁免闭合）**；12,663/12,665身份按声明深度已审，2项缺源仍未审，未解释差集0。119项为审阅时问题总数（H13/M79/L27、5CQ）；当前修复状态见页首 CRP 导航；[最终问题](npc/verif/records/process/code_correctness_review/FINAL_FINDINGS.md)、[覆盖](npc/verif/records/process/code_correctness_review/COVERAGE.md)、[证据](npc/verif/records/process/code_correctness_review/EVIDENCE_INDEX.md)、[修复/回归建议](npc/verif/records/process/code_correctness_review/REPAIR_AND_REGRESSION.md)。当前后续优先修复已完成工作的问题；未决项按正式Linux M阶段实际需求再落档。[P10收尾/提交回执](npc/verif/records/process/code_correctness_review/P10.md#p10-final-approval-20261017)；CCR审阅时未改生产源码，后续修复见现行台账，M2未推进。
 
 boot_linux（当前分支）: M1 Linux native首启与REF已完成/Handoff，P9 `14179a3`、收尾`6bf7ba2`；[启动配方](npc/verif/linux/boot/README.md)。2026-10-11 [M2 NPC A扩展计划](npc/verif/docs/LINUX_M2_PLAN.md)已落盘自审待用户确认，P1未Start；采用人工RTL/验证、AI设计与审查模式。
 new_world: PA4.5选做部分分支，npc验证环境与用例搭建

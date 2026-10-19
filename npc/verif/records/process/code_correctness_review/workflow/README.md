@@ -95,4 +95,4 @@
 
 每组完成后同步[逐项修复镜像/人工guard](../repair-status/README.md)，并维护TASK_QUEUE唯一下一入口。接近上下文质量边界时先收尾可完成的当前组；结束时统一汇总未决/延期/未测及影响，冻结[下次启动guard](../repair-status/README.md#manual-start-guard)，将下一次任务前置改为人工决定或明确豁免。压缩本身不是批准或完成；本授权来源及有效边界必须保留在状态中。
 
-本轮实际执行收尾（2026-10-18）：F0039提交b2229ef后连续完成两组F0041/F0042/F0053（root e83df62、nested6dc302a）与F0045（root f4e3c0c）。现在[人工启动guard](../repair-status/README.md#manual-start-guard)已冻结Pending；下一次Start须用户明确决定/豁免，旧连续授权不越过该用户要求的结束门槛。
+本轮实际执行收尾（2026-10-18）：F0039提交b2229ef后连续完成两组F0041/F0042/F0053（root e83df62、nested6dc302a）与F0045（root f4e3c0c）。当时[人工启动guard](../repair-status/README.md#manual-start-guard)冻结Pending；后续独立任务已按该页用户回执放行，未决项只阻塞依赖它的任务。2026-10-20用户又明确授权修正过期入口后继续实际未修任务；旧连续提交预授权不因此重新生效。本段保留原结束门槛来源，当前执行仅沿TASK_QUEUE唯一入口。

@@ -93,22 +93,27 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 
 Context* schedule(Context *prev) {
   current->cp = prev;
+  PCB *next;
 #ifdef FG_PROCESS
   // Give hello one dispatch in every 100; use the current foreground for
   // the other 99, including after F1/F2/F3 changes fg_pcb.
   static unsigned dispatch_count = 0;
   if (++dispatch_count == 100) {
     dispatch_count = 0;
-    current = &pcb[3];
+    next = &pcb[3];
   } else {
-    current = fg_pcb;
+    next = fg_pcb;
   }
+#elif defined(TEST_KLOAD) || defined(MULTIPROGRAM) || defined(TIME_SHARING)
+  next = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
+#elif defined(TEST_NTERM)
+  next = &pcb[0];
 #else
-  current = (current == fg_pcb ? &pcb[3] : fg_pcb);
+  next = current;
 #endif
-  // single-process case (e.g. TEST_NTERM): if the target PCB has no context,
-  // stay on the current one instead of switching into a dead PCB.
-  return (current->cp ? current->cp : prev);
+  // Keep the PCB and returned frame together if the target is not runnable.
+  if (next != NULL && next->cp != NULL) { current = next; }
+  return current->cp;
 }
 
 void set_fg_pcb(int idx) {

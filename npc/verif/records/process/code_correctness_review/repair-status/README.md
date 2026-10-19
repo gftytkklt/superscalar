@@ -12,12 +12,14 @@
 
 用户明确授权：“完成后提交并继续……在上下文长度在不影响任务质量的前提下连续进行多批任务的提交和新任务开启……未决项除非直接影响下一批任务，否则……最后再统一汇总，形成启动下一次任务前必须人工确定或豁免的guard”。本授权替代当前CRP各组必须另等确认的停点，仍逐项验证、逐组完成留档再提交；不授权push、安装、其他业务主线或未决实现。代理验收与提交预授权不等于用户逐项review。
 
-本轮已完成提交：既有F0039 b2229ef；新组三项F0041/F0042/F0053 root e83df62、am-kernels 6dc302a；新组F0045 root f4e3c0c。两组独立验收/留档后连续提交。现停在完整收尾边界；以下guard冻结Pending，旧连续授权不能自行绕过新的人工启动门槛。未push，M2未Start。
+当轮已完成提交：既有F0039 b2229ef；新组三项F0041/F0042/F0053 root e83df62、am-kernels 6dc302a；新组F0045 root f4e3c0c。两组独立验收/留档后连续提交。当时停在完整收尾边界并冻结guard Pending，后续独立任务放行见下节；旧连续授权不能自行越过用户停点。未push，M2未Start。
 
 <a id="manual-start-guard"></a>
-## 下次启动前人工 guard（2026-10-18冻结，Pending）
+## 启动 guard（2026-10-18历史冻结；后续独立任务已放行）
 
-原冻结来源为用户前轮明确要求“最后再统一汇总，形成启动下一次任务前必须人工确定或豁免的guard”，不是新增全局审批规则。前轮在两组修复完整收尾后结束连续推进；**任何下一次CRP工作单元Start前，须用户明确决定或豁免本节**。沿用既有延期即可放行独立任务，无需一次解决全部问题；模糊的Next、测试通过、压缩恢复或旧授权不自动解除本冻结门槛。
+本节冻结文字是历史截面；后续用户已放行独立修复（见下方回执），2026-10-20又明确授权维护后继续实际未修任务。五CQ/F0040/F0043具体未决保持，不恢复为独立任务统一阻塞。
+
+历史冻结要求（后续放行见本节首段及下方回执）：原冻结来源为用户前轮明确要求“最后再统一汇总，形成启动下一次任务前必须人工确定或豁免的guard”，不是新增全局审批规则。前轮在两组修复完整收尾后结束连续推进；**任何下一次CRP工作单元Start前，须用户明确决定或豁免本节**。沿用既有延期即可放行独立任务，无需一次解决全部问题；模糊的Next、测试通过、压缩恢复或旧授权不自动解除本冻结门槛。
 
 | 待确认/豁免项 | 当前事实与实际影响 | 建议保留的边界 / 可选裁决 |
 |---|---|---|
@@ -36,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复45（前44已确认提交；F0016已获本次提交授权，实际回执见报告）；未修完74，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
+全部已有功能修复46（前45已确认提交；F0069已获确认及本次提交授权，实际回执见报告）；未修完73，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -48,14 +50,14 @@
 | CCR-F0006 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [保留字段/原指令诊断及真实回归](../crp-f0006-f0007/README.md) |
 | CCR-F0007 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [PMEM/Sv39/MMIO边界及真实回归](../crp-f0006-f0007/README.md) |
 | CCR-F0008 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0009 | Confirmed / High | 已修 / 已确认、已授权提交；实际回执见报告 | [最终源码验收及清理回执](../crp-f0009/README.md#implementation-result-20261019) |
+| CCR-F0009 | Confirmed / High | 已修 / 已确认提交d28c393 | [最终源码验收及清理回执](../crp-f0009/README.md#implementation-result-20261019) |
 | CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0012 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
 | CCR-F0013 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
 | CCR-F0014 | Confirmed / Medium | 已修 / 已确认提交194d2c0 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) |
 | CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
-| CCR-F0016 | Confirmed / Medium | 已修 / 已确认；提交见回执 | [三段启动同步/真实golden及性能诊断](../crp-f0016/README.md) |
+| CCR-F0016 | Confirmed / Medium | 已修 / 已确认提交de7e3be | [三段启动同步/真实golden及性能诊断](../crp-f0016/README.md) |
 | CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
 | CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 已修 / 已确认提交522bed7 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) |
@@ -108,7 +110,7 @@
 | CCR-F0066 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0066) |
 | CCR-F0067 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0067) |
 | CCR-F0068 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0068) |
-| CCR-F0069 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0069) |
+| CCR-F0069 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [本组计划及勘误](../crp-f0069/README.md) |
 | CCR-F0070 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0070) |
 | CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
 | CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
@@ -268,3 +270,13 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 2026-10-19 F0016及nanos性能诊断补充：用户本轮授权继续既有唯一入口，F0009 d28c393门槛满足。F0016三段实际装载范围完整送入golden，旧版实际Spike对拍失败/新版通过、REF全字节读回、四同步负例、单镜像/内置/loader/native/REF ABI通过。性能诊断约16–18M guest/s，后台hello约45.46%、guest DBOPL27.14%、guest绘图15.14%，host翻译/访存相关self样本约61%；未实施性能优化。45已修/74未修完，前44已确认提交，本组待新结果确认/commit，统一停点；恢复只沿TASK_QUEUE#crp-next。
 
 2026-10-19 提交授权补充：用户要求调度99:1补充验证后提交当前改动；F0016与宿主优化复用既有验收，只补确认和实际提交回执，不重复Completion。新调度不增加F项计数，45/74保持；F0016实际提交结果见本组报告及local回执，未push/下一CRP Start。
+
+
+## 2026-10-20 入口勘误及实际未修任务启动
+
+F0018在本表一直为已修/已确认提交37b3195；TASK_QUEUE及相关2026-10-19快照误列为未来候选，本轮按用户明确要求勘误，不重复计数/验收。45已修/74未修完经119稳定ID逐行计算；F0069实际尚未修，当前Active，计划/验收见报告，唯一调度入口仍TASK_QUEUE。
+
+
+## 2026-10-20 F0069 完成（未提交）
+
+非FG保留stage按实际PCB选择、无可用目标时保持current/frame一致；原四NULL反例拒绝，最终五配置各50000调用/sanitizer、10个实际内核构建及10次真实有限NEMU运行、默认三前台/hello37→160通过。当前46已修/73未修完，F0069结果确认/commit Pending；其他45项已确认提交。旧F0018重复候选不计新修复；证据/未测/清理见[本组报告](../crp-f0069/README.md)。下一入口只在TASK_QUEUE，本轮不提交/下一组Start。

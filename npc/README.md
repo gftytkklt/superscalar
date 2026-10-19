@@ -1,5 +1,7 @@
 # npc — 自研 RISC-V64 处理器
 
+> **CRP 现行导航（2026-10-20）**：审阅阶段的“119项未修”和各日期的 Pending/未开始为历史截面；当前逐项修复与提交见[修复台账](verif/records/process/code_correctness_review/repair-status/README.md)。F0018 已确认提交 `37b3195`，旧重复下一入口已[勘误](verif/records/process/code_correctness_review/crp-f0069/README.md)。后续唯一入口为 `.agent/TASK_QUEUE.md#crp-next`，M2/M3 未推进。
+
 `npc` 是"一生一芯"工程中的**自研处理器**。核心是一个 RV64 五级流水线 CPU（RTL 单文件
 `vsrc/ysyx_22040750.v`，共 32 个模块），通过自定义握手接口接**参数化 I/D Cache**（默认
 4KB/32B/2 路），并以 AXI4 主接口挂到 Chisel 生成的 SoC（`ysyxSoCFull`）总线上，与
@@ -19,7 +21,7 @@ Flash/PSRAM/SRAM/UART/GPIO/PS2/VGA 等通信；SDRAM 挂 AXI（`AXI4SDRAM`，`ax
 
 ## 1. 目录结构
 
-独立CCR：[P10最终报告](verif/records/process/code_correctness_review/FINAL_REPORT.md) **Completed（按用户两缺源验收豁免闭合）**；12,663/12,665身份按声明深度已审，2项缺源仍未审，未解释差集0。119问题未修（H13/M79/L27、5CQ）；[最终问题](verif/records/process/code_correctness_review/FINAL_FINDINGS.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)、[证据](verif/records/process/code_correctness_review/EVIDENCE_INDEX.md)、[修复/回归建议](verif/records/process/code_correctness_review/REPAIR_AND_REGRESSION.md)。当前后续优先修复已完成工作的问题；未决项按正式Linux M阶段实际需求再落档。[P10收尾/提交回执](verif/records/process/code_correctness_review/P10.md#p10-final-approval-20261017)；生产源码与M2未改。
+独立CCR：[P10最终报告](verif/records/process/code_correctness_review/FINAL_REPORT.md) **Completed（按用户两缺源验收豁免闭合）**；12,663/12,665身份按声明深度已审，2项缺源仍未审，未解释差集0。119项为审阅时问题总数（H13/M79/L27、5CQ）；当前修复状态见页首 CRP 导航；[最终问题](verif/records/process/code_correctness_review/FINAL_FINDINGS.md)、[覆盖](verif/records/process/code_correctness_review/COVERAGE.md)、[证据](verif/records/process/code_correctness_review/EVIDENCE_INDEX.md)、[修复/回归建议](verif/records/process/code_correctness_review/REPAIR_AND_REGRESSION.md)。当前后续优先修复已完成工作的问题；未决项按正式Linux M阶段实际需求再落档。[P10收尾/提交回执](verif/records/process/code_correctness_review/P10.md#p10-final-approval-20261017)；CCR审阅时未改生产源码，后续修复见现行台账，M2未推进。
 
 
 ```
