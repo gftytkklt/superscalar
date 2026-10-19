@@ -34,18 +34,18 @@
 
 ## 当前逐项状态
 
-全部已有功能修复38（F0019已确认提交522bed7；本组F0004/F0008新修复未提交，F0005既有bc7a110补验闭合，本组三项结果待确认）；未修完81，其中契约待定5、F0040部分修复1。总计119。以下“已修/已提交”均有对应报告，历史审阅“未修”不覆盖本表当前镜像。
+全部已有功能修复40（前组F0004/F0005/F0008已确认提交1ddaf04；本组F0006/F0007 Completed，结果确认/新commit Pending）；未修完79，其中契约待定5、F0040部分修复1。总计119。以下状态均以对应报告/回执为准，历史审阅截面不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
 | CCR-F0001 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0001) |
 | CCR-F0002 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0002) |
 | CCR-F0003 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0003) |
-| CCR-F0004 | Confirmed / Medium | 已修 / Completed，本组结果待确认提交 | [非对齐/别名安全与共享真实回归](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0005 | Confirmed / Medium | 已修 / Completed，本组结果待确认，代码已有bc7a110 | [既有bc7a110修复/本组补验](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0006 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0006) |
-| CCR-F0007 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0007) |
-| CCR-F0008 | Confirmed / Medium | 已修 / Completed，本组结果待确认提交 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) |
+| CCR-F0004 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [非对齐/别名安全与共享真实回归](../crp-f0004-f0005-f0008/README.md) |
+| CCR-F0005 | Confirmed / Medium | 已修 / 已确认，代码bc7a110/补验1ddaf04 | [既有bc7a110修复/本组补验](../crp-f0004-f0005-f0008/README.md) |
+| CCR-F0006 | Confirmed / Low | 已修 / Completed，待确认提交 | [保留字段/原指令诊断及真实回归](../crp-f0006-f0007/README.md) |
+| CCR-F0007 | Confirmed / Low | 已修 / Completed，待确认提交 | [PMEM/Sv39/MMIO边界及真实回归](../crp-f0006-f0007/README.md) |
+| CCR-F0008 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) |
 | CCR-F0009 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0009) |
 | CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
 | CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
@@ -246,3 +246,5 @@ F0037/F0038、F0033/F0056、F0034/F0035/F0036、F0085归档ramdisk及F0018完整
 2026-10-18 F0052补充已确认分仓提交22791cf/f3d0252；F0019工具修复Completed待确认提交：原请求3/输出0/exit0精确失败，128独立oracle/真实CLI、10,000 sanitizer生成/3边界树、输入/子进程/IO失败及并发通过，17项终检。35已修/84未修完；仅工具修改，未冒充CPU/RT/nanos重测。
 
 2026-10-19 F0004/F0008新增修复及F0005补验闭合Completed：F0005原代码已随F0022/bc7a110提交，原清单漏镜像，本次按证据补齐不重复修改。宿主181×6检查、实际static/malloc/REF/AM、双CPU全集、RT新REF到msh及nanos8点通过；本组三项待确认，新代码未提交。38已修/81未修完，原历史计数不回写。
+
+2026-10-19 前组宿主内存三项已按用户“提交，继续CRP修复”确认提交1ddaf04；F0006/F0007 Completed待确认提交，40次GCC/sanitizer定向、native/REF自修改/尾非法指令和双CPU全集各36PASS+1XFAIL通过，23终检。其他ISA完整构建仍有原有阻塞，成套源/头逐文件对比确认前后诊断一致；不称其完整通过。40已修/79未修完，详细边界见本组报告，未来仅TASK_QUEUE。

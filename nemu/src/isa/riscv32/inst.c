@@ -145,10 +145,10 @@ static void riscv_exec_atomic(Decode *s, int rd, word_t addr, word_t rhs) {
   uint32_t inst = s->isa.inst.val;
   uint32_t op = BITS(inst, 31, 27);
   int len = BITS(inst, 14, 12) == 2 ? 4 : 8;
-  if (op == 2 && BITS(inst, 24, 20) != 0) { INV(s->pc); return; }
+  if (op == 2 && BITS(inst, 24, 20) != 0) { INV(s->pc, s->isa.inst.val); return; }
   if (op != 2 && op != 3 && op != 1 && op != 0 && op != 4 &&
       op != 12 && op != 8 && op != 16 && op != 20 &&
-      op != 24 && op != 28) { INV(s->pc); return; }
+      op != 24 && op != 28) { INV(s->pc, s->isa.inst.val); return; }
 
   if (addr & (len - 1)) {
     // LR is a load; SC and AMOs have store/AMO misalignment cause.
@@ -403,11 +403,11 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 000 ????? 00011 11", fence_mem, N, s->dnpc = s->snpc);
 #endif
   // fence.i: NEMU 无 cache 一致性需求，实现为空操作（仅需 pc 前进）。
-  // 编码 0x0000100f：funct3=001（fence 是 000，fence.i 是 001）。
-  INSTPAT("0000000 00000 00000 001 00000 00011 11", fence  , N, s->dnpc = s->snpc);
+  // Zifencei requires ignoring the reserved imm/rs1/rd fields.
+  INSTPAT("??????? ????? ????? 001 ????? 00011 11", fence  , N, s->dnpc = s->snpc);
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   // Keep unmatched opcodes as an emulator debug stop until the full illegal-instruction path is validated.
-  INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
+  INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc, s->isa.inst.val));
   INSTPAT_END();
 
   R(0) = 0; // reset $zero to 0

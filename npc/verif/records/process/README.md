@@ -456,3 +456,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-18 [CRP F0019表达式生成工具](code_correctness_review/crp-f0019/README.md)：前组F0052补充已确认分仓提交22791cf/f3d0252；仅gen-expr.c实现有界有效四则生成、独立C oracle/失败传播/私有临时目录。原空输出exit0见证，128条三方结果/真实CLI、10,000 sanitizer/3边界树、8输入/9oracle/3IO故障及并发通过，17项终检。明确非负INT_MAX域/29-token上限及未测边界；35已修/84未修完，本组Completed待确认提交，M2不变。
 
 2026-10-19 [CRP F0004/F0005/F0008宿主内存组](code_correctness_review/crp-f0004-f0005-f0008/README.md)：F0019已确认提交522bed7；新增定长memcpy消除RAM对齐/别名UB、MEM_RANDOM安全写入及guest_to_host整数先减基址，F0005既有bc7a110修复补验闭合。GCC/Clang+sanitizer各181断言、static/malloc/REF实际构建/非对齐跨页/ABI、双CPU36PASS+1XFAIL、RT163.32秒msh/difftest ON、nanos8点/hello1267→5894与AM-native/RV双层启动通过，23终检。38已修/81未修完，本组待确认提交；保留raw helper前置/未测/无效夹具边界，M2保持。
+
+2026-10-19 [CRP F0006/F0007解码与INV诊断](code_correctness_review/crp-f0006-f0007/README.md)：前宿主内存组已确认提交1ddaf04；FENCE.I忽略保留字段，INV仅用已取得原字、不再重复取指/预读。40次GCC/san定向、native/REF自修改及PMEM尾失败、双CPU全集各36PASS+1XFAIL/make0，23终检。其他ISA仅改动单元兼容通过、完整构建既有阻塞前后相同；40已修/79未修完，本组待确认提交，M2保持。
