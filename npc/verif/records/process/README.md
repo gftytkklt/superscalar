@@ -517,3 +517,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ### 2026-10-20 CRP F0060用户参数栈对齐
 
 [F0060报告](code_correctness_review/crp-f0060/README.md)：前组F0069已确认提交e58bbd0。loader仅增加5行padding，保持字符串地址/内容及argc/argv/envp连续布局。原四host反例拒绝，VME/非VME各99例通过；真实_start→call_main入口旧PAL/hello/NTERM未对齐、新四应用及非VME-NTERM均16对齐，六次各1亿指令/纯生产和三前台/hello37→167通过。47已修/72未修完，本组待确认/commit；临时产物684文件约161.3MiB已清理，未测范围/输入身份与再生配方可回查，未来只沿TASK_QUEUE。
+
+
+### 2026-10-20 CRP F0064/F0065文件接口边界
+
+[本组报告](code_correctness_review/crp-f0064-f0065/README.md)：前F0060已确认提交7b83685。fs.c/fs.h共26增6删，非法fd先拒绝、signed定位验证后才发布；原3host反例、30fd/28定位/129断言、真实旧syscall失败/新PASS与自有文件写盘差异、默认三前台/hello38→165通过。49已修/70未修完，本组待确认/commit；389产物约300.7MiB已清理，命令/身份/夹具修正及未测边界保留，未来仅TASK_QUEUE#crp-next。

@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复47（前46已确认提交；F0060已确认及授权提交，实际回执见报告）；未修完72，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
+全部已有功能修复49（前47已确认提交；F0064/F0065已获确认及本次提交授权，实际回执见报告）；未修完70，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -101,12 +101,12 @@
 | CCR-F0057 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0057) |
 | CCR-F0058 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0058) |
 | CCR-F0059 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0059) |
-| CCR-F0060 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [本组报告](../crp-f0060/README.md) |
+| CCR-F0060 | Confirmed / Medium | 已修 / 已确认提交7b83685 | [本组报告](../crp-f0060/README.md) |
 | CCR-F0061 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0061) |
 | CCR-F0062 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0062) |
 | CCR-F0063 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0063) |
-| CCR-F0064 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0064) |
-| CCR-F0065 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0065) |
+| CCR-F0064 | Robustness / Medium | 已修 / 已确认，提交见回执 | [本组报告](../crp-f0064-f0065/README.md) |
+| CCR-F0065 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [本组报告](../crp-f0064-f0065/README.md) |
 | CCR-F0066 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0066) |
 | CCR-F0067 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0067) |
 | CCR-F0068 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0068) |
@@ -290,3 +290,8 @@ F0018在本表一直为已修/已确认提交37b3195；TASK_QUEUE及相关2026-1
 ## 2026-10-20 F0060完成（未提交）
 
 loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例、真实旧C入口不对齐/新四应用及非VME-NTERM对齐、六次各1亿指令/纯生产与默认三前台/hello37→167通过。47已修/72未修完，前46均确认提交，本项结果确认/commit Pending。684临时产物169182570字节已清理，保留文字/身份/patch；完整证据与未测见[本组报告](../crp-f0060/README.md)。未来唯一TASK_QUEUE，不自动提交或下一组Start。
+
+
+## 2026-10-20 F0060提交及F0064/F0065完成
+
+用户“提交后继续”确认前组并授权7b83685提交后本组，5文件/范围/blob/干净状态核对通过，58manifest/18终检和原动态验收/清理复用。F0064四入口fd验证、F0065signed定位先验后发布已修，原3host反例、30fd/28seek/129断言、真实旧FD故障入口/旧seek偏移失败及新syscall PASS/写盘差异、默认三前台/hello38→165通过。49已修/70未修完，前47已确认提交，本组2项待确认/commit；389临时产物315283627字节已清理，证据/夹具修正/未测见[报告](../crp-f0064-f0065/README.md)。未来仅TASK_QUEUE，不自动提交/下一组Start。

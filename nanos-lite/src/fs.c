@@ -1,4 +1,5 @@
 #include <fs.h>
+#include <limits.h>
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -93,7 +94,7 @@ int fs_open(const char *pathname, int flags, int mode) {
 }
 
 long fs_read(int fd, void *buf, size_t len) {
-
+  if (fd < 0 || fd >= filenum) { return -1; }
   long rd_offt = fp_offt[fd] + file_table[fd].disk_offset;
   long offt_incr = 0;
   // normal file
@@ -111,6 +112,7 @@ long fs_read(int fd, void *buf, size_t len) {
 }
 
 long fs_write(int fd, const void *buf, size_t len) {
+  if (fd < 0 || fd >= filenum) { return -1; }
   long wr_offt = fp_offt[fd] + file_table[fd].disk_offset;
   long offt_incr = 0;
   if (file_table[fd].write == NULL) {
@@ -126,17 +128,35 @@ long fs_write(int fd, const void *buf, size_t len) {
   return offt_incr;
 }
 
-long fs_lseek(int fd, size_t offset, int whence) {
+long fs_lseek(int fd, long offset, int whence) {
+  if (fd < 0 || fd >= filenum) { return -1; }
+  size_t base;
   switch(whence) {
-    case SEEK_SET: fp_offt[fd] = offset;break;
-    case SEEK_CUR: fp_offt[fd] += offset;break;
-    case SEEK_END: fp_offt[fd] = file_table[fd].size + offset;break;
+    case SEEK_SET: base = 0; break;
+    case SEEK_CUR:
+      if (fp_offt[fd] < 0) { return -1; }
+      base = (size_t)fp_offt[fd];
+      break;
+    case SEEK_END: base = file_table[fd].size; break;
     default: return -1;
   }
+  size_t next;
+  if (offset < 0) {
+    // Form the magnitude without negating LONG_MIN.
+    size_t back = (size_t)(-(offset + 1)) + 1;
+    if (back > base) { return -1; }
+    next = base - back;
+  } else {
+    if (base > (size_t)LONG_MAX - (size_t)offset) { return -1; }
+    next = base + (size_t)offset;
+  }
+  if (next > file_table[fd].size || next > (size_t)LONG_MAX) { return -1; }
+  fp_offt[fd] = (long)next;
   return fp_offt[fd];
 }
 
 int fs_close(int fd) {
+  if (fd < 0 || fd >= filenum) { return -1; }
   fp_offt[fd] = 0;
   return 0;
 }

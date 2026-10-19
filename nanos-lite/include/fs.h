@@ -8,7 +8,7 @@ enum {SEEK_SET, SEEK_CUR, SEEK_END};
 #endif
 int fs_open(const char *pathname, int flags, int mode);
 long fs_read(int fd, void *buf, size_t len);
-long fs_lseek(int fd, size_t offset, int whence);
+long fs_lseek(int fd, long offset, int whence);
 int fs_close(int fd);
 long fs_write(int fd, const void *buf, size_t len);
 size_t ramdisk_read(void *buf, size_t offset, size_t len);
