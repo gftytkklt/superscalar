@@ -480,3 +480,13 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-19 F0003确认/提交：用户“提交”确认双端修复及并行MTVEC补充的已报告范围/限制；57/385/193清单和28/11/24/8核验保持，复用验收。本批11文件提交，实际回执见[记录末尾](code_correctness_review/crp-f0003/README.md#approval-submit-20261019)及local/parallel-mtvec/submit-receipt.json/.agent；不push、不开始下一组，ignored资产仍仅本地保管。
 
 2026-10-19 [F0003时序优化技巧/前后依赖图](code_correctness_review/crp-f0003/README.md#timing-technique-20261019)：补充串行CSR准备→按指令类别提前并行准备/晚到条件最终选择、判断公式/两处配套修改、icache终点解释及适用/验收方法；knowledge经验地图已登记。仅文档，复用已提交c920dbe的验证/STA，不改代码或启动后组；用户授权总结完成后直接提交。
+
+
+## 2026-10-19 CRP F0009磁盘DMA与失败契约
+
+[原行为复现及具体方案A/B](code_correctness_review/crp-f0009/README.md)：12个观察覆盖正常读写、高位别名、跨端、盘外、尾块、seek/短写/flush与零块；原MMIO/map/disk/paddr调用链，临时盘写入，生产未修。AM/nanos没有可消费错误状态，触发原入口的失败语义裁决停点；建议保留接口并失败终止/明确尾块，或增加可恢复错误协议。43已修/76未修完不变，等待本单元裁决，无修复Completion/提交，M2/M3保持。
+
+
+2026-10-19 [F0009 A修复/最终验收与CCR清理](code_correctness_review/crp-f0009/README.md#implementation-result-20261019)：仅disk.c64位整段DMA/盘块边界及失败终止，零块/已知尾块规则，464定向/6初始化/原版负例、最终native-REF/真实MMIO与storage/nanos通过；PAL旧绘制风险保留。44已修/75未修完，本组待结果确认/commit。按用户要求删除18660可再生产物/旧源码副本、14大日志无损gzip，约4.29GiB逻辑减少；[CRP清理规则/agent工具](code_correctness_review/workflow/README.md#artifact-cleanup)已固化，历史manifest需合并清理回执，旧实现按Git版本重建，不依赖保留的旧二进制。
+
+2026-10-19 F0009用户确认补充：用户手工执行确认PAL绘图正常，原短时不完整观察由运行慢导致；已确认本批结果并授权提交。复用既有验收与清理回执，不记性能修复；实际提交见[F0009回执](code_correctness_review/crp-f0009/README.md#approval-submit-20261019)，本轮不push/不启动F0016。

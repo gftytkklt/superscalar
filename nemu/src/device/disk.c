@@ -15,6 +15,7 @@
 
 #include <device/map.h>
 #include <memory/paddr.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,6 +39,7 @@ enum {
 static uint32_t *disk_base = NULL;
 static FILE *disk_fp = NULL;
 static uint32_t disk_blkcnt = 0;
+static uint64_t disk_size = 0;
 
 static void disk_io_handler(uint32_t offset, int len, bool is_write) {
   uint32_t *reg = disk_base + (offset / 4);
@@ -54,15 +56,36 @@ static void disk_io_handler(uint32_t offset, int len, bool is_write) {
   // so here we only act when the command register is written.
   if (offset != reg_cmd * 4) return;
 
-  if (disk_fp) {
-    uint64_t paddr = ((uint64_t)disk_base[reg_buf_hi] << 32) | disk_base[reg_buf_lo];
-    // guest_to_host() already subtracts CONFIG_MBASE, so pass the raw paddr
-    uint8_t *host_buf = guest_to_host((paddr_t)paddr);
-    fseek(disk_fp, (long)disk_base[reg_blkno] * BLKSZ, SEEK_SET);
-    size_t bytes = (size_t)disk_base[reg_blkcnt] * BLKSZ;
-    if (disk_base[reg_write]) { size_t _r = fwrite(host_buf, bytes, 1, disk_fp); (void)_r; }
-    else { size_t _r = fread(host_buf, bytes, 1, disk_fp); (void)_r; }
-    fflush(disk_fp);
+  if (disk_fp == NULL || disk_base[reg_blkcnt] == 0) return;
+
+  uint64_t paddr = ((uint64_t)disk_base[reg_buf_hi] << 32) | disk_base[reg_buf_lo];
+  uint64_t blkno = disk_base[reg_blkno], blkcnt = disk_base[reg_blkcnt];
+  uint64_t pos = blkno * BLKSZ, bytes = blkcnt * BLKSZ;
+  // Keep the full register address and arithmetic until all narrowing is safe.
+  Assert((uint64_t)(paddr_t)paddr == paddr && bytes <= SIZE_MAX &&
+      pos <= LONG_MAX && bytes <= (uint64_t)LONG_MAX - pos &&
+      blkno < disk_blkcnt && blkcnt <= disk_blkcnt - blkno,
+      "invalid disk DMA: addr=0x%" PRIx64 " block=%" PRIu64 " count=%" PRIu64,
+      paddr, blkno, blkcnt);
+  uint8_t *host_buf = addr_to_soc_range((paddr_t)paddr, (size_t)bytes);
+  Assert(host_buf != NULL, "invalid disk DMA memory span: addr=0x%" PRIx64
+      " bytes=%" PRIu64, paddr, bytes);
+
+  // BLKIO has no error return: never resume the guest after a failed command.
+  Assert(fseek(disk_fp, (long)pos, SEEK_SET) == 0,
+      "disk seek failed: offset=%" PRIu64, pos);
+  if (disk_base[reg_write]) {
+    size_t done = fwrite(host_buf, 1, (size_t)bytes, disk_fp);
+    Assert(done == bytes && !ferror(disk_fp), "disk short write: %zu/%" PRIu64, done, bytes);
+    Assert(fflush(disk_fp) == 0, "disk flush failed");
+    if (pos + bytes > disk_size) disk_size = pos + bytes;
+  } else {
+    // Only the known partial final block is padded; unexpected EOF is an error.
+    uint64_t available = pos < disk_size ? disk_size - pos : 0;
+    size_t expected = available < bytes ? available : (size_t)bytes;
+    size_t done = fread(host_buf, 1, expected, disk_fp);
+    Assert(done == expected && !ferror(disk_fp), "disk short read: %zu/%zu", done, expected);
+    memset(host_buf + expected, 0, (size_t)bytes - expected);
   }
 }
 
@@ -77,11 +100,16 @@ void init_disk() {
   snprintf(path, sizeof(path), "%s/build/ramdisk.img", navy);
   disk_fp = fopen(path, "r+b");
   if (disk_fp) {
-    fseek(disk_fp, 0, SEEK_END);
+    Assert(fseek(disk_fp, 0, SEEK_END) == 0, "disk image seek failed: %s", path);
     long size = ftell(disk_fp);
-    disk_blkcnt = (size + BLKSZ - 1) / BLKSZ;
-    fseek(disk_fp, 0, SEEK_SET);
-    Log("disk image: %s (%ld bytes, %d blocks)", path, size, disk_blkcnt);
+    Assert(size >= 0, "disk image size failed: %s", path);
+    disk_size = (uint64_t)size;
+    uint64_t blocks = disk_size / BLKSZ + (disk_size % BLKSZ != 0);
+    // AM_DISK_CONFIG exposes the block count as an int.
+    Assert(blocks <= INT_MAX, "disk image too large: %" PRIu64 " blocks", blocks);
+    disk_blkcnt = (uint32_t)blocks;
+    Assert(fseek(disk_fp, 0, SEEK_SET) == 0, "disk image rewind failed: %s", path);
+    Log("disk image: %s (%ld bytes, %u blocks)", path, size, disk_blkcnt);
   } else {
     Log("disk image not found at %s, disk disabled", path);
   }
