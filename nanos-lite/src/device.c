@@ -29,6 +29,7 @@ size_t serial_write(const void *buf, size_t offset, size_t len) {
 }
 
 size_t events_read(void *buf, size_t offset, size_t len) {
+  if (len == 0) { return 0; }
   MULTIPROGRAM_YIELD();
   AM_INPUT_KEYBRD_T kbd = {};
   bool keydown = 0;
@@ -36,10 +37,9 @@ size_t events_read(void *buf, size_t offset, size_t len) {
   kbd = io_read(AM_INPUT_KEYBRD);
   keydown = kbd.keydown;
   keycode = kbd.keycode;
-  if(!keycode) {return 0;}
-  char *tmp = (char *)buf;
-  char *down_const = "kd ";
-  char *up_const = "ku ";
+  if (keycode <= 0 || keycode >= LENGTH(keyname) || keyname[keycode] == NULL) {
+    return 0;
+  }
 
   #ifdef FG_PROCESS
   // PA4.5: F1/F2/F3 switch the foreground process. The key is consumed by the
@@ -51,11 +51,15 @@ size_t events_read(void *buf, size_t offset, size_t len) {
   }
   #endif
 
-  if(keydown){strcpy(tmp, down_const);}
-  else{strcpy(tmp, up_const);}
-  strcat(tmp, keyname[keycode]);
-  strcat(tmp, "\n");
-  return strlen(tmp);
+  const char *parts[] = {keydown ? "kd " : "ku ", keyname[keycode], "\n"};
+  size_t n = 0;
+  for (int i = 0; i < LENGTH(parts); i++) {
+    for (const char *p = parts[i]; *p && n < len; p++) {
+      ((char *)buf)[n++] = *p;
+    }
+  }
+  if (n < len) { ((char *)buf)[n] = '\0'; }
+  return n;
 }
 
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
@@ -93,13 +97,13 @@ size_t audio_init() {
 }
 
 size_t audio_read(void *buf, size_t offset, size_t len) {
+  if (len == 0) { return 0; }
   AM_AUDIO_STATUS_T stat = io_read(AM_AUDIO_STATUS);
   int free = audio_sbuf_size - stat.count;
   if (free < 0) free = 0;
   if (len > sizeof(int)) len = sizeof(int);
-  if (len > (size_t)free) len = free;
-  *(int *)buf = free;
-  return sizeof(int);
+  memcpy(buf, &free, len);
+  return len;
 }
 
 size_t audio_ctrl_write(const void *buf, size_t offset, size_t len) {

@@ -522,3 +522,14 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ### 2026-10-20 CRP F0064/F0065文件接口边界
 
 [本组报告](code_correctness_review/crp-f0064-f0065/README.md)：前F0060已确认提交7b83685。fs.c/fs.h共26增6删，非法fd先拒绝、signed定位验证后才发布；原3host反例、30fd/28定位/129断言、真实旧syscall失败/新PASS与自有文件写盘差异、默认三前台/hello38→165通过。49已修/70未修完，本组待确认/commit；389产物约300.7MiB已清理，命令/身份/夹具修正及未测边界保留，未来仅TASK_QUEUE#crp-next。
+
+
+### 2026-10-20 CRP F0066/F0067设备read边界
+
+[本组报告](code_correctness_review/crp-f0066-f0067/README.md)：前组已确认提交5941586。仅device.c16增12删，事件有界复制/可选NUL/键码及F键兼容、零长度无轮询，音频状态限长memcpy/原4字节值保持。原4host失败、两分支各135场景、真实旧/新用户设备read/SDL输入与正常PCM路径、三前台及hello38→169通过。51已修/68未修完，新组待确认/commit；390产物约300.8MiB清理完成，短读非缓存语义、命令/身份/未测见报告，未来只沿TASK_QUEUE。
+
+
+2026-10-20 [F0066/F0067音频补查重新完成](code_correctness_review/crp-f0066-f0067/README.md#audio-review-20261020)：按用户收敛要求，已证当前99:1下长绘图延后补音；同引擎仅诊断跳过绘图后4.98→10.87包/s、欠填充117/217→0/217，原音频生成保持。400×300单因素仍欠填充，旧基线未知；dummy频率证据非物理听音，不修执行预算问题，无新增生产修改。13核对/3负例及819产物清理完成；本组Completed待确认提交，F0068未Start，唯一TASK_QUEUE。
+
+
+2026-10-20 用户确认并授权提交[F0066/F0067及音频补查](code_correctness_review/crp-f0066-f0067/README.md#submit-20261020)：复用既有技术收尾，9项提交前核对及原60/补充64证据身份保持，只纳入5份可归属代码/报告/索引文件。实际commit回执见本组local；51/68不变，提交后停止，F0068未Start，无push，ignored证据/.agent不随commit备份。
