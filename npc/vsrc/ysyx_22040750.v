@@ -714,6 +714,7 @@ module ysyx_22040750_cpu_core(
 	wire [5:0] csr_op_sel;
 	wire [4:0] csr_uimm;
 	wire [63:0] csr_intr_no;
+    wire [31:0] csr_tval;
     //IF_ID
     wire IF_valid;
     wire [31:0] IF_ID_pc;
@@ -748,6 +749,7 @@ module ysyx_22040750_cpu_core(
 	wire [5:0] ID_EX_csr_op_sel;
 	wire [4:0] ID_EX_csr_uimm;
 	wire [63:0] ID_EX_csr_intr_no;
+    wire [31:0] ID_EX_csr_tval;
     //EX_MEM
     wire EX_MEM_valid;
     wire [8:0] EX_MEM_rstrb;
@@ -774,6 +776,7 @@ module ysyx_22040750_cpu_core(
 	//wire [6:0] EX_MEM_csr_op_sel;
 	//wire [4:0] EX_MEM_csr_uimm;
 	wire [63:0] EX_MEM_csr_intr_no;
+    wire [31:0] EX_MEM_csr_tval;
     //MEM_WB
     wire [31:0] MEM_WB_pc;
     wire MEM_WB_valid;
@@ -795,6 +798,7 @@ module ysyx_22040750_cpu_core(
 	//wire [6:0] MEM_WB_csr_op_sel;
 	//wire [4:0] MEM_WB_csr_uimm;
 	wire [63:0] MEM_WB_csr_intr_no;
+    wire [31:0] MEM_WB_csr_tval;
     wire MEM_WB_mmio;
     reg MEM_WB_mmio_d;
     // pipeline stall & forward
@@ -1038,6 +1042,7 @@ module ysyx_22040750_cpu_core(
 		// .I_sys_clk(I_sys_clk),
 		// .I_rst(I_rst),
 		.I_inst(IF_ID_inst),
+        .I_pc(IF_ID_pc),
 		.O_imm(imm),
 		.I_timer_intr(IF_ID_timer_intr & timer_intr),
 		// pipline stall
@@ -1066,7 +1071,8 @@ module ysyx_22040750_cpu_core(
 		.O_csr_addr(csr_addr),// ID & WB
 		.O_csr_wen(csr_wen),// WB
 		.O_csr_intr(csr_intr),// ID & WB
-		.O_csr_intr_no(csr_intr_no),// WB
+		.O_csr_intr_no(csr_intr_no),
+        .O_csr_tval(csr_tval),// WB
 		.O_csr_mret(csr_mret),// ID & WB
 		.O_word_op_mask(word_op_mask),
 		.O_stall_en(stall_en)
@@ -1106,6 +1112,7 @@ module ysyx_22040750_cpu_core(
 		.I_csr_wen(csr_wen),
 		.I_csr_intr(csr_intr),
 		.I_csr_intr_no(csr_intr_no),
+        .I_csr_tval(csr_tval),
 		.I_csr(csr_forward_data),
 		.I_csr_mret(csr_mret),
 		.I_fencei(fencei),
@@ -1116,6 +1123,7 @@ module ysyx_22040750_cpu_core(
 		.O_csr_intr(ID_EX_csr_intr),
 		// .O_csr_mtip(ID_EX_mtip),
 		.O_csr_intr_no(ID_EX_csr_intr_no),
+        .O_csr_tval(ID_EX_csr_tval),
 		.O_csr(ID_EX_csr),
 		.O_csr_mret(ID_EX_csr_mret),
 		.O_imm(ID_EX_imm),
@@ -1228,6 +1236,7 @@ module ysyx_22040750_cpu_core(
 		.I_csr_intr(ID_EX_csr_intr),
 		// .I_csr_mtip(ID_EX_mtip),
 		.I_csr_intr_no(ID_EX_csr_intr_no),
+        .I_csr_tval(ID_EX_csr_tval),
 		.I_csr_mret(ID_EX_csr_mret),
 		.I_csr(alu_csr_data),
 		.I_fencei(ID_EX_fencei),
@@ -1238,6 +1247,7 @@ module ysyx_22040750_cpu_core(
 		.O_csr_intr(EX_MEM_csr_intr),
 		// .O_csr_mtip(EX_MEM_mtip),
 		.O_csr_intr_no(EX_MEM_csr_intr_no),
+        .O_csr_tval(EX_MEM_csr_tval),
 		.O_csr_mret(EX_MEM_csr_mret),
 		.O_csr(EX_MEM_csr),
 		.O_rstrb(EX_MEM_rstrb),
@@ -1290,6 +1300,7 @@ module ysyx_22040750_cpu_core(
 		.I_csr_intr(EX_MEM_csr_intr),
 		// .I_csr_mtip(EX_MEM_mtip),
 		.I_csr_intr_no(EX_MEM_csr_intr_no),
+        .I_csr_tval(EX_MEM_csr_tval),
 		.I_csr_mret(EX_MEM_csr_mret),
 		.I_csr(EX_MEM_csr),
 		//.O_csr_op_sel(),
@@ -1299,6 +1310,7 @@ module ysyx_22040750_cpu_core(
 		.O_csr_intr(MEM_WB_csr_intr),
 		// .O_csr_mtip(MEM_WB_mtip),
 		.O_csr_intr_no(MEM_WB_csr_intr_no),
+        .O_csr_tval(MEM_WB_csr_tval),
 		.O_csr_mret(MEM_WB_csr_mret),
 		.O_csr(MEM_WB_csr),
     	.O_pc(MEM_WB_pc),
@@ -1362,9 +1374,11 @@ module ysyx_22040750_cpu_core(
 		.I_MEM_WB_valid(MEM_WB_valid),
 		.I_csr_wen(MEM_WB_csr_wen),
 		.I_csr_intr_wr(MEM_WB_csr_intr),
-		.I_csr_intr_rd(csr_intr),// from IF_ID
+		// MTVEC is preselected by instruction class, before operand-dependent traps.
+		.I_csr_intr_rd(1'b0),
 		.I_intr_pc(MEM_WB_pc),
 		.I_csr_intr_no(MEM_WB_csr_intr_no),
+        .I_csr_tval(MEM_WB_csr_tval),
 		.I_csr_mret_wr(MEM_WB_csr_mret),
 		.I_csr_mret_rd(csr_mret),
 		.I_wr_addr(MEM_WB_csr_addr),
@@ -1467,6 +1481,7 @@ module ysyx_22040750_csr(
     input I_csr_intr_rd,
     input [31:0] I_intr_pc,
     input [63:0] I_csr_intr_no,
+    input [31:0] I_csr_tval,
     input I_csr_mret_wr,
     input I_csr_mret_rd,
     input [11:0] I_wr_addr,
@@ -1484,9 +1499,10 @@ module ysyx_22040750_csr(
     // localparam MSCRATCH = 12'h340;
     localparam MEPC = 12'h341;
     localparam MCAUSE = 12'h342;
+    localparam MTVAL = 12'h343;
     localparam MIP = 12'h344;
     
-    reg [63:0] satp, mstatus, mie, mtvec, mepc, mcause, mip;
+    reg [63:0] satp, mstatus, mie, mtvec, mepc, mcause, mtval, mip;
     reg [63:0] rd_data;
     wire mstatus_mie, mstatus_mpie;
     wire csr_wen, csr_intr_wr, csr_mret_wr;
@@ -1508,7 +1524,7 @@ module ysyx_22040750_csr(
             mip <= {mip[63:8],I_mtip,mip[6:0]};
     always @(posedge I_sys_clk)
         if(I_rst) begin
-            {satp, mie, mtvec, mepc, mcause} <= 'h0;
+            {satp, mie, mtvec, mepc, mcause, mtval} <= 'h0;
             mstatus <= 64'ha00001800;
         end
         // S6: "these ena signals will not occur at the same time" 已升级为断言钉死
@@ -1522,6 +1538,7 @@ module ysyx_22040750_csr(
                 MTVEC: mtvec <= I_wr_data;
                 MEPC: mepc <= I_wr_data;
                 MCAUSE: mcause <= I_wr_data;
+                MTVAL: mtval <= I_wr_data;
                 // MIP: mip <= I_wr_data;
                 // MSCRATCH: mscratch <= I_wr_data;
                 default:;
@@ -1536,6 +1553,7 @@ module ysyx_22040750_csr(
             mtvec <= mtvec;
             mepc <= {32'b0, I_intr_pc};
             mcause <= I_csr_intr_no;
+            mtval <= {32'b0, I_csr_tval};
             // mip <= mip;
             // mscratch <= mscratch;
         end
@@ -1575,6 +1593,7 @@ module ysyx_22040750_csr(
                     MTVEC: rd_data = mtvec;
                     MEPC: rd_data = mepc;
                     MCAUSE: rd_data = mcause;
+                    MTVAL: rd_data = mtval;
                     MIP: rd_data = mip;
                     // MSCRATCH: rd_data = mscratch;
                     default: rd_data = 'h0;
@@ -2197,6 +2216,7 @@ module ysyx_22040750_decoder(
     // input I_sys_clk,
     // input I_rst,
     input [31:0] I_inst,
+    input [31:0] I_pc,
     input I_timer_intr,
     output [63:0] O_imm,
     input [63:0] I_rs1_data,
@@ -2224,6 +2244,7 @@ module ysyx_22040750_decoder(
     output O_csr_wen,
     output O_csr_intr,
     output [63:0] O_csr_intr_no,
+    output [31:0] O_csr_tval,
     output O_csr_mret,
     output [1:0] O_stall_en// en[1] for rs1, en[2] for rs2
     //output O_sim_end
@@ -2397,6 +2418,16 @@ module ysyx_22040750_decoder(
     wire FENCEI;
     assign FENCEI = (opcode == 7'b0001111) && (funct3 == 3'b001);
     // inst var parsing
+    // Share ECALL's csr_intr redirect, pipeline payload and WB commit path.
+    wire target_misaligned;
+    wire [31:0] control_target;
+    wire control_taken;
+    assign control_target = (JALR ? I_rs1_data[31:0] : I_pc) + O_imm[31:0];
+    assign control_taken = JAL | JALR | typeB_jr;
+    // JALR clears bit0; IALIGN=32 still requires bit1 to be zero.
+    assign target_misaligned = control_taken & (control_target[1] |
+                                                (control_target[0] & ~JALR));
+    assign O_csr_tval = target_misaligned ? (control_target & (JALR ? 32'hfffffffe : 32'hffffffff)) : 32'b0;
     wire csr_rd_gpr;
     assign csr_rd_gpr = CSRRW | CSRRS | CSRRC | I_timer_intr;
     assign O_stall_en[1] = (typeI | typeS | typeR | typeB | csr_rd_gpr) && (rs1 != 0);
@@ -2419,8 +2450,9 @@ module ysyx_22040750_decoder(
     // csr data
     // addr used for csr read port & CSR-forward matching:
     // mret consumes MEPC (not the 0x302 field in its encoding);
-    // timer-intr/exception entry consumes MTVEC
-    assign O_csr_addr = I_timer_intr ? 12'h305 :
+    // Pre-read/forward MTVEC for every control-transfer candidate in parallel
+    // with target/branch checks. Only csr_jr selects it as the next PC.
+    assign O_csr_addr = (I_timer_intr | ECALL | EBREAK | JAL | JALR | typeB) ? 12'h305 :
                         MRET         ? 12'h341 :
                         decode_inst[31:20];
     assign O_csr_imm = decode_inst[19:15];
@@ -2451,7 +2483,7 @@ module ysyx_22040750_decoder(
     assign NO = I_timer_intr ? 64'h8000_0000_0000_0007 : ECALL ? 64'hb : EBREAK ? 64'h3 : 64'h0;
     // assign NO = ({64{ECALL & ~}} & 64'hb) | ({64{EBREAK}}) | ();
     assign O_csr_wen = CSRRW | CSRRS | CSRRC | CSRRWI | CSRRSI | CSRRCI;
-    assign O_csr_intr = ECALL | EBREAK | I_timer_intr;
+    assign O_csr_intr = ECALL | EBREAK | I_timer_intr | target_misaligned;
     assign O_csr_intr_no = NO;
     assign O_csr_mret = MRET;
     // reg wr en
@@ -2463,7 +2495,7 @@ module ysyx_22040750_decoder(
     //assign O_regin_sel[2] = 0;
     assign O_regin_sel[1] = O_reg_wen & regin_from_mem;
     assign O_regin_sel[0] = O_reg_wen & (~regin_from_mem);
-    assign O_reg_wen = typeR | typeI | typeU | typeJ | O_csr_wen;
+    assign O_reg_wen = (typeR | typeI | typeU | typeJ | O_csr_wen) & ~target_misaligned;
     assign O_mem_wen = typeS;
     assign O_mem_wstrb = ({8{SD}} & 8'b11111111)
     		       | ({8{SW}} & 8'b00001111)
@@ -2486,7 +2518,7 @@ module ysyx_22040750_decoder(
     assign lt = ($signed(I_rs1_data)) < ($signed(I_rs2_data));
     assign ge = ~lt;
     assign typeB_jr = (BEQ&eq) | (BNE&neq) | (BLT&lt) | (BGE&ge) | (BLTU&ltu) | (BGEU&geu);
-    assign csr_jr = ECALL | EBREAK | MRET | I_timer_intr;
+    assign csr_jr = ECALL | EBREAK | MRET | I_timer_intr | target_misaligned;
     // assign O_dnpc_sel[4] = csr_jr;
     // assign O_dnpc_sel[3] = JALR;
     // assign O_dnpc_sel[2] = JAL;
@@ -2622,6 +2654,7 @@ module ysyx_22040750_EX_MEM_reg(
 	input I_csr_intr,
 	// input I_csr_mtip,
 	input [63:0] I_csr_intr_no,
+    input [31:0] I_csr_tval,
 	input I_csr_mret,
 	input [63:0] I_csr,
 	input I_fencei,
@@ -2632,6 +2665,7 @@ module ysyx_22040750_EX_MEM_reg(
 	output reg O_csr_intr,
 	// output reg O_csr_mtip,
 	output reg [63:0] O_csr_intr_no,
+    output reg [31:0] O_csr_tval,
 	output reg O_csr_mret,
 	output reg [63:0] O_csr,
     //input I_EX_MEM_block,
@@ -2742,6 +2776,7 @@ module ysyx_22040750_EX_MEM_reg(
 			O_csr_intr <= 0;
 			// O_csr_mtip <= 0;
 			O_csr_intr_no <= 0;
+            O_csr_tval <= 0;
 			O_csr_mret <= 0;
 			O_csr <= 0;
 			O_fencei <= 0;
@@ -2766,6 +2801,7 @@ module ysyx_22040750_EX_MEM_reg(
 			O_csr_intr <= I_csr_intr;
 			// O_csr_mtip <= I_csr_mtip;
 			O_csr_intr_no <= I_csr_intr_no;
+            O_csr_tval <= I_csr_tval;
 			O_csr_mret <= I_csr_mret;
 			O_csr <= I_csr;
 			O_fencei <= I_fencei;
@@ -2790,6 +2826,7 @@ module ysyx_22040750_EX_MEM_reg(
 			O_csr_intr <= O_csr_intr;
 			// O_csr_mtip <= O_csr_mtip;
 			O_csr_intr_no <= O_csr_intr_no;
+            O_csr_tval <= O_csr_tval;
 			O_csr_mret <= O_csr_mret;
 			O_csr <= O_csr;
 			O_fencei <= O_fencei;
@@ -3440,6 +3477,7 @@ module ysyx_22040750_ID_EX_reg(
 	input I_csr_intr,
 	// input I_csr_mtip,
 	input [63:0] I_csr_intr_no,
+    input [31:0] I_csr_tval,
 	input [63:0] I_csr,
 	input I_csr_mret,
 	input I_fencei,
@@ -3451,6 +3489,7 @@ module ysyx_22040750_ID_EX_reg(
 	output reg O_csr_intr,
 	// output reg O_csr_mtip,
 	output reg [63:0] O_csr_intr_no,
+    output reg [31:0] O_csr_tval,
 	output reg [63:0] O_csr,
 	output reg O_csr_mret,
 
@@ -3527,6 +3566,7 @@ module ysyx_22040750_ID_EX_reg(
 			O_csr_intr <= 0;
 			// O_csr_mtip <= 0;
 			O_csr_intr_no <= 0;
+            O_csr_tval <= 0;
 			O_csr_mret <= 0;
 			O_fencei <= 0;
 		end
@@ -3556,6 +3596,7 @@ module ysyx_22040750_ID_EX_reg(
 			O_csr_intr <= I_csr_intr;
 			// O_csr_mtip <= I_csr_mtip;
 			O_csr_intr_no <= I_csr_intr_no;
+            O_csr_tval <= I_csr_tval;
 			O_csr_mret <= I_csr_mret;
 			O_fencei <= I_fencei;
 		end
@@ -3585,6 +3626,7 @@ module ysyx_22040750_ID_EX_reg(
 			O_csr_intr <= O_csr_intr;
 			// O_csr_mtip <= O_csr_mtip;
 			O_csr_intr_no <= O_csr_intr_no;
+            O_csr_tval <= O_csr_tval;
 			O_csr_mret <= O_csr_mret;
 			O_fencei <= O_fencei;
 		end
@@ -3712,6 +3754,7 @@ module ysyx_22040750_MEM_WB_reg(
 	input I_csr_intr,
 	// input I_csr_mtip,
 	input [63:0] I_csr_intr_no,
+    input [31:0] I_csr_tval,
 	input I_csr_mret,
 	input [63:0] I_csr,
 
@@ -3722,6 +3765,7 @@ module ysyx_22040750_MEM_WB_reg(
 	output reg O_csr_intr,
 	// output reg O_csr_mtip,
 	output reg [63:0] O_csr_intr_no,
+    output reg [31:0] O_csr_tval,
 	output reg O_csr_mret,
 	output reg [63:0] O_csr,
 
@@ -3779,6 +3823,7 @@ module ysyx_22040750_MEM_WB_reg(
 			O_csr_intr <= 0;
 			// O_csr_mtip <= 0;
 			O_csr_intr_no <= 0;
+            O_csr_tval <= 0;
 			O_csr_mret <= 0;
 			O_csr <= 0;
             O_bubble_inst_debug <= 0;
@@ -3803,6 +3848,7 @@ module ysyx_22040750_MEM_WB_reg(
 			O_csr_intr <= I_csr_intr;
 			// O_csr_mtip <= I_csr_mtip;
 			O_csr_intr_no <= I_csr_intr_no;
+            O_csr_tval <= I_csr_tval;
 			O_csr_mret <= I_csr_mret;
 			O_csr <= I_csr;
             O_bubble_inst_debug <= I_bubble_inst_debug;
@@ -3826,6 +3872,7 @@ module ysyx_22040750_MEM_WB_reg(
 			O_csr_intr <= O_csr_intr;
 			// O_csr_mtip <= O_csr_mtip;
 			O_csr_intr_no <= O_csr_intr_no;
+            O_csr_tval <= O_csr_tval;
 			O_csr_mret <= O_csr_mret;
 			O_csr <= O_csr;
             O_bubble_inst_debug <= O_bubble_inst_debug;

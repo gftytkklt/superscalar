@@ -466,3 +466,15 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-19 F0002后续确认提交：用户“提交后继续”确认前组报告范围/限制，实际784e73b（五文件72增9删）；285manifest/23既有验收保持，复用动态测试，无push。
 
 2026-10-19 [CRP F0001算术宿主语义与双端核验](code_correctness_review/crp-f0001/README.md)：用户要求解释具体计算反例及双端必要修复。原NEMU GCC/Clang O2的7反例/64项数值全部正确，两种UBSan各7例中止；确认C UB，未观察普通O2数值错误。仅inst.c8增7删改7处无符号运算/低位符号扩展。原NPC RTL以独立期望64项配原/新REF均通过，无对应缺陷，保留原RTL；改错期望时双端真实BAD可检出。修复后4配置各64/64、native/REF构建/ABI、双CPU各36PASS+1XFAIL、RT168.44秒msh、nanos8截图/hello1262→5850、24终检通过。42已修/77未修完，本组待确认提交；326文件为证据SHA条目，非用例数，M2保持。
+
+2026-10-19 F0001后续确认提交：用户“提交后继续”确认原报告范围/限制，实际252eaea（五文件77增10删），326manifest/24验收/身份保持，复用动态结果，无push。
+
+2026-10-19 [CRP F0003双端指令对齐边界分析](code_correctness_review/crp-f0003/README.md)：原3例NEMU均跳到80000002，JAL/JALR污染rd；NPC原decoder/next-PC模块5控制观察及CSR写读确认无错位trap/mtval能力。这里只核模块控制，不冒称完整SoC结果。最小双端方案A（提前补M态cause0/mtval/精确提交）与延期B已具体列出，触发既有M3/WORKFLOW_POLICY §3范围裁决；生产修复未开始，不标F0003 Completed，不重跑无改动消费者。10项分析检查/57文件证据，42已修已提交/77未修完，M2/M3不推进。
+
+## 2026-10-19 CRP F0003方案A实施结果
+
+用户明确同意A，NPC cause0已复用ecall控制时序/三流水/有效WB链路，双端功能完成。[本组报告](code_correctness_review/crp-f0003/README.md#implementation-20261019)保存NEMU76×2、NPC71向量、真实三平台13trap/流水与mtvec前递、15微测试/15断言、双CPU各36PASS+1XFAIL、RT171.45秒msh及nanos8帧/hello1316→5722、28项功能终检。STA同配方前后估算频率399.074→355.983MHz（-10.80%），面积+1.10%，两版均未达500MHz；性能接受待用户决定。43功能已修/76未修完，本组结果确认/commit Pending；停等接受回退或继续优化的决定，Next仅TASK_QUEUE维护，不自动推进M2/M3/其他单元。
+
+2026-10-19 [F0003并行mtvec补充交付](code_correctness_review/crp-f0003/README.md#parallel-mtvec-result-20261019)：用户批准后同单元Reopen，提前按指令类别读/前递mtvec、错位只控制最终选择，保留ecall流水/WB。71+14定向、实际SoC trap/冒险/mtvec与负例、15微测/15断言、NPC CPU36PASS+1XFAIL、RT169.64秒msh和24项核验通过；原385证据保持，NEMU/nanos未受影响复用验收。同配方估算420.232MHz，原399.074/串行355.983，面积相对原+0.265%，仍未达500MHz。原回退停点经获准优化解除，新结果确认/commit Pending，43已修/76未修完保持，未启动F0009/M2/M3。
+
+2026-10-19 F0003确认/提交：用户“提交”确认双端修复及并行MTVEC补充的已报告范围/限制；57/385/193清单和28/11/24/8核验保持，复用验收。本批11文件提交，实际回执见[记录末尾](code_correctness_review/crp-f0003/README.md#approval-submit-20261019)及local/parallel-mtvec/submit-receipt.json/.agent；不push、不开始下一组，ignored资产仍仅本地保管。

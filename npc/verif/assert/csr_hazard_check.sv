@@ -1,8 +1,7 @@
 // ---------------------------------------------------------------------------
 // [3] Bug2: CSR 写读冒险（RAW）
 // 在 ID 发出一次对 MEPC 的读（且未被停顿）时必须看到"按程序序应读到的新值"：
-//   最新未提交写值(优先 WB->MEM->EX 段) else 已提交值。
-// 当前 RTL(csr_foward 用译码快照 ID_EX_csr 前递)在 EX 段窗口必然违背，断言失败。
+//   最新未提交写值（EX->MEM->WB）else 已提交值；trap 也会提交 MEPC。
 // 只针对 MEPC 演示；推广到任意 CSR 可把 committed 数组化。
 // ---------------------------------------------------------------------------
 module csr_hazard_check (
@@ -17,7 +16,8 @@ module csr_hazard_check (
     input mem_csr_wen, input [11:0] mem_csr_addr, input [63:0] mem_csr,
     // WB 段（未提交）的写
     input wb_csr_wen, input [11:0] wb_csr_addr, input [63:0] wb_csr,
-    input wb_valid
+    input wb_valid, wb_trap,
+    input [31:0] wb_pc
 );
   localparam MEPC = 12'h341;
 
@@ -27,6 +27,7 @@ module csr_hazard_check (
     if (rst)                             committed <= 0;
     else if (wb_valid && wb_csr_wen && wb_csr_addr == MEPC)
                                         committed <= wb_csr;
+    else if (wb_valid && wb_trap)         committed <= {32'b0, wb_pc};
   end
 
   wire id_reads_mepc = id_valid && !id_stall && !id_bubble
@@ -57,5 +58,6 @@ bind ysyx_22040750_cpu_core csr_hazard_check u_csr (
   .mem_csr_wen(EX_MEM_csr_wen), .mem_csr_addr(EX_MEM_csr_addr),
   .mem_csr(EX_MEM_csr),
   .wb_csr_wen(MEM_WB_csr_wen), .wb_csr_addr(MEM_WB_csr_addr),
-  .wb_csr(MEM_WB_csr), .wb_valid(MEM_WB_valid)
+  .wb_csr(MEM_WB_csr), .wb_valid(MEM_WB_valid),
+  .wb_trap(MEM_WB_csr_intr), .wb_pc(MEM_WB_pc)
 );

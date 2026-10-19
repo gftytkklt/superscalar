@@ -8,11 +8,14 @@
 module csr_intr_check (
     input clk, rst,
     input csr_wen, csr_intr_wr, csr_mret_wr,
-    input [63:0] mstatus
+    input [63:0] mstatus, mtval,
+    input [31:0] trap_tval
 );
   reg intr_d;
+  reg [31:0] trap_tval_d;
   always @(posedge clk) begin
     intr_d <= csr_intr_wr;
+    trap_tval_d <= trap_tval;
     if (!rst) begin
       // 三事件同拍互斥（同一 WB 指令按译码只能是三者之一）
       if (csr_wen && csr_intr_wr)
@@ -21,6 +24,9 @@ module csr_intr_check (
         $error("CSR: csr_wen && csr_mret_wr same cycle");
       if (csr_intr_wr && csr_mret_wr)
         $error("CSR: csr_intr_wr && csr_mret_wr same cycle");
+      // F0003: tval commits at the same valid-WB event as cause/epc.
+      if (intr_d && mtval != {32'b0, trap_tval_d})
+        $error("CSR: mtval does not match committed trap payload");
       // intr 提交必须清 MIE（防立即重取中断的硬件机制）
       if (intr_d && mstatus[3])
         $error("CSR: mstatus.MIE not cleared after intr commit (intr would retake immediately)");
@@ -33,5 +39,5 @@ endmodule
 bind ysyx_22040750_csr csr_intr_check u_csr_intr (
   .clk(I_sys_clk), .rst(I_rst),
   .csr_wen(csr_wen), .csr_intr_wr(csr_intr_wr), .csr_mret_wr(csr_mret_wr),
-  .mstatus(mstatus)
+  .mstatus(mstatus), .mtval(mtval), .trap_tval(I_csr_tval)
 );
