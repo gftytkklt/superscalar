@@ -512,3 +512,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ### 2026-10-20 CRP F0069及过期入口更正
 
 [本组计划/结果](code_correctness_review/crp-f0069/README.md)：F0018已确认提交37b3195，旧重复未来入口作废，相关现行导航及历史勘误同步；119稳定ID核对不重复计数。proc.c修复四种非FG模式空PCB与fallback一致性，FG保持99:1。原四反例拒绝、五配置各50000调用/ASan-UBSan、10内核构建/10真实NEMU运行、默认三前台与hello37→160通过；155预清理身份/结果核对通过。46已修/73未修完，本组待确认/提交；下一入口仅TASK_QUEUE，无自动commit/push/M2推进。
+
+
+### 2026-10-20 CRP F0060用户参数栈对齐
+
+[F0060报告](code_correctness_review/crp-f0060/README.md)：前组F0069已确认提交e58bbd0。loader仅增加5行padding，保持字符串地址/内容及argc/argv/envp连续布局。原四host反例拒绝，VME/非VME各99例通过；真实_start→call_main入口旧PAL/hello/NTERM未对齐、新四应用及非VME-NTERM均16对齐，六次各1亿指令/纯生产和三前台/hello37→167通过。47已修/72未修完，本组待确认/commit；临时产物684文件约161.3MiB已清理，未测范围/输入身份与再生配方可回查，未来只沿TASK_QUEUE。

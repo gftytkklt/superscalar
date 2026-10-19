@@ -168,6 +168,11 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
   }
   envp_addr[envc] = 0;
 
+  // Leave padding above the pointer tables so argc (and the initial sp)
+  // is 16-byte aligned without moving any of the strings.
+  size_t args_size = ((size_t)argc + (size_t)envc + 3) * sizeof(uintptr_t);
+  sp = ROUNDDOWN(sp - args_size, 16) + args_size;
+
   // 2. envp[] pointer array (with NULL)
   sp -= (envc + 1) * sizeof(uintptr_t);
   memcpy(USTACK_TO_PA(sp), envp_addr, (envc + 1) * sizeof(uintptr_t));

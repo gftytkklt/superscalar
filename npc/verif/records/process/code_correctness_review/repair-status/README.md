@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复46（前45已确认提交；F0069已获确认及本次提交授权，实际回执见报告）；未修完73，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
+全部已有功能修复47（前46已确认提交；F0060已确认及授权提交，实际回执见报告）；未修完72，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -101,7 +101,7 @@
 | CCR-F0057 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0057) |
 | CCR-F0058 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0058) |
 | CCR-F0059 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0059) |
-| CCR-F0060 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0060) |
+| CCR-F0060 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [本组报告](../crp-f0060/README.md) |
 | CCR-F0061 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0061) |
 | CCR-F0062 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0062) |
 | CCR-F0063 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0063) |
@@ -110,7 +110,7 @@
 | CCR-F0066 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0066) |
 | CCR-F0067 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0067) |
 | CCR-F0068 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0068) |
-| CCR-F0069 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [本组计划及勘误](../crp-f0069/README.md) |
+| CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
 | CCR-F0070 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0070) |
 | CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
 | CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
@@ -280,3 +280,13 @@ F0018在本表一直为已修/已确认提交37b3195；TASK_QUEUE及相关2026-1
 ## 2026-10-20 F0069 完成（未提交）
 
 非FG保留stage按实际PCB选择、无可用目标时保持current/frame一致；原四NULL反例拒绝，最终五配置各50000调用/sanitizer、10个实际内核构建及10次真实有限NEMU运行、默认三前台/hello37→160通过。当前46已修/73未修完，F0069结果确认/commit Pending；其他45项已确认提交。旧F0018重复候选不计新修复；证据/未测/清理见[本组报告](../crp-f0069/README.md)。下一入口只在TASK_QUEUE，本轮不提交/下一组Start。
+
+
+## 2026-10-20 F0069实际提交及F0060启动
+
+用户“同意你提交以后进入下一项”确认前组范围并授权提交后执行唯一F0060。实际e58bbd0，12文件173增17删，暂存/实际blob一致、提交后root/index干净；复用75manifest/21文档身份/15终检及既有动态验收/清理，未push。本组F0060尚Active，46已修/73未修完不变，计划/边界见本组报告，不自动提交新组。
+
+
+## 2026-10-20 F0060完成（未提交）
+
+loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例、真实旧C入口不对齐/新四应用及非VME-NTERM对齐、六次各1亿指令/纯生产与默认三前台/hello37→167通过。47已修/72未修完，前46均确认提交，本项结果确认/commit Pending。684临时产物169182570字节已清理，保留文字/身份/patch；完整证据与未测见[本组报告](../crp-f0060/README.md)。未来唯一TASK_QUEUE，不自动提交或下一组Start。
