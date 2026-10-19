@@ -458,3 +458,7 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-19 [CRP F0004/F0005/F0008宿主内存组](code_correctness_review/crp-f0004-f0005-f0008/README.md)：F0019已确认提交522bed7；新增定长memcpy消除RAM对齐/别名UB、MEM_RANDOM安全写入及guest_to_host整数先减基址，F0005既有bc7a110修复补验闭合。GCC/Clang+sanitizer各181断言、static/malloc/REF实际构建/非对齐跨页/ABI、双CPU36PASS+1XFAIL、RT163.32秒msh/difftest ON、nanos8点/hello1267→5894与AM-native/RV双层启动通过，23终检。38已修/81未修完，本组待确认提交；保留raw helper前置/未测/无效夹具边界，M2保持。
 
 2026-10-19 [CRP F0006/F0007解码与INV诊断](code_correctness_review/crp-f0006-f0007/README.md)：前宿主内存组已确认提交1ddaf04；FENCE.I忽略保留字段，INV仅用已取得原字、不再重复取指/预读。40次GCC/san定向、native/REF自修改及PMEM尾失败、双CPU全集各36PASS+1XFAIL/make0，23终检。其他ISA仅改动单元兼容通过、完整构建既有阻塞前后相同；40已修/79未修完，本组待确认提交，M2保持。
+
+2026-10-19 F0006/F0007后续确认提交：用户“提交并继续CRP修复”确认前组报告范围/限制，实际提交7e68ca7（9文件74增26删）；647文件证据/23项验收无漂移，复用动态结果，未push。
+
+2026-10-19 [CRP F0002 RV64物理地址身份](code_correctness_review/crp-f0002/README.md)：保留D21/窄paddr与REF ABI，仅mmu.c在Bare/页表遍历/叶PA窄化前拒绝高位别名。原86项45失败，修复GCC/sanitizer各86/86、P2原见证、8次真实native/REF高地址及既有Sv39/原子guest、双CPU各36PASS+1XFAIL、RT163.33秒msh/difftest ON、nanos8截图/hello1326→6382与23终检通过。41已修/78未修完，本组待确认提交；PMEM64/其他配置、DMA、五CQ及已列限制保留，M2保持。

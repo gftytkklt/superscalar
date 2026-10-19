@@ -40,6 +40,11 @@ int riscv64_mmu_check(vaddr_t vaddr, int len, int type) {
 static bool rv64_translate(vaddr_t va, int type, bool update_dirty,
                            paddr_t *pa, VAddrFault *fault) {
   if (riscv64_mmu_check(va, 1, type) == MMU_DIRECT) {
+    // Keep the full RV64 address until it is safe to use the physical ABI.
+    if (va > (paddr_t)-1) {
+      mmu_fault(fault, type, true, va);
+      return false;
+    }
     *pa = va;
     return true;
   }
@@ -55,11 +60,11 @@ static bool rv64_translate(vaddr_t va, int type, bool update_dirty,
   if (type != MEM_TYPE_IFETCH && privilege == 3 && (status & MSTATUS_MPRV))
     privilege = (status & MSTATUS_MPP) >> 11;
 
-  paddr_t table = (csr(SATP) & ((1ull << 44) - 1)) << 12;
+  word_t table = (csr(SATP) & ((1ull << 44) - 1)) << 12;
   for (int level = 2; level >= 0; level--) {
-    paddr_t pte_addr = table + (((va >> (12 + 9 * level)) & 0x1ff) << 3);
+    word_t pte_addr = table + (((va >> (12 + 9 * level)) & 0x1ff) << 3);
     word_t pte;
-    if (!paddr_try_read_region(pte_addr, 8, &pte)) {
+    if (pte_addr > (paddr_t)-1 || !paddr_try_read_region(pte_addr, 8, &pte)) {
       mmu_fault(fault, type, true, va);
       return false;
     }
@@ -96,6 +101,13 @@ static bool rv64_translate(vaddr_t va, int type, bool update_dirty,
       return false;
     }
 
+    word_t offset_mask = (1ull << (12 + 9 * level)) - 1;
+    word_t full_pa = ((ppn << 12) & ~offset_mask) | (va & offset_mask);
+    if (full_pa > (paddr_t)-1) {
+      mmu_fault(fault, type, true, va);
+      return false;
+    }
+
     word_t updated = pte | (1ull << 6);
     if (update_dirty) updated |= 1ull << 7;
     if (updated != pte && !paddr_try_write_region(pte_addr, 8, updated)) {
@@ -103,8 +115,7 @@ static bool rv64_translate(vaddr_t va, int type, bool update_dirty,
       return false;
     }
 
-    word_t offset_mask = (1ull << (12 + 9 * level)) - 1;
-    *pa = ((ppn << 12) & ~offset_mask) | (va & offset_mask);
+    *pa = full_pa;
     return true;
   }
 

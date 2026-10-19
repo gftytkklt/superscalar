@@ -34,17 +34,17 @@
 
 ## 当前逐项状态
 
-全部已有功能修复40（前组F0004/F0005/F0008已确认提交1ddaf04；本组F0006/F0007 Completed，结果确认/新commit Pending）；未修完79，其中契约待定5、F0040部分修复1。总计119。以下状态均以对应报告/回执为准，历史审阅截面不覆盖本表当前镜像。
+全部已有功能修复41（前40项已确认提交，F0006/F0007提交7e68ca7；本组F0002 Completed，结果确认/commit Pending）；未修完78，其中契约待定5、F0040部分修复1。总计119。以下状态均以对应报告/回执为准，历史审阅截面不覆盖本表当前镜像。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
 | CCR-F0001 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0001) |
-| CCR-F0002 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0002) |
+| CCR-F0002 | Confirmed / High | 已修 / Completed，待确认提交 | [全地址身份/精确异常/真实消费者](../crp-f0002/README.md) |
 | CCR-F0003 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0003) |
 | CCR-F0004 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [非对齐/别名安全与共享真实回归](../crp-f0004-f0005-f0008/README.md) |
 | CCR-F0005 | Confirmed / Medium | 已修 / 已确认，代码bc7a110/补验1ddaf04 | [既有bc7a110修复/本组补验](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0006 | Confirmed / Low | 已修 / Completed，待确认提交 | [保留字段/原指令诊断及真实回归](../crp-f0006-f0007/README.md) |
-| CCR-F0007 | Confirmed / Low | 已修 / Completed，待确认提交 | [PMEM/Sv39/MMIO边界及真实回归](../crp-f0006-f0007/README.md) |
+| CCR-F0006 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [保留字段/原指令诊断及真实回归](../crp-f0006-f0007/README.md) |
+| CCR-F0007 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [PMEM/Sv39/MMIO边界及真实回归](../crp-f0006-f0007/README.md) |
 | CCR-F0008 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) |
 | CCR-F0009 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0009) |
 | CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
