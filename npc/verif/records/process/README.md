@@ -462,3 +462,7 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-19 F0006/F0007后续确认提交：用户“提交并继续CRP修复”确认前组报告范围/限制，实际提交7e68ca7（9文件74增26删）；647文件证据/23项验收无漂移，复用动态结果，未push。
 
 2026-10-19 [CRP F0002 RV64物理地址身份](code_correctness_review/crp-f0002/README.md)：保留D21/窄paddr与REF ABI，仅mmu.c在Bare/页表遍历/叶PA窄化前拒绝高位别名。原86项45失败，修复GCC/sanitizer各86/86、P2原见证、8次真实native/REF高地址及既有Sv39/原子guest、双CPU各36PASS+1XFAIL、RT163.33秒msh/difftest ON、nanos8截图/hello1326→6382与23终检通过。41已修/78未修完，本组待确认提交；PMEM64/其他配置、DMA、五CQ及已列限制保留，M2保持。
+
+2026-10-19 F0002后续确认提交：用户“提交后继续”确认前组报告范围/限制，实际784e73b（五文件72增9删）；285manifest/23既有验收保持，复用动态测试，无push。
+
+2026-10-19 [CRP F0001算术宿主语义与双端核验](code_correctness_review/crp-f0001/README.md)：用户要求解释具体计算反例及双端必要修复。原NEMU GCC/Clang O2的7反例/64项数值全部正确，两种UBSan各7例中止；确认C UB，未观察普通O2数值错误。仅inst.c8增7删改7处无符号运算/低位符号扩展。原NPC RTL以独立期望64项配原/新REF均通过，无对应缺陷，保留原RTL；改错期望时双端真实BAD可检出。修复后4配置各64/64、native/REF构建/ABI、双CPU各36PASS+1XFAIL、RT168.44秒msh、nanos8截图/hello1262→5850、24终检通过。42已修/77未修完，本组待确认提交；326文件为证据SHA条目，非用例数，M2保持。
