@@ -93,11 +93,19 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
 
 Context* schedule(Context *prev) {
   current->cp = prev;
-  // PA4.5: alternate between the foreground process (fg_pcb, the screen owner)
-  // and the background hello process (pcb[3]). Switching fg_pcb via F1/F2/F3
-  // is handled automatically: if `current` is no longer the foreground, the
-  // next schedule() jumps to the new foreground.
+#ifdef FG_PROCESS
+  // Give hello one dispatch in every 100; use the current foreground for
+  // the other 99, including after F1/F2/F3 changes fg_pcb.
+  static unsigned dispatch_count = 0;
+  if (++dispatch_count == 100) {
+    dispatch_count = 0;
+    current = &pcb[3];
+  } else {
+    current = fg_pcb;
+  }
+#else
   current = (current == fg_pcb ? &pcb[3] : fg_pcb);
+#endif
   // single-process case (e.g. TEST_NTERM): if the target PCB has no context,
   // stay on the current one instead of switching into a dead PCB.
   return (current->cp ? current->cp : prev);

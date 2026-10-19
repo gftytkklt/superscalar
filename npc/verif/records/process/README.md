@@ -500,3 +500,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ## 2026-10-19 NEMU宿主访存热路径优化
 
 [宿主优化与同轮复测](code_correctness_review/host-perf-20261019/README.md)：复用checked MemRegion、省去单页读/取指重复预检，保持原hooks/trace/MMIO/Sv39/接口；2亿指令3次交错中位17.190→19.740M/s（+14.84%），5亿单对15.980→18.233M/s（+14.10%）。430/473边界、384条trace完全相同、malloc/高地址/Sv39/原子与REF ABI、双CPU36PASS+1XFAIL、新NPC+REF的RT到msh、nanos三前台/hello通过。独立用户授权优化，F0016待确认/提交改动保留，45/74计数不变；本轮待确认/commit，无push/下一CRP Start。
+
+
+## 2026-10-19 nanos前台/hello调度99:1与提交收尾
+
+[调度比例与验证/提交回执](code_correctness_review/hello-scheduling-20261019/README.md)：用户明确100次调度仅一次hello，非打印降频。FG_PROCESS每百次99fg/1hello，50000调用/滑动窗口及真实31窗口累计3069fg/31hello/31真实切入通过；纯生产内核3亿指令与三前台/后台进度通过，打印阈值/Navy盘不变。用户条件授权测试后提交F0016/宿主优化/调度三个归属单元，复用旧验收及清理记录，实际SHA见回执；45/74保持，无push/下一任务Start。
