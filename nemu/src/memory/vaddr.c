@@ -90,6 +90,17 @@ static bool rv64_prepare_access(vaddr_t addr, int len, int type,
 
 static bool rv64_try_read(vaddr_t addr, int len, int type,
                           word_t *data, VAddrFault *fault) {
+  assert(len == 1 || len == 2 || len == 4 || len == 8);
+  if ((addr & PAGE_MASK) + len <= PAGE_SIZE) {
+    // A single checked read already validates the complete physical range.
+    // There is no second page to preflight before touching the first one.
+    paddr_t pa;
+    if (!riscv64_mmu_translate_checked(addr, type, &pa, fault)) return false;
+    if (paddr_try_read(pa, len, data)) return true;
+    rv64_access_fault(fault, type, addr);
+    return false;
+  }
+
   RV64AccessPart part[2];
   int count;
   if (!rv64_prepare_access(addr, len, type, part, &count, fault)) return false;

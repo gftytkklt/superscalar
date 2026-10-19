@@ -495,3 +495,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ## 2026-10-19 CRP F0016与NEMU/nanos性能诊断
 
 [F0016修复与性能实测](code_correctness_review/crp-f0016/README.md)：实际装载三段完整同步golden，旧版真实差异/新版Spike与REF全字节读回、四负例、单镜像/内置/loader/native/REF验收通过。真实nanos约16–18M guest/s，hello后台45.46%、OPL合成27.14%、guest绘图15.14%；host翻译/访存占self样本约61%，关闭host绘制未见提速。性能未优化；45已修/74未修完，本组待确认提交，未来唯一入口TASK_QUEUE#crp-next，M2保持。
+
+
+## 2026-10-19 NEMU宿主访存热路径优化
+
+[宿主优化与同轮复测](code_correctness_review/host-perf-20261019/README.md)：复用checked MemRegion、省去单页读/取指重复预检，保持原hooks/trace/MMIO/Sv39/接口；2亿指令3次交错中位17.190→19.740M/s（+14.84%），5亿单对15.980→18.233M/s（+14.10%）。430/473边界、384条trace完全相同、malloc/高地址/Sv39/原子与REF ABI、双CPU36PASS+1XFAIL、新NPC+REF的RT到msh、nanos三前台/hello通过。独立用户授权优化，F0016待确认/提交改动保留，45/74计数不变；本轮待确认/commit，无push/下一CRP Start。
