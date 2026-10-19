@@ -55,3 +55,4 @@
 | NEMU MMU 断言的定位法 | `../process/ONSCRIPTER_RISCV_NEMU_PORT.md` §2 | 断言前打印 pc/ra/vaddr/satp → addr2line 落到源码行 → 反推调用链 |
 | 控制通路标准范式落地（P1~P5）与等价性铁律/断言纪律 | `../process/RTL_STD_MODELS_FINAL.md` §3 | 范式让位于承载性行为（单拍握手对 posedge 采样不可见）；逐格真值表核对；跨拍断言组合信号同沿延迟采样；检查非侵入（bind 监视器） |
 | Kconfig 修改静默失效 | `../process/ONSCRIPTER_RISCV_NEMU_PORT.md` §3 | 直接 sed `.config` 不触发 `autoconf.h` 重生成，须 `conf --syncconfig Kconfig` |
+| 晚到判断从串行CSR准备改为并行候选、最终选择 | [F0003时序技巧与路径图](../process/code_correctness_review/crp-f0003/README.md#timing-technique-20261019) | 按指令类别提前读/前递mtvec，错位只控制最终next-PC选择；同时消除地址和读覆盖两条晚到依赖，保持前递/有效提交，完整FF→FF看icache终点；同配方399→356→420MHz估算 |

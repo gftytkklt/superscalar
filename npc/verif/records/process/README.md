@@ -478,3 +478,5 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-19 [F0003并行mtvec补充交付](code_correctness_review/crp-f0003/README.md#parallel-mtvec-result-20261019)：用户批准后同单元Reopen，提前按指令类别读/前递mtvec、错位只控制最终选择，保留ecall流水/WB。71+14定向、实际SoC trap/冒险/mtvec与负例、15微测/15断言、NPC CPU36PASS+1XFAIL、RT169.64秒msh和24项核验通过；原385证据保持，NEMU/nanos未受影响复用验收。同配方估算420.232MHz，原399.074/串行355.983，面积相对原+0.265%，仍未达500MHz。原回退停点经获准优化解除，新结果确认/commit Pending，43已修/76未修完保持，未启动F0009/M2/M3。
 
 2026-10-19 F0003确认/提交：用户“提交”确认双端修复及并行MTVEC补充的已报告范围/限制；57/385/193清单和28/11/24/8核验保持，复用验收。本批11文件提交，实际回执见[记录末尾](code_correctness_review/crp-f0003/README.md#approval-submit-20261019)及local/parallel-mtvec/submit-receipt.json/.agent；不push、不开始下一组，ignored资产仍仅本地保管。
+
+2026-10-19 [F0003时序优化技巧/前后依赖图](code_correctness_review/crp-f0003/README.md#timing-technique-20261019)：补充串行CSR准备→按指令类别提前并行准备/晚到条件最终选择、判断公式/两处配套修改、icache终点解释及适用/验收方法；knowledge经验地图已登记。仅文档，复用已提交c920dbe的验证/STA，不改代码或启动后组；用户授权总结完成后直接提交。
