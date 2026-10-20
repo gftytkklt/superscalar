@@ -9,5 +9,5 @@ int main() {
   char *argv[] = {"cat", "/share/files/num", NULL};
   execvp("cat", argv);
   printf("[execvp-test] execvp failed\n");
-  return 0;
+  return EXIT_FAILURE;
 }

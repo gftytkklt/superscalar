@@ -59,3 +59,11 @@ make -j4 ARCH=riscv64-nemu git_commit= run
 未新跑host功能测试或CPU/RT/REF：没有生产源码修改，这些消费者不使用本次正式Navy启动产物。NPC/其他ISA、完整命令集、长时/真实音视频均NotRun；不将53秒观察视作完整Linux/OS验收，也不推进M2。
 
 整组完成后停止，等待结果确认/必要文档提交，不自动提交/新组/push。未来仅TASK_QUEUE#crp-next，不从本报告另排一份Next。可在当前对话继续：本次为短的资产闭环，下一单元仍复用exec/update→run背景；每次实际提交落档仍按AGENTS第6条重新评估会话长度与恢复可靠性。
+
+
+<a id="submit-20261020"></a>
+## 2026-10-20 确认与实际提交附记
+
+用户“提交后继续”确认F0074并授权实际提交后一个单元。根实际`b2603592510d20b8cd4467128e8d936e498d143a`，5文档85增5删，实际路径/mode/blob与暂存完全一致；39保留身份/390既有检查及正式资产身份复用。提交时root工作树/index干净，nested8101fad内容/index干净且850原mode保持，未push。local/submit-precheck/staged/receipt记录实际回执；本附记及后续导航/状态变化解释原manifest文档哈希改变，不覆盖旧验收。正式忽略产物仍本地保留，文档commit不备份它们。
+
+提交落档建议“可在当前对话继续”，依据为后续仍复用exec/update→run且恢复入口完整。本轮按用户同句明确授权执行F0087，不从commit本身授权续作或提交新结果；下一入口仍只在TASK_QUEUE#crp-next。

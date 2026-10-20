@@ -603,3 +603,11 @@ F0061及会话规则已确认提交0ddd35c，[实际回执](code_correctness_rev
 ### 2026-10-20 CRP F0074 正式VME产物闭环
 
 ELF组已确认提交a92ccf9，[实际回执](code_correctness_review/crp-f0057-f0058-f0059/README.md#submit-20261020)；按“提交，继续”完成[F0074](code_correctness_review/crp-f0074/README.md)。正式旧盘仅nterm非VME及当前loader受控拒绝已复现，标准update→run无额外clean完成正式更新，108extent/48ELF/四新链接、三前台/hello33→144、8帧目视、218检查及10项local清理通过。无生产源码修改；68已修/51未修完，正式产物已更新、本组结果确认/文档commit Pending。正式忽略镜像/ELF保留，不随commit备份；未来唯一TASK_QUEUE#crp-next，无push/安装/M2推进。
+
+
+### 2026-10-20 CRP F0087 exec示例失败状态
+
+F0074已确认提交b260359，[回执](code_correctness_review/crp-f0074/README.md#submit-20261020)；按“提交后继续”完成[F0087](code_correctness_review/crp-f0087/README.md)。3源4增3删，失败EXIT_FAILURE且execl补提示；原三个动态假成功、修复后27host断言、六真实RV64 main/CRT/exec/退出与目标标记、标准update→run三前台/hello35→157及186检查/归档/目视/清理通过。69已修/50未修完，结果确认/commit Pending；区分用户main状态和nanos重启、诊断与标准盘。唯一TASK_QUEUE#crp-next，无自动新组/push/M2。
+
+
+2026-10-20 用户“提交”确认F0087本批并授权精确根提交；[确认与实际回执](code_correctness_review/crp-f0087/README.md#submit-20261020)承接。88项保留身份/369既有终检和3源补丁核对复用，不重复功能验证或Completion；实际提交后更新本地真实hash/工作树状态并停止，F0090未Start，无push/M2推进。

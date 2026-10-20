@@ -8,5 +8,5 @@ int main() {
   char *const envp[] = {NULL};
   execve("/bin/busybox", argv1, envp);
   printf("exec busybox failed\n");
-  return 0;
+  return EXIT_FAILURE;
 }
