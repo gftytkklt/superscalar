@@ -611,3 +611,11 @@ F0074已确认提交b260359，[回执](code_correctness_review/crp-f0074/README.
 
 
 2026-10-20 用户“提交”确认F0087本批并授权精确根提交；[确认与实际回执](code_correctness_review/crp-f0087/README.md#submit-20261020)承接。88项保留身份/369既有终检和3源补丁核对复用，不重复功能验证或Completion；实际提交后更新本地真实hash/工作树状态并停止，F0090未Start，无push/M2推进。
+
+
+### 2026-10-20 CRP F0090 NDL错误与生命周期
+
+用户“继续CRP修复”授权沿唯一入口完成[F0090](code_correctness_review/crp-f0090/README.md)：NDL负read不报事件、局部资源失败收尾/幂等Init/重复Quit安全、libam传播失败；两源完整diff/语句解释/正反应用。原3动态见证、host14类×普通/ASan+UBSan各113断言、六真实RV64缺设备/read失败及重试/实际fd计数、标准update→run三前台/hello34→148、228preclean/8目视通过。9635项510367465B清理，零tracked删除，正式F0074资产不变。70已修/49未修完，本组Completed但确认/commit Pending；真实native/NWM及绘图/音频未扩修，唯一未来TASK_QUEUE#crp-next，不自动新组/push/M2。
+
+
+2026-10-20 用户“提交”确认F0090已报告范围并授权精确根提交；[确认/实际回执](code_correctness_review/crp-f0090/README.md#submit-20261020)。103保留身份/既有验收/两源patch及正式输入复核，不重跑功能验证或重复Completion；实际提交后保存本地真实hash及工作树状态并停止，F0092未Start，无push/M2推进。

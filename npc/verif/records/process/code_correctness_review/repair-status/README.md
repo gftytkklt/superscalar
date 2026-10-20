@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复69（用户已确认本组F0087并授权提交，前68已确认提交，F0074根b260359；F0087实际提交以本组报告回执为准）；未修完50，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent与正式忽略资产仍需本地保管。
+全部已有功能修复70（前69已确认提交，F0087根aee3a0b；用户“提交”已确认F0090并授权提交，实际提交以本组报告回执为准）；未修完49，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent与正式忽略资产仍需本地保管。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -131,7 +131,7 @@
 | CCR-F0087 | Robustness / Low | 已修 / Completed，用户已确认，实际提交见报告回执 | [exec示例确认/提交](../crp-f0087/README.md#submit-20261020) |
 | CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0089 | Robustness / Low | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
-| CCR-F0090 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0090) |
+| CCR-F0090 | Robustness / Low | 已修 / 已确认，提交见回执 | [NDL失败与生命周期、真实RV64及标准回归](../crp-f0090/README.md) |
 | CCR-F0091 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0091) |
 | CCR-F0092 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0092) |
 | CCR-F0093 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0093) |
@@ -374,3 +374,9 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 
 
 2026-10-20 用户“提交”确认F0087已报告范围并授权精确根提交；88保留身份/369既有终检/3源patch无漂移，复用原验收和清理，仅补[确认/实际回执](../crp-f0087/README.md#submit-20261020)。本轮提交后停止，F0090未Start，无push/M2推进；正式忽略产物不由commit备份。
+
+
+2026-10-20 用户“继续CRP修复”授权F0090一个单元，现已[完成](../crp-f0090/README.md)。70已修/49未修完，本组结果确认/commit Pending；最终228preclean、六真实RV64/标准三前台及清理结果以报告为准。唯一后续TASK_QUEUE#crp-next，F0092未Start，无push/M2推进。
+
+
+2026-10-20 用户“提交”确认F0090已报告范围并授权精确根提交；103保留身份/两源patch与既有验收/清理复核，复用原结果，补[确认及实际回执入口](../crp-f0090/README.md#submit-20261020)。提交后停止，F0092未Start，无push/M2推进。

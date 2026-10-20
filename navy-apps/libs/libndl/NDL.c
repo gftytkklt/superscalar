@@ -10,7 +10,6 @@
 
 static int evtdev = -1;
 static int fbdev = -1;
-static int fbctl = -1;
 static int screen_w = 0, screen_h = 0;
 static int canvas_w = 0, canvas_h = 0;
 static struct timeval timevar = {};
@@ -21,7 +20,14 @@ uint32_t NDL_GetTicks() {
 }
 
 int NDL_PollEvent(char *buf, int len) {
-  return read(evtdev, buf, len) ? 1 : 0;
+  if (buf == NULL || len <= 0) return 0;
+  buf[0] = '\0';
+  if (evtdev < 0 || len == 1) return 0;
+  int nread = read(evtdev, buf, len - 1);
+  if (nread <= 0) return 0;
+  // The native device shim may return snprintf's untruncated length.
+  buf[nread < len ? nread : len - 1] = '\0';
+  return 1;
 }
 
 void NDL_OpenCanvas(int *w, int *h) {
@@ -96,34 +102,47 @@ int NDL_QueryAudio() {
 }
 
 int NDL_Init(uint32_t flags) {
-  if (getenv("NWM_APP")) {
-    evtdev = 3;
-  }
-  else {
-    evtdev = open("/dev/events", 0, 0);
-  }
-  fbctl = open("/dev/dispinfo", 0, 0);
+  if (evtdev >= 0 && fbdev >= 0) return 0;
+  int nwm = getenv("NWM_APP") != NULL;
+  int event_fd = nwm ? 3 : open("/dev/events", 0, 0);
+  if (event_fd < 0) return -1;
+  int fbctl = open("/dev/dispinfo", 0, 0);
+  if (fbctl < 0) goto fail;
   char buf[128];
   int nread = read(fbctl, buf, sizeof(buf) - 1);
-  buf[nread > 0 ? nread : 0] = '\0';
+  close(fbctl);
+  if (nread <= 0 || nread >= sizeof(buf)) goto fail;
+  buf[nread] = '\0';
+  int width = 0, height = 0;
   // format: "WIDTH : <w>\nHEIGHT:<h>\n", whitespace around ':' is flexible
   // (see navy-apps/README.md)
   const char *p = strstr(buf, "WIDTH");
   if (p != NULL) {
     p = strchr(p, ':');
-    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; screen_w = atoi(p); }
+    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; width = atoi(p); }
   }
   p = strstr(buf, "HEIGHT");
   if (p != NULL) {
     p = strchr(p, ':');
-    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; screen_h = atoi(p); }
+    if (p != NULL) { p ++; while (*p == ' ' || *p == '\t') p ++; height = atoi(p); }
   }
-  close(fbctl);
-  fbdev = open("/dev/fb", 0, 0);
+  if (width <= 0 || height <= 0) goto fail;
+  int framebuffer_fd = open("/dev/fb", 0, 0);
+  if (framebuffer_fd < 0) goto fail;
+  evtdev = event_fd;
+  fbdev = framebuffer_fd;
+  screen_w = width; screen_h = height;
   return 0;
+
+fail:
+  // NWM's inherited event pipe is only adopted after successful initialization.
+  if (!nwm) close(event_fd);
+  return -1;
 }
 
 void NDL_Quit() {
-  close(evtdev);
-  close(fbdev);
+  if (evtdev >= 0) close(evtdev);
+  if (fbdev >= 0) close(fbdev);
+  evtdev = fbdev = -1;
+  screen_w = screen_h = canvas_w = canvas_h = 0;
 }

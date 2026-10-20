@@ -21,7 +21,7 @@ static int name_to_keycode(const char *name, int len) {
 }
 
 bool ioe_init() {
-  NDL_Init(0);
+  if (NDL_Init(0) != 0) return false;
   NDL_OpenCanvas(&screen_w, &screen_h);
   return true;
 }
