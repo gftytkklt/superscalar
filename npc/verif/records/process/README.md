@@ -543,3 +543,12 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ### 2026-10-20 CRP F0079/F0080 newlib边界
 
 [本组计划/交付](code_correctness_review/crp-f0079-f0080/README.md)：前F0068已确认提交9fb8831；嵌套newlib两源11增1删，fwrite任一零维度先返回/流状态保持，calloc乘前拒绝溢出并按RERRNO设ENOMEM。原3host见证、新58场景/两模板及unlocked；真实旧只读零请求状态污染/旧calloc错误小分配失败，新完整libc guest及实际新库重建四应用/三前台hello33→148通过。19成功构建、28preclean/7判据负例、1187源及738链接身份；2914产物约189.3MiB已清理。54已修/65未修完，本组待确认/commit；嵌套HEADb7d992a/原mode噪声/优化旧UB表现/未测与再生见报告，未来仅TASK_QUEUE。
+
+
+### 2026-10-20 CRP F0077/F0078/F0088 Navy syscall ABI
+
+[本组计划/交付](code_correctness_review/crp-f0077-f0078-f0088/README.md)：前组nested5d9ffdb/root7a8150e已确认提交。newlib内部宏/原型、libos memory clobber、open可选mode最小修复；原6严格编译拒绝及host宽返回截断/两次mode哨兵失败，新6严格编译/18宽返回/26mode调用、编译IR及实际O2/O3-LTO/弱hook用户IO/时间、重建四消费者/三前台hello35→154通过。旧memory运行通过，不宣称原误编译；其他库warning保持。42preclean/8判据负例、2162源/1497链接身份，16789文件561597430逻辑字节（约535.6MiB）已清理；57已修/62未修完，新组待确认/commit，未来仅TASK_QUEUE。
+
+本组补充：现有update→run完整路径通过，108条文件逐字节核对/四应用新链接/三前台hello35→159，231标准路径核对；Makefile依赖使宏变化触发旧对象重编译，7增量核对通过。补验夹具fixdep缺失/日志判据更正及四份清理回执见本组报告。
+
+2026-10-20 [F0077/F0078/F0088提交及交接](code_correctness_review/crp-f0077-f0078-f0088/README.md#submit-20261020)：用户确认并授权提交，nested实际71fac82，root本次实际回执见local。原165manifest保持、产品验收/33终检复用；57/62保持，考虑上下文长度，提交后转新对话沿TASK_QUEUE唯一入口继续，本轮未Start下一组，无push。

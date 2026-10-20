@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复54（前52项均确认提交，F0068实际9fb8831；F0079/F0080已确认并授权提交，嵌套5d9ffdb，根记录回执见报告）；未修完65，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。CCR树已完成产物按用户要求清理，旧manifest合并批次清理回执解释缺失，旧实现从Git重建。
+全部已有功能修复57（前54项已确认提交；F0077/F0078/F0088结果已确认并授权本次提交，nested 71fac82，root实际回执见本组报告）；未修完62，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -118,8 +118,8 @@
 | CCR-F0074 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0074) |
 | CCR-F0075 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0075) |
 | CCR-F0076 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0076) |
-| CCR-F0077 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0077) |
-| CCR-F0078 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0078) |
+| CCR-F0077 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
+| CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
 | CCR-F0080 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
 | CCR-F0081 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0081) |
@@ -129,7 +129,7 @@
 | CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) |
 | CCR-F0086 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0086) |
 | CCR-F0087 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0087) |
-| CCR-F0088 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0088) |
+| CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0089 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0089) |
 | CCR-F0090 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0090) |
 | CCR-F0091 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0091) |
@@ -312,3 +312,8 @@ loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例�
 
 
 2026-10-20 F0079/F0080：前F0068已确认提交9fb8831，本组授权来自“提交后继续”。两嵌套newlib源/原反例/58host/真实libc与重建三前台验证完成，54/65，结果确认/commit Pending；原850执行位差异保持、内容仅两源变化，根不force-add库。证据/清理/限制见本组报告，未来仅TASK_QUEUE。
+
+
+2026-10-20 F0077/F0078/F0088：前组确认提交nested5d9ffdb/root7a8150e，“提交后继续”授权本组。三项最小修复/逐项证据和实际重建新库/优化/弱hook/三前台完成，57/62，结果确认/commit Pending；原memory当前未误编译/其他warnings/未测/清理见本组报告。未来仅TASK_QUEUE，不自动提交/push/M2。
+
+2026-10-20 本组用户条件提交/接续指令确认已报告范围；nested实际71fac82，root本次提交回执见[本组记录](../crp-f0077-f0078-f0088/README.md#submit-20261020)。165原manifest保持、复用33终检及既有验收；上下文较长，提交后提示新对话继续唯一入口，不开始F0081/F0082、无push/新测试。
