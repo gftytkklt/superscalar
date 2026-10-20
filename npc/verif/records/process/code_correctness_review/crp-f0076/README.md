@@ -316,3 +316,5 @@ F0076 Completed，结果确认/本组commit Pending；97完全已修/22未修完
 ## 用户确认与提交收尾（2026-10-20）
 
 用户“提交并继续”确认上述已报告范围与限制，授权精确提交F0076后执行TASK_QUEUE唯一入口F0070一个单元。提交前81份保留证据身份、三源完整patch与正式资产复核一致，复用49项终检；未重跑动态测试或重复Completion。实际commit/路径核验保存在local/submit-receipt.json及.agent。local/.agent不由commit备份，无push。可在当前对话继续：已恢复完整入口，本轮授权及下一单元边界清楚。
+
+实际提交回执补充（2026-10-20）：根`e7a3e2610b32de736e2e9f706b91aa317a1c5e23`，八路径/blob及三源patch精确；81证据身份、49终检复用，提交后root/index干净。用户“提交并继续”确认此前报告范围并授权下一F0070一个单元，原Pending为当时历史。local/submit-staged及submit-receipt保留，ignored资产未备份，无push。

@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复97（前96已确认提交015841a；F0076已确认、本批授权提交）；未修完22，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复98（前97已确认提交e7a3e26；F0070已确认、本批授权提交）；未修完21，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -111,13 +111,13 @@
 | CCR-F0067 | Robustness / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
 | CCR-F0068 | Confirmed / Medium | 已修 / 已确认提交9fb8831 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
 | CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
-| CCR-F0070 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0070) |
+| CCR-F0070 | Confirmed / High | 已修 / 已确认、本批授权提交 | [初始化失败停止/真实消费者](../crp-f0070/README.md) |
 | CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
 | CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
 | CCR-F0073 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0073) |
 | CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) |
 | CCR-F0075 | Robustness / Low | 已修 / 已确认提交015841a | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
-| CCR-F0076 | Confirmed / Medium | 已修 / 已确认、本批授权提交 | [内核错误码/newlib请求对象验收](../crp-f0076/README.md#f0076-final-20261020) |
+| CCR-F0076 | Confirmed / Medium | 已修 / 已确认提交e7a3e26 | [内核错误码/newlib请求对象验收](../crp-f0076/README.md#f0076-final-20261020) |
 | CCR-F0077 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
@@ -459,3 +459,7 @@ F0117已由用户“提交后继续”确认，实际根b3b3b88，七路径/blob
 ## F0076已批准A并完成（2026-10-20）
 
 F0075已确认实际015841a；用户“提交后继续”授权本组，并明确选择A（已实现内核-errno、libos失败-1及低层全局errno）。三源45增36删，newlib不改。host普通/san各157全过、旧源各72失败，实际RV64 123检查/GOOD及容量失败页表/游标保持；旧内核混配负例BAD。最终标准update→run三前台8帧/hello37→166、179preclean/9346身份/完整diff正反通过，清理9407文件522356632B零tracked/正式删除；主工程误入构建两薄归档触碰及限制在报告如实披露，五正式运行资产SHA保持。97已修/22未修完，前96已确认提交，本组结果确认/commit Pending，唯一TASK_QUEUE入口；不自动提交/下一组/M2。
+
+## F0070完成（2026-10-20）
+
+前F0076已确认实际e7a3e26；用户“提交并继续”授权本单元。mm.c仅一行检查vme_init，失败panic_on/halt1，true保持。旧false在host三配置及实际RV64仍进入后续初始化，新普通/san/NDEBUG及实际RV64普通/NDEBUG精确停止；标准update/run三前台八帧/hello41→181，157preclean/9347身份/完整diff正反及清理通过，详见[本组报告](../crp-f0070/README.md)。98已修/21未修完，本组结果确认/commit Pending；不实现NPC VME/容量/启动复制，M2保持，唯一TASK_QUEUE入口。

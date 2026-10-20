@@ -89,6 +89,6 @@ void init_mm() {
   Log("free physical pages starting from %p", first);
 
 #ifdef HAS_VME
-  vme_init(pg_alloc, free_page);
+  panic_on(!vme_init(pg_alloc, free_page), "VME initialization failed");
 #endif
 }
