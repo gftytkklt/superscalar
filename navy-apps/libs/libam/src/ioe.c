@@ -36,7 +36,7 @@ void ioe_read(int reg, void *buf) {
     }
     case AM_TIMER_UPTIME: {
       AM_TIMER_UPTIME_T *t = (AM_TIMER_UPTIME_T *)buf;
-      t->us = (uint64_t)NDL_GetTicks() * 1000;
+      t->us = NDL_GetTicks64() * 1000;
       break;
     }
     case AM_INPUT_CONFIG: {

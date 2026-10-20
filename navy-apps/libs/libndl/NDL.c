@@ -15,9 +15,13 @@ static int screen_w = 0, screen_h = 0;
 static int canvas_w = 0, canvas_h = 0;
 static struct timeval timevar = {};
 
-uint32_t NDL_GetTicks() {
+uint64_t NDL_GetTicks64(void) {
   gettimeofday(&timevar, NULL);
-  return (timevar.tv_sec*1000 + (timevar.tv_usec)/1000);
+  return (uint64_t)timevar.tv_sec * 1000 + (uint64_t)timevar.tv_usec / 1000;
+}
+
+uint32_t NDL_GetTicks() {
+  return (uint32_t)NDL_GetTicks64();
 }
 
 int NDL_PollEvent(char *buf, int len) {

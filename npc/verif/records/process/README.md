@@ -669,3 +669,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-20 [F0119 NPC/REF初始化签名](code_correctness_review/crp-f0119/README.md) Completed：前F0116实际f5b9973；两行init(int)/传0及EOF换行，host类型/参数/step/skip、新完整NPC/REF/ABI及真实CPU36 PASS+1 XFAIL、37init0/两对拍负例通过；693身份/归档、565路径137996332B清理。93已修/26未修完，前92确认提交，本项结果确认/commit Pending；不push/M2，未来只TASK_QUEUE唯一入口。
+
+2026-10-20 F0119已确认实际提交7912c42；[F0117](code_correctness_review/crp-f0117/README.md)直接系统函数候选按用户NDL层次要求精确撤回，候选观察/清理已留档，当前Active/待接口方案裁决，93已修/26未修完不变。唯一未来入口TASK_QUEUE#crp-next，无新commit/push/M2。
+
+2026-10-20 [F0117 NDL64最终修复](code_correctness_review/crp-f0117/README.md#final-ndl64) Completed：按用户要求libam只调用NDL，新增64位毫秒接口已批准，原32位行为等价；host各90/实际RV6488/真实时间链与标准三前台hello38→168、166身份归档/6002身份及9400路径507473688B清理通过。94已修/25未修完，前93已确认提交，本项确认/commit Pending；后续只TASK_QUEUE#crp-next，不push/M2。上行待决为历史截面，已由用户批准解除。
