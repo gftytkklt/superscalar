@@ -598,3 +598,8 @@ Pending；64已修/55未修完。同轮将每次提交落档会话建议固化�
 ### 2026-10-20 CRP F0057/F0058/F0059 ELF组合修复
 
 F0061及会话规则已确认提交0ddd35c，[实际回执](code_correctness_review/crp-f0061/README.md#submit-20261020)复用既有验收。用户同句授权后完成[ELF组](code_correctness_review/crp-f0057-f0058-f0059/README.md)：头/表/段/entry及短读预检在进程替换前，坏映像ENOEXEC且旧进程保持，合法同页段保留；五源完整diff与语句解释/正反应用。137host、实际27坏映像/设备/同页执行、标准update→run三前台/hello36→159、263preclean及清理完成。累计67已修/52未修完，本组三项待结果确认/commit；F0074正式旧盘仍独立，未来只沿TASK_QUEUE#crp-next，未push/安装/M2推进。
+
+
+### 2026-10-20 CRP F0074 正式VME产物闭环
+
+ELF组已确认提交a92ccf9，[实际回执](code_correctness_review/crp-f0057-f0058-f0059/README.md#submit-20261020)；按“提交，继续”完成[F0074](code_correctness_review/crp-f0074/README.md)。正式旧盘仅nterm非VME及当前loader受控拒绝已复现，标准update→run无额外clean完成正式更新，108extent/48ELF/四新链接、三前台/hello33→144、8帧目视、218检查及10项local清理通过。无生产源码修改；68已修/51未修完，正式产物已更新、本组结果确认/文档commit Pending。正式忽略镜像/ELF保留，不随commit备份；未来唯一TASK_QUEUE#crp-next，无push/安装/M2推进。

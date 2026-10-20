@@ -428,3 +428,11 @@ index b86091d31d628421ce584fccd926933d02827e46..32806788b6ab96a2869cdb99ef1cd116
  
    Context *cp = ucontext(&pcb->as, kstack, (void *)entry);
 ```
+
+
+<a id="submit-20261020"></a>
+## 2026-10-20 确认与实际提交附记
+
+用户“提交，继续”确认本组三项并授权提交后一个单元；实际根提交`a92ccf9a7a594d6d4ab024dd75bc8e5c48b2a761`，10文件653增88删，路径/mode/blob及已验收5源patch与暂存完全一致。87保留身份/379既有终检复用，7处空白仅内嵌diff的空上下文。提交后根工作树/index干净，nested8101fad内容/index干净、850原mode保持，未push。local/submit-precheck、submit-staged、submit-receipt记录实际身份；本附记及后续导航/状态变化解释旧manifest中的文档哈希改变，不覆盖原验收。
+
+新源完整commit由本附记补足，前文WORKTREE标注保留完成时事实。提交落档建议“可在当前对话继续”，依据是下一项仍属ELF产物链且恢复入口完整；本轮仅按用户同句明确授权执行F0074，新结果不自动提交。正式旧盘未更新是本组完成时事实；后续F0074更新以其[独立报告](../crp-f0074/README.md)为准，不将新资产写回旧快照。local/.agent不由commit备份。
