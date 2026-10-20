@@ -29,6 +29,8 @@ bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
   pgfree_usr = pgfree_f;
 
   kas.ptr = pgalloc_f(PGSIZE);
+  panic_on(kas.ptr == NULL, "Failed to allocate kernel page table");
+  memset(kas.ptr, 0, PGSIZE);
 
   int i;
   for (i = 0; i < LENGTH(segments); i ++) {
@@ -46,11 +48,12 @@ bool vme_init(void* (*pgalloc_f)(int), void (*pgfree_f)(void*)) {
 
 void protect(AddrSpace *as) {
   PTE *updir = (PTE*)(pgalloc_usr(PGSIZE));
+  panic_on(updir == NULL, "Failed to allocate user page table");
+  // Copy the kernel mappings before publishing the new address space.
+  memcpy(updir, kas.ptr, PGSIZE);
   as->ptr = updir;
   as->area = USER_SPACE;
   as->pgsize = PGSIZE;
-  // map kernel space
-  memcpy(updir, kas.ptr, PGSIZE);
 }
 
 void unprotect(AddrSpace *as) {
@@ -125,7 +128,7 @@ void map(AddrSpace *as, void *va, void *pa, int prot) {
   for (int i = 1; i < 3; i ++) {
     if (!(pt[i - 1][vpn[i - 1]] & PTE_V)) {
       PTE *pg = (PTE *)pgalloc_usr(PGSIZE);
-      assert(pg != NULL);
+      panic_on(pg == NULL, "Failed to allocate intermediate page table");
       memset(pg, 0, PGSIZE);
       // store the next-level page table's physical page number in Sv39 PPN (bits 53:10)
       pt[i - 1][vpn[i - 1]] = (((uintptr_t)pg >> 12) << 10) | PTE_V;

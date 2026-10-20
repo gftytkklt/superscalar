@@ -70,3 +70,5 @@ F0070 Completed，结果确认/本组commit Pending；98完全已修/21未修完
 ## 用户确认与提交收尾（2026-10-20）
 
 用户“提交后继续”确认本组已报告范围和限制，授权精确提交后执行TASK_QUEUE唯一入口F0032一个单元。提交前69保留证据身份/完整patch/正式资产与30项终检复核一致，复用动态验收，不重复Completion。实际commit/路径/blob核验见local/submit-receipt及.agent；无push。可在当前对话继续：下一项同属VME，入口与验收边界完整。
+
+实际提交回执补充（2026-10-20）：根`6264781045bfa0381763c6fd8f00e5779420a67e`，六路径/blob与一行生产patch精确，69证据身份/30终检复用；提交后root/index干净。用户“提交后继续”确认已报告范围并授权下一F0032一个单元，原Pending为历史。local/submit-staged、submit-receipt保留，ignored资产未备份，无push。

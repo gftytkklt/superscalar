@@ -695,3 +695,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 用户“提交并继续”确认F0076已报告范围及限制；81份身份/源码patch/正式资产与49项终检复核通过，授权精确提交后仅执行F0070一个单元，实际回执见F0076 local/.agent；无push。
 
 2026-10-20 F0076已确认提交e7a3e26；[F0070 VME初始化失败停止](code_correctness_review/crp-f0070/README.md) Completed：生产mm.c一行检查，host普通/san/NDEBUG旧反例与新true/false、实际RV64失败路径及普通NEMU三前台八帧/hello41→181通过；157preclean/9347身份/完整diff正反与清理归档。98已修21未修完，本组结果确认/commit Pending；不实现NPC VME，唯一TASK_QUEUE，无push/M2。
+
+2026-10-20 F0070已确认提交6264781；[F0032 AM VME分配必要分析](code_correctness_review/crp-f0032/README.md)完成：当前源host普通UBSan/NDEBUG各六种观察，脏根污染外表/NULL分配及assert失效精确见证；33分析检查/五正式资产保持及3文件95577B清理。建议A根清零+分配失败诊断终止（无回滚），待用户失败契约裁决，生产未改/未修计数保持98与21；唯一TASK_QUEUE，无push/M2。
+
+2026-10-20 用户明确批准A后，[F0032 AM VME根页/分配失败保护](code_correctness_review/crp-f0032/README.md) Completed：单源6增3删，host24场景与实际RV64旧BAD/最终16GOOD、am-tests p初始化/标准三前台八帧hello38→173；194preclean/9348身份/完整diff正反及9401文件361741235B清理，正式五资产保持。99已修20未修完，本组结果确认/commit Pending；前分析待决为历史，唯一TASK_QUEUE，无push/M2。

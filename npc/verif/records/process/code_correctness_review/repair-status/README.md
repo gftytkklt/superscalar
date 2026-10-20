@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复98（前97已确认提交e7a3e26；F0070已确认、本批授权提交）；未修完21，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复99（前98已确认提交6264781；F0032已确认、本批授权提交）；未修完20，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -73,7 +73,7 @@
 | CCR-F0029 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0029) |
 | CCR-F0030 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0030) |
 | CCR-F0031 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0031) |
-| CCR-F0032 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0032) |
+| CCR-F0032 | Robustness / Low | 已修 / 已确认、本批授权提交 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
 | CCR-F0033 | Confirmed / Medium | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
 | CCR-F0034 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
 | CCR-F0035 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
@@ -111,7 +111,7 @@
 | CCR-F0067 | Robustness / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
 | CCR-F0068 | Confirmed / Medium | 已修 / 已确认提交9fb8831 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
 | CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
-| CCR-F0070 | Confirmed / High | 已修 / 已确认、本批授权提交 | [初始化失败停止/真实消费者](../crp-f0070/README.md) |
+| CCR-F0070 | Confirmed / High | 已修 / 已确认提交6264781 | [初始化失败停止/真实消费者](../crp-f0070/README.md) |
 | CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
 | CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
 | CCR-F0073 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0073) |
@@ -463,3 +463,11 @@ F0075已确认实际015841a；用户“提交后继续”授权本组，并明�
 ## F0070完成（2026-10-20）
 
 前F0076已确认实际e7a3e26；用户“提交并继续”授权本单元。mm.c仅一行检查vme_init，失败panic_on/halt1，true保持。旧false在host三配置及实际RV64仍进入后续初始化，新普通/san/NDEBUG及实际RV64普通/NDEBUG精确停止；标准update/run三前台八帧/hello41→181，157preclean/9347身份/完整diff正反及清理通过，详见[本组报告](../crp-f0070/README.md)。98已修/21未修完，本组结果确认/commit Pending；不实现NPC VME/容量/启动复制，M2保持，唯一TASK_QUEUE入口。
+
+## F0032必要分析（2026-10-20）
+
+F0070已确认提交6264781；用户“提交后继续”授权本单元。当前源host两配置六种场景复现脏根改写外表、根/protect NULL非法访问与map检查在NDEBUG消失；33检查/正式资产保持及3文件清理，见[分析与可评审方案](../crp-f0032/README.md)。建议AM根清零及所有页表分配失败不受NDEBUG影响地诊断终止，不增加可恢复OOM/回滚/回收；该失败契约待用户裁决，生产修复未Start，98已修21未修完不变。唯一TASK_QUEUE入口，不自动下一组/M2。
+
+## F0032方案A批准并完成（2026-10-20）
+
+用户明确选择“采用最小诊断终止方案（推荐）”；AM NEMU vme.c6增3删，根NULL检查/自清零、protect复制后发布、中间页失败诊断NDEBUG保持。host24场景/真实RV64旧脏根BAD及最终普通/NDEBUG各8 GOOD、现有am-tests p初始化与标准nanos三前台八帧/hello38→173通过；194preclean/9348身份/完整diff正反及9401文件361741235B清理，五正式资产保持，详见[本组报告](../crp-f0032/README.md)。99已修20未修完，本组结果确认/commit Pending，前98已确认6264781。失败无回滚/回收，M2不变，未来唯一TASK_QUEUE入口。前文分析待决为批准前历史。
