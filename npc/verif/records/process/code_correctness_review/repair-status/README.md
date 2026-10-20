@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复95（前94已确认提交；F0020已确认/本批授权提交）；未修完24，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复96（前95已确认提交；F0075已确认/本批授权提交）；未修完23，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -61,7 +61,7 @@
 | CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
 | CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 已修 / 已确认提交522bed7 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) |
-| CCR-F0020 | Confirmed / Medium | 已修 / 已确认，本批授权提交 | [SD方向/I/O/按需容量验收](../crp-f0020/README.md#f0020-final-20261020) |
+| CCR-F0020 | Confirmed / Medium | 已修 / 已确认提交8e5b1ca | [SD方向/I/O/按需容量验收](../crp-f0020/README.md#f0020-final-20261020) |
 | CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
 | CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) |
 | CCR-F0023 | Confirmed / High | 已修 / 已确认提交c9be898 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
@@ -116,7 +116,7 @@
 | CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
 | CCR-F0073 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0073) |
 | CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) |
-| CCR-F0075 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0075) |
+| CCR-F0075 | Robustness / Low | 已修 / 已确认，本批授权提交 | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
 | CCR-F0076 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0076) |
 | CCR-F0077 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
@@ -447,3 +447,11 @@ F0117已由用户“提交后继续”确认，实际根b3b3b88，七路径/blob
 ## F0020完成（2026-10-20）
 
 前F0118最小静音子范围实际be8a4c0。用户要求16 GiB不预占，并明确失败终止/未写区读零按需增长；F0020方向/命令重放/I/O边界修复完成，host普通/san各529正常+132空盘断言/10失败，真实RV64新NEMU GOOD及三失败，512MiB上限/16GiB逻辑8KiB实际占用验证。完整diff/16项保护/正反归档及1996文件清理通过，见[本组报告](../crp-f0020/README.md)。95已修/24未修完，本组结果确认/commit Pending；F0118整项仍Partial。唯一后续入口TASK_QUEUE#crp-next，当前停止，无本组commit/push/M2。
+
+## F0020提交及F0075必要分析（2026-10-20）
+
+用户“提交并继续”确认F0020，实际8e5b1ca；70身份/完整patch与42既有终检复用，无新测试。F0075现源host复现跨尾len8仍回8并请求第三块/盘外起点回1/极大offset回绕块0，正常跨块与RMW六项通过；生产零修改、17分析检查/11身份、一可执行文件清理。设备盘应沿内嵌盘截短还是严格拒绝尚待用户裁决，见[报告](../crp-f0075/README.md)，不推定SD策略适用。95已修均确认提交/24未修完，F0075 Active，不记功能修复或Completion。唯一TASK_QUEUE入口，不自动commit/push/M2。
+
+## F0075已批准实施完成（2026-10-20）
+
+用户明确选择沿内嵌盘跨尾截短/盘外0，待决解除；disk.c16增3删，容量差值先界定长度/块号，零长无配置读取或I/O；保留512B bounce和RMW，真实底层错误按F0009终止。普通/san各79、真实RV64实际nanos disk17/无盘3/短读拒绝、标准update→run三前台8帧/hello41→178/108extent通过。155preclean/5925身份/完整diff正反，清理9343文件357724084B零tracked/正式删除，见[报告](../crp-f0075/README.md#f0075-final-20261020)。96已修/23未修完，前95确认提交，本组结果确认/commit Pending；唯一TASK_QUEUE入口，不自动提交/下一组/M2。

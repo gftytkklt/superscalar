@@ -683,3 +683,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 [F0020 SD卡方向与按需空间](code_correctness_review/crp-f0020/README.md#f0020-final-20261020) Completed：用户批准缺盘/越界/真实I/O错误终止、未写区零读；初始化不扩盘，host普通/san各529正常+132空盘/10失败，真实RV64新NEMU及512MiB上限通过；末端写16GiB逻辑/8KiB实际占用。16保护/正反归档/1996文件清理，95已修24未修完，结果确认/commit Pending；前F0118静音子范围已提交be8a4c0、整项Partial。未来仅TASK_QUEUE。
 
 2026-10-20 F0020用户“提交并继续”确认已披露范围，70保留身份/完整patch无漂移，复用42项终检；授权提交后F0075一个单元，实际回执见本组local/.agent，不push。
+
+2026-10-20 F0020已由用户确认实际提交8e5b1ca；[F0075必要分析](code_correctness_review/crp-f0075/README.md)复现盘尾/盘外/offset回绕三问题，正常六检查与17分析核验通过，生产零修改。越界截短/严格拒绝已询问，待用户裁决；95已修/24未修完不变，不执行完成快照，不新增分析commit门槛，唯一TASK_QUEUE。
+
+2026-10-20 [F0075设备盘容量截短](code_correctness_review/crp-f0075/README.md#f0075-final-20261020) Completed：用户批准跨尾截短/盘外0，nanos disk.c16增3删，host普通/san各79、实际RV64 nanos disk17/无盘3/短读终止与标准三前台8帧/hello41→178、108extent通过。155保护归档/5925身份/完整diff正反/9343文件357724084B清理；96已修23未修完，结果确认/commit Pending，唯一TASK_QUEUE，无push/M2。
+
+2026-10-20 用户“提交后继续”确认F0075已披露范围，提交前59证据/patch/正式资产无漂移，复用既有22终检；授权精确提交后仅执行TASK_QUEUE的F0076一个单元，实际回执见本组local/.agent，无push。

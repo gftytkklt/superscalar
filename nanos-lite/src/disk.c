@@ -35,7 +35,7 @@ void init_disk() {
 size_t disk_size(void) {
   if (!disk_present) return embed_size;
   AM_DISK_CONFIG_T cfg = io_read(AM_DISK_CONFIG);
-  if (cfg.blksz <= 0 || cfg.blkcnt <= 0 ||
+  if (!cfg.present || cfg.blksz != BLKSZ || cfg.blkcnt <= 0 ||
       (size_t)cfg.blkcnt > SIZE_MAX / (size_t)cfg.blksz) return 0;
   return (size_t)cfg.blksz * (size_t)cfg.blkcnt;
 }
@@ -47,10 +47,20 @@ static size_t embed_read(void *buf, size_t offset, size_t len) {
   return len;
 }
 
+static size_t disk_transfer_size(size_t offset, size_t len) {
+  size_t capacity = disk_size();
+  if (offset >= capacity) return 0;
+  // Subtract before adding offsets or narrowing block numbers to the AM int.
+  return len > capacity - offset ? capacity - offset : len;
+}
+
 /* read `len` bytes at byte offset `offset` from the disk into `buf` */
 size_t disk_read(void *buf, size_t offset, size_t len) {
+  if (len == 0) return 0;
   if (!disk_present) return embed_read(buf, offset, len);
-  size_t blksz = io_read(AM_DISK_CONFIG).blksz;
+  len = disk_transfer_size(offset, len);
+  if (len == 0) return 0;
+  size_t blksz = BLKSZ;
   size_t done = 0;
   while (done < len) {
     size_t pos = offset + done;
@@ -67,6 +77,7 @@ size_t disk_read(void *buf, size_t offset, size_t len) {
 
 /* write `len` bytes from `buf` to byte offset `offset` on the disk */
 size_t disk_write(const void *buf, size_t offset, size_t len) {
+  if (len == 0) return 0;
   if (!disk_present) {
     // embedded ramdisk: in-memory write-back (the section is writable)
     if (!embed_ptr) return 0;
@@ -75,7 +86,9 @@ size_t disk_write(const void *buf, size_t offset, size_t len) {
     memcpy(embed_ptr + offset, buf, len);
     return len;
   }
-  size_t blksz = io_read(AM_DISK_CONFIG).blksz;
+  len = disk_transfer_size(offset, len);
+  if (len == 0) return 0;
+  size_t blksz = BLKSZ;
   size_t done = 0;
   while (done < len) {
     size_t pos = offset + done;
