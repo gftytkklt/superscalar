@@ -569,3 +569,6 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ### 2026-10-20 CRP 框架/OS 组件代码 diff 留档
 
 [本轮盘点、覆盖与验证](code_correctness_review/framework-diffs-20261020/README.md)：25 份原问题验收报告补齐 48 份完整逐文件 diff 与语句级功能说明，覆盖 newlib/libos、Navy、nanos、AM/klib、RT 及 am-kernels 的 41 个已实施相关 ID（F0040 仅部分）。逐个与 Git/历史补丁正反应用核对；明确独立仓库及 F0051 首次跟踪前基线。仅文档修改并按授权提交，F0083 代码确认/嵌套提交门槛仍保留，未启动下一修复单元。
+
+
+2026-10-20 用户进一步要求将上述归档需求固化后提交：[CRP 工作流规范](code_correctness_review/workflow/README.md#framework-repair-archive)已规定框架/OS修复逐问题内嵌完整diff、仓库/基线身份、语句级解释、正反应用核验、清理前留档及分仓提交状态；[本轮规则补充记录](code_correctness_review/framework-diffs-20261020/README.md#workflow-rule-20261020)保存范围与结果。不改变 F0083 代码确认/提交门槛或推进下一修复单元。
