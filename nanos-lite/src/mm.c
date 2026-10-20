@@ -1,5 +1,6 @@
 #include <memory.h>
 #include <proc.h>
+#include <errno.h>
 
 void* new_page(size_t nr_page) {
   uintptr_t cursor = (uintptr_t)heap.start;
@@ -42,32 +43,32 @@ void free_page(void *p) {
 /* The brk() system call handler. */
 int mm_brk(uintptr_t brk) {
 #ifdef HAS_VME
-  if (current == NULL) return -1;
+  if (current == NULL) return -ENOMEM;
   uintptr_t lo = (uintptr_t)current->as.area.start;
   uintptr_t hi = (uintptr_t)current->as.area.end;
-  if (hi < lo || hi - lo < STACK_SIZE) return -1;
+  if (hi < lo || hi - lo < STACK_SIZE) return -ENOMEM;
   uintptr_t limit = hi - STACK_SIZE;
   if (current->brk_start < lo || current->brk_start > limit ||
       current->max_brk < current->brk_start || current->max_brk > limit ||
       brk < current->brk_start || brk > limit ||
       brk > UINTPTR_MAX - (PGSIZE - 1) ||
-      current->max_brk > UINTPTR_MAX - (PGSIZE - 1)) return -1;
+      current->max_brk > UINTPTR_MAX - (PGSIZE - 1)) return -ENOMEM;
   if (brk > current->max_brk) {
     uintptr_t start = ROUNDUP(current->max_brk, PGSIZE);
     uintptr_t end = ROUNDUP(brk, PGSIZE);
-    if (end > limit) return -1;
+    if (end > limit) return -ENOMEM;
     size_t pages = (end - start) / PGSIZE;
     if (pages == 0) {
       current->max_brk = brk;
       return 0;
     }
-    if (pages > SIZE_MAX / 4) return -1;
+    if (pages > SIZE_MAX / 4) return -ENOMEM;
     // Other existing AM targets have at most three intermediate table levels.
     size_t tables = __am_map_table_pages ?
       __am_map_table_pages(&current->as, start, end) : 3 * pages;
-    if (tables > SIZE_MAX - pages) return -1;
+    if (tables > SIZE_MAX - pages) return -ENOMEM;
     void *data = new_page(pages + tables);
-    if (data == NULL) return -1;
+    if (data == NULL) return -ENOMEM;
     table_next = (uintptr_t)data + pages * PGSIZE;
     table_end = table_next + tables * PGSIZE;
     for (uintptr_t va = start; va < end; va += PGSIZE) {

@@ -689,3 +689,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 [F0075设备盘容量截短](code_correctness_review/crp-f0075/README.md#f0075-final-20261020) Completed：用户批准跨尾截短/盘外0，nanos disk.c16增3删，host普通/san各79、实际RV64 nanos disk17/无盘3/短读终止与标准三前台8帧/hello41→178、108extent通过。155保护归档/5925身份/完整diff正反/9343文件357724084B清理；96已修23未修完，结果确认/commit Pending，唯一TASK_QUEUE，无push/M2。
 
 2026-10-20 用户“提交后继续”确认F0075已披露范围，提交前59证据/patch/正式资产无漂移，复用既有22终检；授权精确提交后仅执行TASK_QUEUE的F0076一个单元，实际回执见本组local/.agent，无push。
+
+2026-10-20 F0075已确认提交015841a后，用户继续并选择A；[F0076内核/libos/newlib errno](code_correctness_review/crp-f0076/README.md#f0076-final-20261020) Completed：三源明确错误码/低层槽，host各157及旧72失败、实际RV64 123/GOOD与容量状态保持、最终标准三前台hello37→166/8帧目视；179保护/9346身份/完整diff正反及9407文件522356632B清理。97已修22未修完，本组结果确认/commit Pending；误入主工程构建两薄归档影响及未测限制在报告披露，五正式资产SHA保持。未来仅TASK_QUEUE，无push/M2。
+
+2026-10-20 用户“提交并继续”确认F0076已报告范围及限制；81份身份/源码patch/正式资产与49项终检复核通过，授权精确提交后仅执行F0070一个单元，实际回执见F0076 local/.agent；无push。

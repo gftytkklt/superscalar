@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复96（前95已确认提交；F0075已确认/本批授权提交）；未修完23，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复97（前96已确认提交015841a；F0076已确认、本批授权提交）；未修完22，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -116,8 +116,8 @@
 | CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
 | CCR-F0073 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0073) |
 | CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) |
-| CCR-F0075 | Robustness / Low | 已修 / 已确认，本批授权提交 | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
-| CCR-F0076 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0076) |
+| CCR-F0075 | Robustness / Low | 已修 / 已确认提交015841a | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
+| CCR-F0076 | Confirmed / Medium | 已修 / 已确认、本批授权提交 | [内核错误码/newlib请求对象验收](../crp-f0076/README.md#f0076-final-20261020) |
 | CCR-F0077 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
@@ -455,3 +455,7 @@ F0117已由用户“提交后继续”确认，实际根b3b3b88，七路径/blob
 ## F0075已批准实施完成（2026-10-20）
 
 用户明确选择沿内嵌盘跨尾截短/盘外0，待决解除；disk.c16增3删，容量差值先界定长度/块号，零长无配置读取或I/O；保留512B bounce和RMW，真实底层错误按F0009终止。普通/san各79、真实RV64实际nanos disk17/无盘3/短读拒绝、标准update→run三前台8帧/hello41→178/108extent通过。155preclean/5925身份/完整diff正反，清理9343文件357724084B零tracked/正式删除，见[报告](../crp-f0075/README.md#f0075-final-20261020)。96已修/23未修完，前95确认提交，本组结果确认/commit Pending；唯一TASK_QUEUE入口，不自动提交/下一组/M2。
+
+## F0076已批准A并完成（2026-10-20）
+
+F0075已确认实际015841a；用户“提交后继续”授权本组，并明确选择A（已实现内核-errno、libos失败-1及低层全局errno）。三源45增36删，newlib不改。host普通/san各157全过、旧源各72失败，实际RV64 123检查/GOOD及容量失败页表/游标保持；旧内核混配负例BAD。最终标准update→run三前台8帧/hello37→166、179preclean/9346身份/完整diff正反通过，清理9407文件522356632B零tracked/正式删除；主工程误入构建两薄归档触碰及限制在报告如实披露，五正式运行资产SHA保持。97已修/22未修完，前96已确认提交，本组结果确认/commit Pending，唯一TASK_QUEUE入口；不自动提交/下一组/M2。

@@ -1,5 +1,6 @@
 #include <fs.h>
 #include <limits.h>
+#include <errno.h>
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -88,13 +89,13 @@ int fs_open(const char *pathname, int flags, int mode) {
     fp_offt[fd] = 0;   // open 语义：文件偏移量从 0 开始（覆盖 execve 后残留的偏移量）
     return fd;
   }
-  // POSIX semantics: return -1 instead of panicking. Applications like
-  // ONScripter probe optional files (cursors, fonts) and tolerate failures.
-  return -1;
+  // libos converts the cause to the newlib errno ABI; applications such as
+  // ONScripter can still tolerate missing optional files (cursors, fonts).
+  return -ENOENT;
 }
 
 long fs_read(int fd, void *buf, size_t len) {
-  if (fd < 0 || fd >= filenum) { return -1; }
+  if (fd < 0 || fd >= filenum) { return -EBADF; }
   long rd_offt = fp_offt[fd] + file_table[fd].disk_offset;
   long offt_incr = 0;
   // normal file
@@ -112,7 +113,7 @@ long fs_read(int fd, void *buf, size_t len) {
 }
 
 long fs_write(int fd, const void *buf, size_t len) {
-  if (fd < 0 || fd >= filenum) { return -1; }
+  if (fd < 0 || fd >= filenum) { return -EBADF; }
   long wr_offt = fp_offt[fd] + file_table[fd].disk_offset;
   long offt_incr = 0;
   if (file_table[fd].write == NULL) {
@@ -129,28 +130,28 @@ long fs_write(int fd, const void *buf, size_t len) {
 }
 
 long fs_lseek(int fd, long offset, int whence) {
-  if (fd < 0 || fd >= filenum) { return -1; }
+  if (fd < 0 || fd >= filenum) { return -EBADF; }
   size_t base;
   switch(whence) {
     case SEEK_SET: base = 0; break;
     case SEEK_CUR:
-      if (fp_offt[fd] < 0) { return -1; }
+      if (fp_offt[fd] < 0) { return -EINVAL; }
       base = (size_t)fp_offt[fd];
       break;
     case SEEK_END: base = file_table[fd].size; break;
-    default: return -1;
+    default: return -EINVAL;
   }
   size_t next;
   if (offset < 0) {
     // Form the magnitude without negating LONG_MIN.
     size_t back = (size_t)(-(offset + 1)) + 1;
-    if (back > base) { return -1; }
+    if (back > base) { return -EINVAL; }
     next = base - back;
   } else {
-    if (base > (size_t)LONG_MAX - (size_t)offset) { return -1; }
+    if (base > (size_t)LONG_MAX - (size_t)offset) { return -EINVAL; }
     next = base + (size_t)offset;
   }
-  if (next > file_table[fd].size || next > (size_t)LONG_MAX) { return -1; }
+  if (next > file_table[fd].size || next > (size_t)LONG_MAX) { return -EINVAL; }
   fp_offt[fd] = (long)next;
   return fp_offt[fd];
 }
@@ -162,7 +163,7 @@ long fs_filesz(int fd) {
 }
 
 int fs_close(int fd) {
-  if (fd < 0 || fd >= filenum) { return -1; }
+  if (fd < 0 || fd >= filenum) { return -EBADF; }
   fp_offt[fd] = 0;
   return 0;
 }

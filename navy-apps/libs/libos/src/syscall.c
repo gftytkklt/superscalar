@@ -7,6 +7,18 @@
 #include <stdint.h>
 #include "syscall.h"
 
+// newlib's _xxx_r wrappers copy this low-layer slot into the requested _reent.
+#undef errno
+extern int errno;
+
+static intptr_t syscall_result(intptr_t ret) {
+  if (ret < 0) {
+    errno = (int)-ret;
+    return -1;
+  }
+  return ret;
+}
+
 // helper macros
 #define _concat(x, y) x ## y
 #define concat(x, y) _concat(x, y)
@@ -73,28 +85,28 @@ void _exit(int status) {
 }
 
 int _open(const char *path, int flags, mode_t mode) {
-  return _syscall_(SYS_open, (intptr_t)path, flags, mode);
+  return syscall_result(_syscall_(SYS_open, (intptr_t)path, flags, mode));
 }
 
 long _write(int fd, void *buf, size_t count) {
-  return _syscall_(SYS_write, fd, (intptr_t)buf, count);
+  return syscall_result(_syscall_(SYS_write, fd, (intptr_t)buf, count));
 }
 
 void *_sbrk(intptr_t increment) {
   uintptr_t current = (uintptr_t)program_break;
   uintptr_t base = (uintptr_t)&end;
   uintptr_t next;
-  if (current < base) return (void *)-1;
+  if (current < base) { errno = ENOMEM; return (void *)-1; }
   if (increment >= 0) {
-    if ((uintptr_t)increment > UINTPTR_MAX - current) return (void *)-1;
+    if ((uintptr_t)increment > UINTPTR_MAX - current) { errno = ENOMEM; return (void *)-1; }
     next = current + (uintptr_t)increment;
   } else {
     // Unsigned negation also handles INTPTR_MIN without signed overflow.
     uintptr_t decrement = (uintptr_t)0 - (uintptr_t)increment;
-    if (decrement > current - base) return (void *)-1;
+    if (decrement > current - base) { errno = ENOMEM; return (void *)-1; }
     next = current - decrement;
   }
-  int ret = _syscall_(SYS_brk, (intptr_t)next, 0, 0);
+  intptr_t ret = syscall_result(_syscall_(SYS_brk, (intptr_t)next, 0, 0));
   if (ret == 0){
     void* addr = program_break;
     program_break = (void *)next;
@@ -104,35 +116,30 @@ void *_sbrk(intptr_t increment) {
 }
 
 long _read(int fd, void *buf, size_t count) {
-  return _syscall_(SYS_read, fd, (intptr_t)buf, count);
+  return syscall_result(_syscall_(SYS_read, fd, (intptr_t)buf, count));
 }
 
 int _close(int fd) {
-  return _syscall_(SYS_close, fd, 0, 0);
+  return syscall_result(_syscall_(SYS_close, fd, 0, 0));
 }
 
 off_t _lseek(int fd, off_t offset, int whence) {
-  return _syscall_(SYS_lseek, fd, offset, whence);
+  return syscall_result(_syscall_(SYS_lseek, fd, offset, whence));
 }
 
 int _gettimeofday(struct timeval *tv, struct timezone *tz) {
-  return _syscall_(SYS_gettimeofday, (intptr_t)tv, (intptr_t)tz, 0);
-  return 0;
+  return syscall_result(_syscall_(SYS_gettimeofday, (intptr_t)tv, (intptr_t)tz, 0));
 }
 
 int _execve(const char *fname, char * const argv[], char *const envp[]) {
-  int ret = _syscall_(SYS_execve, (intptr_t)fname, (intptr_t)argv, (intptr_t)envp);
-  if (ret < 0) {
-    errno = -ret;
-    return -1;
-  }
-  return ret;
+  return syscall_result(_syscall_(SYS_execve, (intptr_t)fname, (intptr_t)argv, (intptr_t)envp));
 }
 
 // Syscalls below are not used in Nanos-lite.
 // But to pass linking, they are defined as dummy functions.
 
 int _fstat(int fd, struct stat *buf) {
+  errno = ENOSYS;
   return -1;
 }
 
