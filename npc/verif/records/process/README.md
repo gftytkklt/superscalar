@@ -673,3 +673,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 F0119已确认实际提交7912c42；[F0117](code_correctness_review/crp-f0117/README.md)直接系统函数候选按用户NDL层次要求精确撤回，候选观察/清理已留档，当前Active/待接口方案裁决，93已修/26未修完不变。唯一未来入口TASK_QUEUE#crp-next，无新commit/push/M2。
 
 2026-10-20 [F0117 NDL64最终修复](code_correctness_review/crp-f0117/README.md#final-ndl64) Completed：按用户要求libam只调用NDL，新增64位毫秒接口已批准，原32位行为等价；host各90/实际RV6488/真实时间链与标准三前台hello38→168、166身份归档/6002身份及9400路径507473688B清理通过。94已修/25未修完，前93已确认提交，本项确认/commit Pending；后续只TASK_QUEUE#crp-next，不push/M2。上行待决为历史截面，已由用户批准解除。
+
+2026-10-20 用户“提交后继续”确认F0117，实际根b3b3b88；[F0118必要分析](code_correctness_review/crp-f0118/README.md)已复现现五层音频链后端失败仍成功/普通重开配置不一致/显式失败旧资源与队列状态，普通与sanitizer共10运行48断言、43核对及12产物911184B清理。生产未改，F0118 Active/待失败处理及重开语义A/B裁决，非功能已修；94已修均确认提交/25未修完，唯一TASK_QUEUE#crp-next，无push/M2。
+
+2026-10-20 [F0118失败静音子范围](code_correctness_review/crp-f0118/README.md#mute-final-20261020) Completed/整项Partial：按用户最小可见错误及写入前停止PCM策略，NEMU INIT0/清旧队列对齐游标、AM写ring前返回，两源16增3删；host各52/真实RV64三失败无ring变更与COUNT0、正常65537B/显式恢复fresh512/标准三前台hello40→179、193归档身份/5978身份/9370路径360267188B清理通过。两默认产物用户自建保留，Guard解除；94完全已修/25未修完不变，本轮新增确认/commit Pending，唯一TASK_QUEUE#crp-next。
+
+2026-10-20 F0118最小静音子范围用户“提交后继续”确认并授权提交；复用92份证据/两源完整patch及既有19终检，F0118整项仍Partial。实际提交回执见本批local/implementation与.agent；唯一后续入口TASK_QUEUE#crp-next。

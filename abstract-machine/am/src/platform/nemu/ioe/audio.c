@@ -41,8 +41,12 @@ void __am_audio_play(AM_AUDIO_PLAY_T *ctl) {
   assert(bufsize != 0);
   const uint8_t *play_buf = ctl->buf.start;
   while (remaining != 0) {
+    // A failed backend clears INIT: remain silent without writing the ring.
+    if (inl(AUDIO_INIT_ADDR) == 0) return;
     uint32_t len = remaining < bufsize ? remaining : bufsize;
-    while (bufsize - inl(AUDIO_COUNT_ADDR) < len);
+    while (bufsize - inl(AUDIO_COUNT_ADDR) < len) {
+      if (inl(AUDIO_INIT_ADDR) == 0) return;
+    }
     for (uint32_t i = 0; i < len; i++) {
       if (wr_index >= bufsize) wr_index -= bufsize;
       outb(AUDIO_SBUF_ADDR + wr_index, play_buf[i]);

@@ -68,6 +68,13 @@ static void audio_play(void *userdata, uint8_t *stream, int len){
   }
 }
 
+static void audio_disable() {
+  audio_base[reg_init] = 0;
+  // Discard queued PCM while preserving alignment with the AM write cursor.
+  rd_index = (rd_index + audio_base[reg_count]) % audio_base[reg_sbuf_size];
+  audio_base[reg_count] = 0;
+}
+
 static void SDL_audio_init(){
   SDL_AudioSpec s = {};
   s.freq = audio_freq();
@@ -80,7 +87,8 @@ static void SDL_audio_init(){
   //count = 0;
   if (!audio_initialized) {
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
-      fprintf(stderr, "audio: SDL_InitSubSystem failed: %s\n", SDL_GetError());
+      fprintf(stderr, "audio: SDL_InitSubSystem failed: %s; audio disabled\n", SDL_GetError());
+      audio_disable();
       return;
     }
     audio_initialized = true;
@@ -90,7 +98,8 @@ static void SDL_audio_init(){
     audio_opened = false;
   }
   if (SDL_OpenAudio(&s, NULL) != 0) {
-    fprintf(stderr, "audio: SDL_OpenAudio failed: %s\n", SDL_GetError());
+    fprintf(stderr, "audio: SDL_OpenAudio failed: %s; audio disabled\n", SDL_GetError());
+    audio_disable();
     return;
   }
   audio_opened = true;

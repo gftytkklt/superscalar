@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复94（前93均已确认提交；F0119实际7912c42；F0117 Completed、确认/commit Pending）；未修完25，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复94（均已确认提交；F0117实际b3b3b88）；未修完25，含5CQ及F0040/F0118 Partial。F0118静音子范围已完成，新增静音子范围已由用户“提交后继续”确认并授权提交。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -158,8 +158,8 @@
 | CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) |
-| CCR-F0117 | Confirmed / Low | 已修 / Completed，确认及commit Pending | [NDL64批准/最终实现与验收](../crp-f0117/README.md#final-ndl64) |
-| CCR-F0118 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0118) |
+| CCR-F0117 | Confirmed / Low | 已修 / 已确认提交b3b3b88 | [NDL64批准/最终实现与验收](../crp-f0117/README.md#final-ndl64) |
+| CCR-F0118 | Robustness / Medium | 未修完 / Partial；失败静音子范围Completed，已确认/本批授权提交 | [用户最小策略/无写入与真实验收](../crp-f0118/README.md#mute-final-20261020) |
 | CCR-F0119 | Confirmed / Low | 已修 / 已确认提交7912c42 | [NPC init(int)/参数哨兵/真实CPU/ABI与清理](../crp-f0119/README.md) |
 
 ## 2026-10-18 条件兼容修复补充
@@ -435,3 +435,11 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 ## F0117 NDL64完成（2026-10-20）
 
 用户要求libam只经NDL，已撤回直接系统函数候选；用户后续批准新增NDL64并保持旧行为。NDL_GetTicks64毫秒64/原32位低位保持、libam只适配1000，3源9增3删；原动态回绕反例、host两构建各90断言、原新32接口1000样本/故障序列逐字节相同、实际RV64同libam/NDL88/main0/GOOD及真实2ms进展、标准update→run三前台hello38→168、166preclean/6002身份/完整diff正反/8目视，清理9400路径507473688B零tracked删除。[报告](../crp-f0117/README.md#final-ndl64)。94已修/25未修完，前93确认提交，本组结果确认/commit Pending；唯一TASK_QUEUE入口，F0118未Start/M2保持。
+
+## F0117提交与F0118必要分析（2026-10-20）
+
+F0117已由用户“提交后继续”确认，实际根b3b3b88，七路径/blob/55保留身份及三源patch精确、两原diff空白核对，复用原验收和清理，不重跑。F0118已完成必要现源分析：原F0010已处理检查返回/错误打印/失败不Pause；当前五层实际函数host同步桥接普通/sanitizer五例各24断言，共10运行/48断言、43身份/现象核对，后端失败上层仍ret0并接受PCM、普通重开寄存器22050实际44100、显式失败旧已关/队列仍在可再写均复现；非真实OS/线程/声卡验收。仅分析，生产未改；清理12探针/对象911184B，等用户A保留接口故障终止仿真或B可恢复错误扩展（含重开清队列语义）裁决，见[报告](../crp-f0118/README.md)。94已修均确认提交/25未修完，F0118仍未修，当前单元Active，无自动提交/下一组/M2。
+
+## F0118最小静音子范围完成（2026-10-20）
+
+用户明确后端失败报错、不播放从不写入开始；本轮选择保留公开接口/继续仿真，替代旧A/B。NEMU失败INIT0/COUNT0并推进消费游标到已提交末端；AM写ring前/等待期间检查0返回，2源16增3删。旧三反例精确拒绝，host两构建各52/真实RV64三故障各3×65537B提交ring65536B未变/COUNT0及正常65537B PCM、两个显式成功fresh512/线程/欠载静音、标准三前台hello40→179、193preclean/5978身份/完整diff正反通过。用户已确认两默认产物由其原工程构建并保留，Guard解除；清理9370路径360267188B零tracked/默认删除。[报告](../crp-f0118/README.md#mute-final-20261020)。F0118仍Partial（普通改配置重开未修），94完全已修/25未修完不变，本子范围结果确认/commit Pending；未来仅TASK_QUEUE，不自动commit/push/M2。
