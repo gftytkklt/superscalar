@@ -122,8 +122,8 @@
 | CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
 | CCR-F0080 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
-| CCR-F0081 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0081) |
-| CCR-F0082 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0082) |
+| CCR-F0081 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
+| CCR-F0082 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
 | CCR-F0083 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0083) |
 | CCR-F0084 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0084) |
 | CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) |
@@ -317,3 +317,10 @@ loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例�
 2026-10-20 F0077/F0078/F0088：前组确认提交nested5d9ffdb/root7a8150e，“提交后继续”授权本组。三项最小修复/逐项证据和实际重建新库/优化/弱hook/三前台完成，57/62，结果确认/commit Pending；原memory当前未误编译/其他warnings/未测/清理见本组报告。未来仅TASK_QUEUE，不自动提交/push/M2。
 
 2026-10-20 本组用户条件提交/接续指令确认已报告范围；nested实际71fac82，root本次提交回执见[本组记录](../crp-f0077-f0078-f0088/README.md#submit-20261020)。165原manifest保持、复用33终检及既有验收；上下文较长，提交后提示新对话继续唯一入口，不开始F0081/F0082、无push/新测试。
+
+
+### 2026-10-20 F0081/F0082完成（本组待确认提交）
+
+两项wrapper容量保护完成，43场景/169断言在host sanitizer与实际RV64新库均通过，三次真实exec参数/环境链及标准update→run三前台/hello34→149通过。145终检/身份/目视及9398产物清理见[本组报告](../crp-f0081-f0082/README.md)。59已修/60未修完，前57确认提交，新2项未确认提交；两HEAD/index保持，nested四源60增36删/原850mode噪声保留。未测/夹具更正/再生限制见报告，未来仅TASK_QUEUE，无commit/push/M2。
+
+2026-10-20 用户“提交后继续”确认F0081/F0082并授权提交后一个单元；nested实际d923fa4，root回执见本组local/submit-receipt.json；59已修均确认提交，复用验收/清理，无push，随后仅F0083。

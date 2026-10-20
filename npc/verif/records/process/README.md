@@ -552,3 +552,10 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 本组补充：现有update→run完整路径通过，108条文件逐字节核对/四应用新链接/三前台hello35→159，231标准路径核对；Makefile依赖使宏变化触发旧对象重编译，7增量核对通过。补验夹具fixdep缺失/日志判据更正及四份清理回执见本组报告。
 
 2026-10-20 [F0077/F0078/F0088提交及交接](code_correctness_review/crp-f0077-f0078-f0088/README.md#submit-20261020)：用户确认并授权提交，nested实际71fac82，root本次实际回执见local。原165manifest保持、产品验收/33终检复用；57/62保持，考虑上下文长度，提交后转新对话沿TASK_QUEUE唯一入口继续，本轮未Start下一组，无push。
+
+
+### 2026-10-20 CRP F0081/F0082 exec输入边界
+
+[本组计划/交付](code_correctness_review/crp-f0081-f0082/README.md)：前组nested71fac82/root23b0313已确认提交，用户“继续CRP修复”授权本单元。四posix源60增36删，argv255+NULL与PATH1023+NUL容量保护，E2BIG/ENAMETOOLONG明确失败；四原ASan栈越界反例、43场景169断言host/RV64、三次真实exec参数/环境链及标准update→run三前台hello34→149通过。145preclean/4890源/850链接身份，9398文件约483.5MiB清理；夹具声明/结束方式更正、原空PATH/尾段保留及未测见报告。59已修/60未修完，新2项结果确认/commit Pending，未来仅TASK_QUEUE。
+
+2026-10-20 F0081/F0082获用户“提交后继续”确认并授权，nested实际d923fa4，root实际回执见本组local/submit-receipt.json；复用验收/清理，不重复完成事件，随后执行唯一F0083入口，无push。
