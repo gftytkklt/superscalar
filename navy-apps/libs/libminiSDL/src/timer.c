@@ -10,6 +10,7 @@ void CallbackHelper();
 
 typedef struct {
   bool used;
+  uint64_t generation;
   uint32_t interval;
   SDL_NewTimerCallback callback;
   void *param;
@@ -17,10 +18,12 @@ typedef struct {
 } SDL_Timer;
 
 static SDL_Timer timers[MAX_TIMERS];
+static bool timer_dispatching;
 
 SDL_TimerID SDL_AddTimer(uint32_t interval, SDL_NewTimerCallback callback, void *param) {
   for (int i = 0; i < MAX_TIMERS; i ++) {
     if (!timers[i].used) {
+      timers[i].generation ++;
       timers[i].used = true;
       timers[i].interval = interval;
       timers[i].callback = callback;
@@ -55,16 +58,24 @@ void SDL_Delay(uint32_t ms) {
 // SDL APIs (SDL_GetTicks / SDL_PollEvent / SDL_Delay), mirroring the way the
 // audio callback is fed.
 void SDL_TimerHelper() {
+  if (timer_dispatching) return;
+  timer_dispatching = true;
   uint32_t now = NDL_GetTicks();
   for (int i = 0; i < MAX_TIMERS; i ++) {
     if (timers[i].used && now - timers[i].last >= timers[i].interval) {
+      uint64_t generation = timers[i].generation;
       uint32_t next = timers[i].callback(timers[i].interval, timers[i].param);
+      // Callbacks may advance time or create timers in later slots.
+      now = NDL_GetTicks();
+      // A callback may remove this timer and reuse its slot.
+      if (!timers[i].used || timers[i].generation != generation) continue;
       if (next == 0) {
         timers[i].used = false;
       } else {
         timers[i].interval = next;
-        timers[i].last = NDL_GetTicks();
+        timers[i].last = now;
       }
     }
   }
+  timer_dispatching = false;
 }

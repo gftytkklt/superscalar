@@ -627,3 +627,10 @@ F0090已确认提交9251511；用户“继续”授权现行入口一个单元�
 
 
 2026-10-20 用户“提交，继续”确认F0092并授权精确根提交后唯一下一单元；[提交回执入口](code_correctness_review/crp-f0092/README.md#submit-20261020)。复用52身份/原验收/归档和清理，仅补确认及真实提交核对，不重跑功能验证或重复Completion；无push/M2推进。
+
+
+### 2026-10-20 CRP F0093 miniSDL定时器重入与回调状态
+
+F0092已确认提交7eb176d，用户“提交，继续”授权现行下一单元；[F0093报告](code_correctness_review/crp-f0093/README.md)：仅timer.c 12增1删，串行派发保护、内部slot generation防旧返回覆盖新实例、callback后刷新扫描时间，audio/公开ID/16槽能力保持。原四动态反例、host15类×普通/ASan+UBSan各111断言、实际RV6452断言/真实120ms重建及后续slot/main0/GOOD、标准update→run三前台/hello35→148、207preclean/完整diff正反/8目视通过。清理9389项507101571B、零tracked删除，正式资产保持。72已修/47未修完，本组结果确认/commit Pending；NULL到期调用/并发/物理音频等未承诺，唯一未来TASK_QUEUE#crp-next，无push/M2推进。
+
+2026-10-20 用户确认其update/run生成的三份正式产物予以保留，并授权F0093提交后继续；[确认/提交回执入口](code_correctness_review/crp-f0093/README.md#submit-20261020)。原验收复用，不覆盖历史身份，不将生成产物纳入提交。
