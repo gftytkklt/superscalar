@@ -33,12 +33,12 @@ void init_difftest(char *ref_so_file, long img_size, uint8_t* mem, uint64_t *cpu
     assert(nemu_difftest_exec);
     nemu_difftest_raise_intr = (void (*)(uint64_t))dlsym(handle, "difftest_raise_intr");
     assert(nemu_difftest_raise_intr);
-    void(*nemu_difftest_init)(void) = (void (*)())dlsym(handle, "difftest_init");
+    void(*nemu_difftest_init)(int) = (void (*)(int))dlsym(handle, "difftest_init");
     assert(nemu_difftest_init);
     void (*nemu_difftest_ref_display)(void) = (void (*)())dlsym(handle, "difftest_ref_display");
     assert(nemu_difftest_ref_display);
     // printf("difftest link end\n");
-    nemu_difftest_init();
+    nemu_difftest_init(0);
     nemu_difftest_memcpy(FLASH_BASE, mem, img_size, DIFFTEST_TO_REF);
     for(int i = 0;i<32;i++){
         cpu_context[i] = cpu_gpr[i];

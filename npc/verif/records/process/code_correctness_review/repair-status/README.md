@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复92（均已确认；F0116实际提交见本组回执）；未修完27，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复93（前92已确认提交；F0116 f5b9973；F0119 Completed、确认/commit Pending）；未修完26，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -160,7 +160,7 @@
 | CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) |
 | CCR-F0117 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0117) |
 | CCR-F0118 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0118) |
-| CCR-F0119 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0119) |
+| CCR-F0119 | Confirmed / Low | 已修 / Completed；确认及commit Pending | [NPC init(int)/参数哨兵/真实CPU/ABI与清理](../crp-f0119/README.md) |
 
 ## 2026-10-18 条件兼容修复补充
 
@@ -424,3 +424,8 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 
 
 2026-10-20 用户再次“提交后继续”确认F0116并授权提交后F0119一个单元；79保留身份及生产patch一致，122终检复用。[提交回执](../crp-f0116/README.md#submit-20261020)，92已修均确认，27未修完；不push/M2。
+
+
+## F0119完成（2026-10-20）
+
+用户再次“提交后继续”授权F0116提交后本单元；F0116实际f5b9973。F0119 NPC两行init(int)/显式0及末尾换行，旧类型编译/函数sanitizer拒绝、最终host动态DSO/step/skip通过；新同版完整NPC/REF及ABI、真实CPU全集36 PASS+1 XFAIL/37次init0、PC/GPR故障两例拒绝；693身份/归档检查、258消费者/97REF输入、565路径137996332B清理。[报告](../crp-f0119/README.md)。93已修/26未修完，前92确认提交，本项确认/commit Pending；默认产物未替换，未push/M2，未来只TASK_QUEUE唯一入口。

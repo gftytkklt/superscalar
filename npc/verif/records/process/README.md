@@ -666,3 +666,6 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-20 用户再次“提交后继续”确认F0116，79保留身份/patch无漂移并复用122终检；[确认/提交回执](code_correctness_review/crp-f0116/README.md#submit-20261020)。92已修均确认，27未修完；提交后执行F0119一个单元，无push/M2。
+
+
+2026-10-20 [F0119 NPC/REF初始化签名](code_correctness_review/crp-f0119/README.md) Completed：前F0116实际f5b9973；两行init(int)/传0及EOF换行，host类型/参数/step/skip、新完整NPC/REF/ABI及真实CPU36 PASS+1 XFAIL、37init0/两对拍负例通过；693身份/归档、565路径137996332B清理。93已修/26未修完，前92确认提交，本项结果确认/commit Pending；不push/M2，未来只TASK_QUEUE唯一入口。
