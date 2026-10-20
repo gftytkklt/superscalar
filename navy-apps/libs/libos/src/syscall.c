@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <time.h>
+#include <stdint.h>
 #include "syscall.h"
 
 // helper macros
@@ -80,10 +81,23 @@ long _write(int fd, void *buf, size_t count) {
 }
 
 void *_sbrk(intptr_t increment) {
-  int ret = _syscall_(SYS_brk, (intptr_t)program_break+increment, 0, 0);
+  uintptr_t current = (uintptr_t)program_break;
+  uintptr_t base = (uintptr_t)&end;
+  uintptr_t next;
+  if (current < base) return (void *)-1;
+  if (increment >= 0) {
+    if ((uintptr_t)increment > UINTPTR_MAX - current) return (void *)-1;
+    next = current + (uintptr_t)increment;
+  } else {
+    // Unsigned negation also handles INTPTR_MIN without signed overflow.
+    uintptr_t decrement = (uintptr_t)0 - (uintptr_t)increment;
+    if (decrement > current - base) return (void *)-1;
+    next = current - decrement;
+  }
+  int ret = _syscall_(SYS_brk, (intptr_t)next, 0, 0);
   if (ret == 0){
     void* addr = program_break;
-    program_break += increment;
+    program_break = (void *)next;
     return addr;
   }
   return (void *)-1;

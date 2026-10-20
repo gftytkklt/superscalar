@@ -58,6 +58,7 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
       for (uintptr_t va = page_start;
            va < ROUNDUP(vaddr + memsz, PGSIZE); va += PGSIZE) {
         void *pa = new_page(1);
+        panic_on(pa == NULL, "Out of physical pages loading ELF");
         map(&pcb->as, (void *)va, pa, MMAP_READ | MMAP_WRITE);
 
         // copy the file part of this page (if any). Note the segment may start
@@ -80,6 +81,7 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
       // record the peak program break (page-aligned) for mm_brk()
       uintptr_t brk = ROUNDUP(vaddr + memsz, PGSIZE);
       if (brk > pcb->max_brk) pcb->max_brk = brk;
+      if (vaddr + memsz > pcb->brk_start) pcb->brk_start = vaddr + memsz;
       #else
       fs_lseek(fd, offset, SEEK_SET);
       fs_read(fd, (void *)vaddr, filesz);
@@ -115,6 +117,7 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
   // skip mapping (brk <= max_brk) and the new program would run on unmapped
   // heap pages (exec-after-exit reload path).
   pcb->max_brk = 0;
+  pcb->brk_start = 0;
   Area kstack = {pcb->stack, pcb->stack + STACK_SIZE};
 
   // user stack: allocate a fresh 32KB region FIRST. Do not read argv/envp
@@ -125,15 +128,18 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
   // writes the arguments into the *physical* pages (reachable through the
   // kernel identical mapping), which are mapped to the user stack region.
   uintptr_t ustack = (uintptr_t)pcb->as.area.end;   // 0x80000000
-  uintptr_t ustack_lo = ustack - 8 * PGSIZE;        // 32KB
-  void *ustack_pa = new_page(8);
+  uintptr_t ustack_lo = ustack - STACK_SIZE;
+  void *ustack_pa = new_page(STACK_SIZE / PGSIZE);
+  panic_on(ustack_pa == NULL, "Out of physical pages for user stack");
   for (uintptr_t va = ustack_lo; va < ustack; va += PGSIZE) {
     map(&pcb->as, (void *)va, (void *)((uintptr_t)ustack_pa + (va - ustack_lo)),
         MMAP_READ | MMAP_WRITE);
   }
 # define USTACK_TO_PA(v) ((void *)((uintptr_t)ustack_pa + ((uintptr_t)(v) - ustack_lo)))
 #else
-  uintptr_t ustack = (uintptr_t)new_page(8) + 8 * PGSIZE;
+  void *ustack_pa = new_page(STACK_SIZE / PGSIZE);
+  panic_on(ustack_pa == NULL, "Out of physical pages for user stack");
+  uintptr_t ustack = (uintptr_t)ustack_pa + STACK_SIZE;
 # define USTACK_TO_PA(v) ((void *)(v))
 #endif
 

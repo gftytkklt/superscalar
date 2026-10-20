@@ -69,6 +69,29 @@ void __am_switch(Context *c) {
   }
 }
 
+// Internal read-only preflight for nanos-lite's heap allocation transaction.
+// Count each missing Sv39 table once, without allocating or publishing a PTE.
+size_t __am_map_table_pages(AddrSpace *as, uintptr_t start, uintptr_t end) {
+  PTE *root = (PTE *)as->ptr;
+  size_t pages = 0;
+  uintptr_t previous = (uintptr_t)-1;
+  for (uintptr_t va = start; va < end;) {
+    uintptr_t vpn2 = (va >> 30) & 0x1ff;
+    uintptr_t vpn1 = (va >> 21) & 0x1ff;
+    if (!(root[vpn2] & PTE_V)) {
+      if (vpn2 != previous) pages++;
+      pages++;
+    } else {
+      PTE *pt = (PTE *)((((root[vpn2] >> 10) & 0xfffffffff) << 12));
+      if (!(pt[vpn1] & PTE_V)) pages++;
+    }
+    previous = vpn2;
+    uintptr_t step = (1ul << 21) - (va & ((1ul << 21) - 1));
+    va += (end - va < step ? end - va : step);
+  }
+  return pages;
+}
+
 void map(AddrSpace *as, void *va, void *pa, int prot) {
   // Sv39 three-level page table: VPN[2]=va[38:30], VPN[1]=va[29:21], VPN[0]=va[20:12]
   uintptr_t vaddr = (uintptr_t)va;

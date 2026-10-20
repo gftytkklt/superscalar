@@ -574,3 +574,13 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 2026-10-20 用户进一步要求将上述归档需求固化后提交：[CRP 工作流规范](code_correctness_review/workflow/README.md#framework-repair-archive)已规定框架/OS修复逐问题内嵌完整diff、仓库/基线身份、语句级解释、正反应用核验、清理前留档及分仓提交状态；[本轮规则补充记录](code_correctness_review/framework-diffs-20261020/README.md#workflow-rule-20261020)保存范围与结果。不改变 F0083 代码确认/提交门槛或推进下一修复单元。
 
 2026-10-20 F0083获用户“提交后继续”确认并授权提交后一个单元；nested实际8101fad，根文档原1dbf841，本次[F0083确认/提交附记](code_correctness_review/crp-f0083/README.md#submit-20261020)及local回执承接。复用原验收/清理，随后仅F0089，无push。
+
+### 2026-10-20 CRP F0062/F0063/F0089堆与页表容量事务
+
+[同组计划/完整diff/验收](code_correctness_review/crp-f0089/README.md)：用户扩大范围至new_page及
+页表分配失败事务；6根源105增20删，物理/虚拟预检和预留失败不改页表/游标/break，
+exec重建堆下界，_sbrk极值防御。原五失败见证，host84+默认/NDEBUG各137、实际RV64堆/容量拒绝/
+exec与标准update→run三前台/hello34→152、165项preclean通过。Completed、结果确认/commit Pending，
+63已修/56未修完；旧F0063完成记录引用已更正。无push/安装/M2推进，未来唯一TASK_QUEUE#crp-next。
+
+2026-10-20 用户“提交”确认F0062/F0063/F0089本组并授权精确提交；[确认/提交附记](code_correctness_review/crp-f0089/README.md#submit-20261020)及local实际回执承接。原100项manifest/源码身份不变，复用既有验收与清理，不重复完成快照；本轮提交后停止，无push/下一单元/M2推进。

@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复57（前54项已确认提交；F0077/F0078/F0088结果已确认并授权本次提交，nested 71fac82，root实际回执见本组报告）；未修完62，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
+全部已有功能修复63（前60项已确认提交，F0083 nested8101fad/root4b7570f；本组F0062/F0063/F0089 Completed，用户已确认，实际提交见本组回执）；未修完56，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -103,8 +103,8 @@
 | CCR-F0059 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0059) |
 | CCR-F0060 | Confirmed / Medium | 已修 / 已确认提交7b83685 | [本组报告](../crp-f0060/README.md) |
 | CCR-F0061 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0061) |
-| CCR-F0062 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0062) |
-| CCR-F0063 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0063) |
+| CCR-F0062 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
+| CCR-F0063 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0064 | Robustness / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
 | CCR-F0065 | Confirmed / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
 | CCR-F0066 | Confirmed / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
@@ -130,7 +130,7 @@
 | CCR-F0086 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0086) |
 | CCR-F0087 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0087) |
 | CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
-| CCR-F0089 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0089) |
+| CCR-F0089 | Robustness / Low | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0090 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0090) |
 | CCR-F0091 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0091) |
 | CCR-F0092 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0092) |
@@ -336,3 +336,14 @@ loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例�
 [盘点与核验](../framework-diffs-20261020/README.md)：25 份原验收文档内嵌 48 份逐文件 diff，覆盖 41 个相关 ID（含 F0040 已实施部分），附仓库/版本及语句级实现说明；正反应用与历史补丁一致，生产代码不变。用户授权补充完后提交文档；F0083 报告及内嵌 diff 纳入根文档提交，生产结果确认/嵌套源码提交仍 Pending，不将根提交等同于代码提交。累计 60/59 不变，后续只沿 TASK_QUEUE 唯一入口，未开始 F0089/M2。
 
 2026-10-20 用户“提交后继续”确认F0083并授权提交后一个单元；nested实际8101fad，root报告原1dbf841，本次回执见[F0083提交附记](../crp-f0083/README.md#submit-20261020)。60已修均确认提交，复用原验收/清理，无push；随后仅F0089。
+
+### 2026-10-20 F0062/F0063/F0089同链合组完成
+
+用户“提交后继续”授权接续F0089，后明确扩大同组范围至F0062/F0063和页表分配失败事务。
+[本组交付](../crp-f0089/README.md)：checked new_page、loader受控OOM、ELF堆下界/栈底上界、
+Sv39只读表页预算+数据/表预留事务及_sbrk无符号预检。原五见证，host84及默认/NDEBUG各137，
+真实RV64容量拒绝/8192B堆/exec重建，最终标准update→run三前台/hello34→152，165preclean通过。
+63已修/56未修完，新3项确认/commit Pending。原队列“F0063完成记录”为错误引用，现已更正；
+原审阅未修截面保留，不伪造旧验收。未来只沿TASK_QUEUE唯一入口；无push/安装/M2推进。
+
+2026-10-20 用户“提交”确认F0062/F0063/F0089已报告范围并授权本组精确根提交；100项manifest及生产patch无漂移，复用原验证/清理，不重复Completion。63已修均已确认，实际路径/blob/提交回执见[本组附记](../crp-f0089/README.md#submit-20261020)及local/submit-receipt.json；本轮提交后停止，无push/下一组/M2推进。
