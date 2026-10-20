@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复89（前87已确认提交，RWops图像70983d4；本组BDF/终端F0105/F0109 Completed待结果确认/根commit）；未修完30，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复90（均已确认；F0111 bird实际80f9918，根文档提交及回执见本项报告）；未修完29，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -146,13 +146,13 @@
 | CCR-F0102 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0103 | Confirmed / Low | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0104 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
-| CCR-F0105 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
+| CCR-F0105 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
 | CCR-F0106 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
 | CCR-F0107 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0107) |
 | CCR-F0108 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0108) |
-| CCR-F0109 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
+| CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
 | CCR-F0110 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0110) |
-| CCR-F0111 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0111) |
+| CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
 | CCR-F0112 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0112) |
 | CCR-F0113 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0113) |
 | CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
@@ -402,3 +402,9 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 
 
 2026-10-20 用户“提交后继续”确认RWops图像三项，实际根70983d4；随后F0105/F0109 Completed，host两构建及实际RV64各248599/7×191glyph、6判据负例/main0/GOOD，标准三前台hello32→148/8目视及NTerm像素匹配通过；完整diff/235身份/29归档/93preclean与9398路径清理完成。89已修/30未修完，本组待结果确认/commit；详见[报告](../crp-bdf-term-20261020/README.md)。唯一Next仅TASK_QUEUE#crp-next，未push/M2，不恢复旧连续提交授权。
+
+
+2026-10-20 用户“提交后继续”确认BDF/终端，实际根13d30a9；F0111 Completed待结果确认/根及bird nested提交，90已修/29未修完。host两构建767/live4→4、实际RV64765/main0/GOOD/6判据负例、71atlas548240像素及标准三前台hello32→143/额外bird标题动画/hello61通过；255身份/12diff正反/80preclean及9463路径清理见[报告](../crp-f0111/README.md)。既有Video.h/21mode/ONS编码/libc850mode保留；唯一Next仍TASK_QUEUE#crp-next，无push/M2，不恢复连续提交授权。
+
+
+2026-10-20 用户“提交，给我一条能自己运行bird进行测试的终端语句”确认F0111并授权精确分仓提交；bird实际80f9918，两源111增61删、Git mode100644及已验收patch/blob相符，21原mode/Video.h保留。根报告随本次提交，完整[确认/回执](../crp-f0111/README.md#submit-20261020)与local/submit-*为准；90已修均已确认，29未修完，F0112未Start，不push/M2。复用484终检及原验收，不重跑产品。

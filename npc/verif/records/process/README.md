@@ -648,3 +648,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-20 RWops图像三项已确认实际提交[70983d4回执](code_correctness_review/crp-rw-image-20261020/README.md#submit-20261020)；随后[BDF/终端F0105/F0109](code_correctness_review/crp-bdf-term-20261020/README.md) Completed：5源127增80删，原token/bitmap/ESC/高位索引动态反例、host普通/ASan+UBSan各248599、实际RV64同套/main0/GOOD及6判据负例，标准update→run三前台hello32→148/8目视、NTerm两帧各69797像素与旧字体模型相等；235身份/29diff正反/93preclean通过，清理9398路径510228359B。89已修/30未修完，前87已确认提交，本组结果确认/commit Pending；未来仅TASK_QUEUE#crp-next，未push/M2。
+
+
+2026-10-20 BDF/终端两项已确认实际提交[13d30a9回执](code_correctness_review/crp-bdf-term-20261020/README.md#submit-20261020)；随后[F0111 bird资源加载](code_correctness_review/crp-f0111/README.md) Completed：nested两源111增61删，原缺图/长名称/负rect/重复实例动态反例、host普通/ASan+UBSan各767与tracked live4→4、实际RV64765/main0/GOOD及6判据负例，71atlas548240像素/hash一致；标准update→run三前台hello32→143/8目视及真实bird3标题动画帧/hello61，255身份/12归档/80preclean通过，清理9463路径530286715B。90已修/29未修完，前89已确认提交，本项结果确认/根及bird提交Pending；未来仅TASK_QUEUE#crp-next，无push/M2。
+
+
+2026-10-20 用户确认F0111并授权分仓提交，bird源码实际80f9918、根报告随本次提交；[确认/实际回执入口](code_correctness_review/crp-f0111/README.md#submit-20261020)。120保留身份/8正式资产/两源与patch相符，既有验收及清理复用，不新增动态测试；90已修均确认，29未修完，F0112未Start，无push/M2。
