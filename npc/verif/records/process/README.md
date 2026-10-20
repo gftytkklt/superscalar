@@ -641,3 +641,5 @@ F0092已确认提交7eb176d，用户“提交，继续”授权现行下一单�
 F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，并授权SDL音频统一完成后组合验收；格式选择为SDL S16单/双、mixer S16双，拒绝其他输出格式。[八项报告](code_correctness_review/crp-audio-20261020/README.md)覆盖F0094/F0095/F0096/F0100/F0101/F0102/F0103/F0115：关闭/generation、样本和frame边界、格式/Query、共享WAV parser、64位位置、OGG owner、54通道/ONS错误传播。原动态见证、host两构建各174、两WAV入口68文件/201×两构建、F0093各111回归、实际RV64125/main0/GOOD及65537帧、ONS完整RV64编译、标准update→run三前台/hello33→147、8目视和完整diff正反通过。80已修/39未修完，本组合结果确认/根及ONS提交Pending；清理/最终身份见报告。F0043/F0118/PAL RIX等非SDL层独立问题保持；不push/M2推进，唯一未来TASK_QUEUE#crp-next。
 
 2026-10-20 SDL音频八项已获用户确认并授权根/ONS提交，实际回执见[本组收尾](code_correctness_review/crp-audio-20261020/README.md#submit-20261020)；后续图形与应用性能分析只沿TASK_QUEUE#crp-next，前文Pending保留历史事实。
+
+2026-10-20 [SDL图形四项与nanos-lite运行时性能](code_correctness_review/crp-video-20261020/README.md)：F0091/F0097/F0098/F0114 Completed，结果确认/commit Pending；host180×两+42×两、实际RV64像素/42API/6设备/GOOD、标准update→run三前台hello36→158/8目视及bird3目视，同版normal/skip两对定位长绘图延后补音。84已修/35未修完；完整diff正反/身份/归档/清理完成，唯一后续入口TASK_QUEUE#crp-next。

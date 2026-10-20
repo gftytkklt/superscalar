@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <fcntl.h>
+#include <limits.h>
 
 static int evtdev = -1;
 static int fbdev = -1;
@@ -31,46 +32,69 @@ int NDL_PollEvent(char *buf, int len) {
 }
 
 void NDL_OpenCanvas(int *w, int *h) {
+  if (w == NULL || h == NULL || fbdev < 0 || screen_w <= 0 || screen_h <= 0) return;
+  int width = *w, height = *h;
+  if (width == 0 && height == 0) { width = screen_w; height = screen_h; }
+  if (width <= 0 || height <= 0 || width > screen_w || height > screen_h) return;
   if (getenv("NWM_APP")) {
     int fbctl = 4;
-    fbdev = 5;
-    screen_w = *w; screen_h = *h;
+    // NWM's resize path stores its framebuffer byte count in an int.
+    if ((uint64_t)width * height > INT_MAX / 4) return;
     char buf[64];
-    int len = sprintf(buf, "%d %d", screen_w, screen_h);
+    int len = sprintf(buf, "%d %d", width, height);
     // let NWM resize the window and create the frame buffer
-    write(fbctl, buf, len);
+    if (write(fbctl, buf, len) != len) return;
     while (1) {
       // 3 = evtdev
       int nread = read(3, buf, sizeof(buf) - 1);
       if (nread <= 0) continue;
-      buf[nread] = '\0';
+      buf[nread < sizeof(buf) ? nread : sizeof(buf) - 1] = '\0';
       if (strcmp(buf, "mmap ok") == 0) break;
     }
     close(fbctl);
+    fbdev = 5;
+    screen_w = width; screen_h = height;
   }
-  if (*w == 0 && *h == 0) {*w = screen_w; *h = screen_h;}
-  assert(*w <= screen_w && *h <= screen_h);
-  canvas_w = *w; canvas_h = *h;
+  canvas_w = width; canvas_h = height;
+  *w = width; *h = height;
+}
+
+static int write_pixels(const uint8_t *pixels, size_t bytes) {
+  while (bytes > 0) {
+    ssize_t done = write(fbdev, pixels, bytes);
+    // Both framebuffer implementations advance by the returned byte count.
+    // Retrying a partial pixel would misalign the next nanos-lite fb_write.
+    if (done <= 0 || (size_t)done > bytes || done % 4 != 0) return 0;
+    pixels += done;
+    bytes -= done;
+  }
+  return 1;
 }
 
 void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
-  int offset_y = screen_w*((screen_h-canvas_h)/2+y);
-  int offset_x = (screen_w-canvas_w)/2 + x;
-  int offset = offset_y + offset_x;
+  if (fbdev < 0 || pixels == NULL || canvas_w <= 0 || canvas_h <= 0 ||
+      x < 0 || y < 0 || w <= 0 || h <= 0 ||
+      x > canvas_w || y > canvas_h || w > canvas_w - x || h > canvas_h - y) return;
+  uint64_t row_bytes = (uint64_t)w * 4;
+  uint64_t bytes = row_bytes * h;
+  uint64_t offset = ((uint64_t)screen_w * ((screen_h - canvas_h) / 2 + y) +
+                     (screen_w - canvas_w) / 2 + x) * 4;
+  uint64_t end = offset + (uint64_t)(h - 1) * screen_w * 4 + row_bytes;
+  if (bytes > SIZE_MAX || bytes > LONG_MAX || end > LONG_MAX) return;
   // full-width rects are contiguous rows in the framebuffer: one shot
   if (w == screen_w) {
-    lseek(fbdev, offset*4, SEEK_SET);
-    write(fbdev, pixels, w*h*4);
+    if (lseek(fbdev, (off_t)offset, SEEK_SET) != (off_t)offset) return;
+    write_pixels((const uint8_t *)pixels, (size_t)bytes);
     return;
   }
-  uint32_t *current_row = pixels;
+  const uint8_t *current_row = (const uint8_t *)pixels;
   // arbitrary canvas
   // this is correct for native
   for (int i=0;i<h;i++){
-    lseek(fbdev, offset*4, SEEK_SET);
-    write(fbdev, current_row, w*4);
-    current_row += w;
-    offset += screen_w;
+    if (lseek(fbdev, (off_t)offset, SEEK_SET) != (off_t)offset ||
+        !write_pixels(current_row, (size_t)row_bytes)) return;
+    current_row += row_bytes;
+    offset += (uint64_t)screen_w * 4;
   }
 }
 

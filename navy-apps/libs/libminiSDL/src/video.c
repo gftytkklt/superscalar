@@ -91,7 +91,18 @@ void SDL_UpdateRect(SDL_Surface *s, int x, int y, int w, int h) {
     }
     for (int i = 0; i < h; i ++) {
       uint32_t *src_row = (uint32_t *)s->pixels + (y + i) * (s->pitch / 4) + x;
-      for (int j = 0; j < w; j ++) buf[i * w + j] = src_row[j] | 0xff000000u;
+      if (s->format->Rmask == DEFAULT_RMASK && s->format->Gmask == DEFAULT_GMASK &&
+          s->format->Bmask == DEFAULT_BMASK) {
+        for (int j = 0; j < w; j ++) buf[i * w + j] = src_row[j] | 0xff000000u;
+      } else {
+        for (int j = 0; j < w; j ++) {
+          uint32_t p = src_row[j];
+          uint32_t r = (p & s->format->Rmask) >> s->format->Rshift;
+          uint32_t g = (p & s->format->Gmask) >> s->format->Gshift;
+          uint32_t b = (p & s->format->Bmask) >> s->format->Bshift;
+          buf[i * w + j] = 0xff000000u | (r << 16) | (g << 8) | b;
+        }
+      }
     }
     NDL_DrawRect(buf, x, y, w, h);
   } else {
@@ -215,12 +226,20 @@ void SDL_SoftStretch(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_
     return;
   }
 
+  // Stretching requires complete rectangles; unlike the equal-size blit above,
+  // it does not define a clipped sampling map.
+  if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0 ||
+      sx < 0 || sy < 0 || dx < 0 || dy < 0 ||
+      sx >= src->w || sy >= src->h || dx >= dst->w || dy >= dst->h ||
+      sw > src->w - sx || sh > src->h - sy ||
+      dw > dst->w - dx || dh > dst->h - dy) return;
+
   for (int j = 0; j < dh; j ++) {
-    int sy0 = sy + (j * sh) / dh;
-    uint8_t *sp = src->pixels + sy0 * src->pitch;
-    uint8_t *dp = dst->pixels + (dy + j) * dst->pitch + dx;
+    int sy0 = sy + (uint64_t)j * sh / dh;
+    uint8_t *sp = src->pixels + (size_t)sy0 * src->pitch;
+    uint8_t *dp = dst->pixels + (size_t)(dy + j) * dst->pitch + dx;
     for (int i = 0; i < dw; i ++) {
-      int sx0 = sx + (i * sw) / dw;
+      int sx0 = sx + (uint64_t)i * sw / dw;
       dp[i] = sp[sx0];
     }
   }
@@ -283,7 +302,26 @@ SDL_Surface *SDL_ConvertSurface(SDL_Surface *src, SDL_PixelFormat *fmt, uint32_t
 
   assert(fmt->Gmask == src->format->Gmask);
   assert(fmt->Amask == 0 || src->format->Amask == 0 || (fmt->Amask == src->format->Amask));
-  ConvertPixelsARGB_ABGR(ret->pixels, src->pixels, src->w * src->h);
+  if (fmt->Rmask == src->format->Rmask && fmt->Bmask == src->format->Bmask) {
+    memcpy(ret->pixels, src->pixels, (size_t)src->pitch * src->h);
+  } else {
+    assert(fmt->Rmask == src->format->Bmask && fmt->Bmask == src->format->Rmask);
+    if ((fmt->Rmask | fmt->Bmask) == (DEFAULT_RMASK | DEFAULT_BMASK)) {
+      ConvertPixelsARGB_ABGR(ret->pixels, src->pixels, src->w * src->h);
+    } else {
+      // maskToShift also accepts other byte positions. Only exchange the
+      // declared R/B fields and retain the green/alpha bytes as before.
+      uint32_t *sp = (uint32_t *)src->pixels, *dp = (uint32_t *)ret->pixels;
+      size_t count = (size_t)src->w * src->h;
+      for (size_t i = 0; i < count; i ++) {
+        uint32_t p = sp[i];
+        uint32_t r = (p & src->format->Rmask) >> src->format->Rshift;
+        uint32_t b = (p & src->format->Bmask) >> src->format->Bshift;
+        dp[i] = (p & ~(fmt->Rmask | fmt->Bmask)) |
+          ((r << fmt->Rshift) & fmt->Rmask) | ((b << fmt->Bshift) & fmt->Bmask);
+      }
+    }
+  }
 
   return ret;
 }

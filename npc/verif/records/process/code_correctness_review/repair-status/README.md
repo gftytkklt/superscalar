@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复80（SDL音频八项已获用户确认；ONS6326adf已提交，根提交回执见本组报告）；未修完39，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent与正式忽略资产仍需本地保管。
+全部已有功能修复84（前80已确认提交，SDL音频根d4b6c9c/ONS6326adf；本组图形四项Completed，结果确认/commit Pending）；未修完35，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent与正式忽略资产仍需本地保管。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -132,14 +132,14 @@
 | CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0089 | Robustness / Low | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0090 | Robustness / Low | 已修 / 已确认，提交见回执 | [NDL失败与生命周期、真实RV64及标准回归](../crp-f0090/README.md) |
-| CCR-F0091 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0091) |
+| CCR-F0091 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0092 | Robustness / Medium | 已修 / 已确认，提交见回执 | [事件入队边界/真实RV64及标准回归](../crp-f0092/README.md) |
 | CCR-F0093 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [定时器重入/slot生命周期及实际RV64](../crp-f0093/README.md) |
 | CCR-F0094 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0095 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0096 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0097 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0097) |
-| CCR-F0098 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0098) |
+| CCR-F0097 | Confirmed / Medium | 已修 / Completed，结果确认及commit Pending | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
+| CCR-F0098 | Confirmed / Medium | 已修 / Completed，结果确认及commit Pending | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0099 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0099) |
 | CCR-F0100 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0101 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
@@ -155,7 +155,7 @@
 | CCR-F0111 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0111) |
 | CCR-F0112 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0112) |
 | CCR-F0113 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0113) |
-| CCR-F0114 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0114) |
+| CCR-F0114 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0116 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0116) |
 | CCR-F0117 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0117) |
@@ -395,3 +395,5 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 2026-10-20 用户音频合组及格式限制授权，F0093实际e42b6b3后八项Completed，80已修/39未修完；本组根/ONS源码尚未提交、结果确认Pending。[逐项与共享证据](../crp-audio-20261020/README.md)。原ONS编码差异和用户update/run资产保留，下一入口只在TASK_QUEUE#crp-next；不恢复连续提交授权或推进M2。
 
 2026-10-20 用户确认SDL音频八项并授权提交后继续；ONS实际6326adf，根实际回执见[本组提交收尾](../crp-audio-20261020/README.md#submit-20261020)，复用87身份/118终检及原技术验收，不重复Completion。原字体编码/libc850mode与正式资产保持；后续按唯一入口图形组及用户明确的nanos-lite应用画面/音频性能分析，不恢复连续提交授权。
+
+2026-10-20 音频已确认提交根d4b6c9c/ONS6326adf后，按用户继续及应用卡顿分析授权完成图形F0091/F0097/F0098/F0114；84已修/35未修完。本组未提交，正常绘图约4.4–4.6PCM包/s、同版仅跳过绘图约10.85包/s且两轮无欠填充，结论/局限见[本组报告](../crp-video-20261020/README.md)。无性能策略修改；唯一下步及门槛在TASK_QUEUE#crp-next，不自动commit/下一组/M2。
