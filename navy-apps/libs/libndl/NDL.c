@@ -86,16 +86,18 @@ void NDL_OpenAudio(int freq, int channels, int samples) {
 }
 
 void NDL_CloseAudio() {
-  close(sbctl_fd);
-  close(sb_fd);
+  if (sbctl_fd >= 0) close(sbctl_fd);
+  if (sb_fd >= 0) close(sb_fd);
   sbctl_fd = sb_fd = -1;
 }
 
 int NDL_PlayAudio(void *buf, int len) {
+  if (sb_fd < 0 || len <= 0) return 0;
   return write(sb_fd, buf, len);
 }
 
 int NDL_QueryAudio() {
+  if (sbctl_fd < 0) return 0;
   int free = 0;
   read(sbctl_fd, &free, sizeof(free));
   return free;

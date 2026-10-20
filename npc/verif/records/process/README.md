@@ -634,3 +634,10 @@ F0090已确认提交9251511；用户“继续”授权现行入口一个单元�
 F0092已确认提交7eb176d，用户“提交，继续”授权现行下一单元；[F0093报告](code_correctness_review/crp-f0093/README.md)：仅timer.c 12增1删，串行派发保护、内部slot generation防旧返回覆盖新实例、callback后刷新扫描时间，audio/公开ID/16槽能力保持。原四动态反例、host15类×普通/ASan+UBSan各111断言、实际RV6452断言/真实120ms重建及后续slot/main0/GOOD、标准update→run三前台/hello35→148、207preclean/完整diff正反/8目视通过。清理9389项507101571B、零tracked删除，正式资产保持。72已修/47未修完，本组结果确认/commit Pending；NULL到期调用/并发/物理音频等未承诺，唯一未来TASK_QUEUE#crp-next，无push/M2推进。
 
 2026-10-20 用户确认其update/run生成的三份正式产物予以保留，并授权F0093提交后继续；[确认/提交回执入口](code_correctness_review/crp-f0093/README.md#submit-20261020)。原验收复用，不覆盖历史身份，不将生成产物纳入提交。
+
+
+### 2026-10-20 CRP SDL音频八项合组
+
+F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，并授权SDL音频统一完成后组合验收；格式选择为SDL S16单/双、mixer S16双，拒绝其他输出格式。[八项报告](code_correctness_review/crp-audio-20261020/README.md)覆盖F0094/F0095/F0096/F0100/F0101/F0102/F0103/F0115：关闭/generation、样本和frame边界、格式/Query、共享WAV parser、64位位置、OGG owner、54通道/ONS错误传播。原动态见证、host两构建各174、两WAV入口68文件/201×两构建、F0093各111回归、实际RV64125/main0/GOOD及65537帧、ONS完整RV64编译、标准update→run三前台/hello33→147、8目视和完整diff正反通过。80已修/39未修完，本组合结果确认/根及ONS提交Pending；清理/最终身份见报告。F0043/F0118/PAL RIX等非SDL层独立问题保持；不push/M2推进，唯一未来TASK_QUEUE#crp-next。
+
+2026-10-20 SDL音频八项已获用户确认并授权根/ONS提交，实际回执见[本组收尾](code_correctness_review/crp-audio-20261020/README.md#submit-20261020)；后续图形与应用性能分析只沿TASK_QUEUE#crp-next，前文Pending保留历史事实。

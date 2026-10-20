@@ -3,14 +3,15 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sdl-wav-internal.h>
 
-#define MAX_CHANNELS 16
 
 /* ---- internal layout of the opaque Mix_Music / Mix_Chunk handles ---- */
 
 typedef struct {
   stb_vorbis *vorbis;      // OGG decoder
   stb_vorbis_info info;    // sample_rate / channels
+  uint8_t *encoded;        // borrowed by the decoder until close
   int playing;
   int loops;               // -1 = infinite, 0 = play once, n = n replays
   int volume;              // 0 .. MIX_MAX_VOLUME
@@ -25,7 +26,7 @@ typedef struct {
 
 typedef struct {
   Chunk *chunk;
-  uint32_t pos;            // 16.16 fixed-point position in source frames
+  uint64_t pos;            // 48.16 fixed-point position in source frames
   int loops;
   int volume;
   int playing;
@@ -34,7 +35,8 @@ typedef struct {
 
 static int audio_freq = 44100;
 static int num_channels = 0;
-static Channel channels[MAX_CHANNELS];
+static Channel *channels;
+static int mixer_open;
 static void (*channel_finished_cb)(int channel) = NULL;
 static Music *cur_music = NULL;
 
@@ -51,9 +53,12 @@ static void mix_music(int16_t *out, int out_n) {
   Music *m = cur_music;
   uint32_t src_rate = m->info.sample_rate;
   int src_ch = m->info.channels;
-  int need = (int)(((uint64_t)out_n * src_rate + audio_freq - 1) / audio_freq);
-  int16_t *tmp = malloc(need * src_ch * 2);
-  assert(tmp);
+  uint64_t need64 = ((uint64_t)out_n * src_rate + audio_freq - 1) / audio_freq;
+  if (src_ch < 1 || src_ch > 2 || need64 > INT_MAX / (src_ch * 2) ||
+      need64 > SIZE_MAX / (src_ch * 2)) { m->playing = 0; return; }
+  int need = need64;
+  int16_t *tmp = malloc((size_t)need * src_ch * 2);
+  if (tmp == NULL) { m->playing = 0; return; }
   int got = stb_vorbis_get_samples_short_interleaved(m->vorbis, src_ch, tmp, need * src_ch);
   if (got < need) {
     // reached the end of the stream: restart if looping
@@ -79,15 +84,15 @@ static void mix_music(int16_t *out, int out_n) {
   free(tmp);
 }
 
-// Mix one channel's chunk into `out`. Advances the 16.16 position and stops the
+// Mix one channel's chunk into `out`. Advances the 48.16 position and stops the
 // channel (with loop handling) when the chunk is exhausted.
 static void mix_chunk(Channel *c, int16_t *out, int out_n) {
   Chunk *ch = c->chunk;
   int src_frames = ch->len / (2 * ch->channels);
   int16_t *pcm = (int16_t *)ch->data;
-  uint32_t step = (uint32_t)(((uint64_t)ch->freq << 16) / audio_freq);
+  uint64_t step = ((uint64_t)ch->freq << 16) / audio_freq;
   for (int i = 0; i < out_n; i ++) {
-    int f = c->pos >> 16;
+    uint64_t f = c->pos >> 16;
     if (f >= src_frames) break;
     int16_t l, r;
     if (ch->channels == 2) { l = pcm[f * 2]; r = pcm[f * 2 + 1]; }
@@ -123,7 +128,8 @@ static void mix_audio(void *userdata, uint8_t *stream, int len) {
 /* ---- General ---- */
 
 int Mix_OpenAudio(int frequency, uint16_t format, int channels, int chunksize) {
-  audio_freq = frequency;
+  if (frequency <= 0 || format != AUDIO_S16 || channels != 2 ||
+      chunksize <= 0 || chunksize > UINT16_MAX) return -1;
   SDL_AudioSpec spec = {
     .freq = frequency,
     .format = format,
@@ -133,12 +139,17 @@ int Mix_OpenAudio(int frequency, uint16_t format, int channels, int chunksize) {
     .userdata = NULL,
   };
   if (SDL_OpenAudio(&spec, NULL) != 0) return -1;
+  audio_freq = frequency;
+  mixer_open = 1;
   SDL_PauseAudio(0);
   return 0;
 }
 
 void Mix_CloseAudio() {
   SDL_CloseAudio();
+  mixer_open = 0;
+  for (int i = 0; i < num_channels; i ++) channels[i].playing = 0;
+  if (cur_music) cur_music->playing = 0;
 }
 
 char *Mix_GetError() {
@@ -146,74 +157,38 @@ char *Mix_GetError() {
 }
 
 int Mix_QuerySpec(int *frequency, uint16_t *format, int *channels) {
+  if (!mixer_open) return 0;
   if (frequency) *frequency = audio_freq;
   if (format) *format = AUDIO_S16;
   if (channels) *channels = 2;
-  return 0;
+  return 1;
 }
 
 /* ---- WAV loading ---- */
 
 static Chunk *parse_wav(SDL_RWops *src) {
-  char riff[4], wave[4];
-  uint32_t riff_size;
-  if (SDL_RWread(src, riff, 1, 4) != 4 || memcmp(riff, "RIFF", 4) != 0) return NULL;
-  if (SDL_RWread(src, &riff_size, 4, 1) != 1) return NULL;
-  if (SDL_RWread(src, wave, 1, 4) != 4 || memcmp(wave, "WAVE", 4) != 0) return NULL;
-
-  uint32_t freq = 0;
-  int channels = 0, bits = 0;
-  uint8_t *data = NULL;
-  uint32_t data_size = 0;
-
-  for (;;) {
-    char id[4];
-    uint32_t size;
-    if (SDL_RWread(src, id, 1, 4) != 4) break;
-    if (SDL_RWread(src, &size, 4, 1) != 1) break;
-    if (memcmp(id, "fmt ", 4) == 0) {
-      uint16_t format;
-      if (SDL_RWread(src, &format, 2, 1) != 1) return NULL;
-      if (SDL_RWread(src, &channels, 2, 1) != 1) return NULL;
-      if (SDL_RWread(src, &freq, 4, 1) != 1) return NULL;
-      SDL_RWseek(src, 6, RW_SEEK_CUR); // byte rate + block align
-      if (SDL_RWread(src, &bits, 2, 1) != 1) return NULL;
-      if (format != 1) return NULL; // only PCM
-      if (size > 16) SDL_RWseek(src, size - 16, RW_SEEK_CUR);
-    } else if (memcmp(id, "data", 4) == 0) {
-      data = malloc(size);
-      if (data == NULL) return NULL;
-      if (SDL_RWread(src, data, 1, size) != size) { free(data); return NULL; }
-      data_size = size;
-      break;
-    } else {
-      SDL_RWseek(src, size, RW_SEEK_CUR);
-    }
-  }
-  if (data == NULL) return NULL;
-
-  Chunk *ch = malloc(sizeof(Chunk));
-  assert(ch);
-  ch->freq = freq;
-  ch->channels = channels;
-  if (bits == 8) {
-    // convert unsigned 8-bit to 16-bit
-    uint16_t *pcm16 = malloc(data_size * 2);
-    assert(pcm16);
-    for (uint32_t i = 0; i < data_size; i ++) pcm16[i] = ((int)data[i] - 128) << 8;
+  SDL_AudioSpec spec;
+  uint8_t *data;
+  uint32_t size;
+  if (!load_pcm_wav(src, &spec, &data, &size)) return NULL;
+  if (spec.format == AUDIO_U8) {
+    if (size > UINT32_MAX / 2 || size > SIZE_MAX / 2) { free(data); return NULL; }
+    int16_t *pcm = malloc(size ? (size_t)size * 2 : 1);
+    if (pcm == NULL) { free(data); return NULL; }
+    for (uint32_t i = 0; i < size; i ++) pcm[i] = ((int)data[i] - 128) * 256;
     free(data);
-    ch->data = (uint8_t *)pcm16;
-    ch->len = data_size * 2;
-  } else {
-    ch->data = data;
-    ch->len = data_size;
+    data = (uint8_t *)pcm;
+    size *= 2;
   }
+  Chunk *ch = malloc(sizeof(Chunk));
+  if (ch == NULL) { free(data); return NULL; }
+  *ch = (Chunk){ .data = data, .len = size, .freq = spec.freq, .channels = spec.channels };
   return ch;
 }
 
 Mix_Chunk *Mix_LoadWAV_RW(SDL_RWops *src, int freesrc) {
   Chunk *ch = parse_wav(src);
-  if (freesrc) SDL_RWclose(src);
+  if (freesrc && src != NULL) SDL_RWclose(src);
   return (Mix_Chunk *)ch;
 }
 
@@ -227,21 +202,33 @@ void Mix_FreeChunk(Mix_Chunk *chunk) {
 /* ---- Channels ---- */
 
 int Mix_AllocateChannels(int n) {
-  if (n < 0) n = 0;
-  if (n > MAX_CHANNELS) n = MAX_CHANNELS;
+  if (n < 0) return num_channels;
+  if (n == num_channels) return n;
+  if (n == 0) {
+    free(channels);
+    channels = NULL;
+  } else {
+    if ((size_t)n > SIZE_MAX / sizeof(Channel)) return num_channels;
+    Channel *next = realloc(channels, (size_t)n * sizeof(Channel));
+    if (next == NULL) return num_channels;
+    if (n > num_channels) memset(next + num_channels, 0, (n - num_channels) * sizeof(Channel));
+    channels = next;
+  }
   num_channels = n;
   return num_channels;
 }
 
 int Mix_Volume(int channel, int volume) {
   if (channel < 0) { // all channels
+    if (num_channels == 0) return 0;
     int prev = channels[0].volume;
-    for (int i = 0; i < num_channels; i ++) channels[i].volume = volume;
+    if (volume >= 0) for (int i = 0; i < num_channels; i ++)
+      channels[i].volume = volume > MIX_MAX_VOLUME ? MIX_MAX_VOLUME : volume;
     return prev;
   }
   if (channel >= num_channels) return -1;
   int prev = channels[channel].volume;
-  channels[channel].volume = volume;
+  if (volume >= 0) channels[channel].volume = volume > MIX_MAX_VOLUME ? MIX_MAX_VOLUME : volume;
   return prev;
 }
 
@@ -279,22 +266,25 @@ void Mix_ChannelFinished(void (*channel_finished)(int channel)) {
 /* ---- Music ---- */
 
 Mix_Music *Mix_LoadMUS_RW(SDL_RWops *src) {
+  if (src == NULL) return NULL;
   int64_t pos = SDL_RWtell(src);
   if (SDL_RWseek(src, 0, RW_SEEK_SET) != 0) return NULL;
   int64_t size = SDL_RWsize(src);
-  if (size <= 0) return NULL;
+  if (pos < 0 || size <= 0 || size > INT_MAX || (uint64_t)size > SIZE_MAX) return NULL;
   uint8_t *data = malloc(size);
   if (data == NULL) return NULL;
-  if (SDL_RWread(src, data, 1, size) != (size_t)size) { free(data); return NULL; }
-  SDL_RWseek(src, pos, RW_SEEK_SET);
+  size_t got = SDL_RWread(src, data, 1, size);
+  int restored = SDL_RWseek(src, pos, RW_SEEK_SET) == pos;
+  if (got != (size_t)size || !restored) { free(data); return NULL; }
 
   int err = 0;
   stb_vorbis *v = stb_vorbis_open_memory(data, size, &err, NULL);
   if (v == NULL) { free(data); return NULL; }
 
   Music *m = malloc(sizeof(Music));
-  assert(m);
+  if (m == NULL) { stb_vorbis_close(v); free(data); return NULL; }
   m->vorbis = v;
+  m->encoded = data;
   m->info = stb_vorbis_get_info(v);
   m->playing = 0;
   m->loops = 0;
@@ -315,6 +305,7 @@ void Mix_FreeMusic(Mix_Music *music) {
   Music *m = (Music *)music;
   if (m == cur_music) cur_music = NULL;
   stb_vorbis_close(m->vorbis);
+  free(m->encoded);
   free(m);
 }
 
@@ -331,7 +322,7 @@ int Mix_PlayMusic(Mix_Music *music, int loops) {
 int Mix_VolumeMusic(int volume) {
   if (cur_music == NULL) return -1;
   int prev = cur_music->volume;
-  cur_music->volume = volume;
+  if (volume >= 0) cur_music->volume = volume > MIX_MAX_VOLUME ? MIX_MAX_VOLUME : volume;
   return prev;
 }
 

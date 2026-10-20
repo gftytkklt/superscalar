@@ -1,10 +1,12 @@
 #include <NDL.h>
+#include <SDL.h>
 
 int SDL_Init(uint32_t flags) {
   return NDL_Init(flags);
 }
 
 void SDL_Quit() {
+  SDL_CloseAudio();
   NDL_Quit();
 }
 
