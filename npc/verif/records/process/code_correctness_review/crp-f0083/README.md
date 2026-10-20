@@ -213,3 +213,17 @@ index f1f885789ca6a62c0fa3db96c0fc7b43fc307322..932688411542120ef0a136aa1a8cf5cb
 ### 本轮文档提交归属补充（2026-10-20）
 
 本报告、内嵌 setenv diff 及既有 F0083 索引随本次[框架修复文档补充](../framework-diffs-20261020/README.md)提交根仓库；nested 的 setenv_r.c 未提交，代码结果确认/提交 Pending。上文“root 报告未提交”是原交付截面，本次只更新文档持久化事实，不把文档提交当作 F0083 代码提交或功能重新验收。实际根文档提交回执见该补充记录 local/submit-receipt.json；原 local/nested-repair.patch 保持。
+
+
+<a id="submit-20261020"></a>
+## 结果确认与实际提交（2026-10-20）
+
+用户“提交后继续”确认上文已报告的F0083范围并授权精确提交后执行一个新单元。
+复用原功能验收和清理，68项原manifest仅8份后续规则/索引/状态文字变化，源与
+原补丁完全一致，无证据缺失。nested实际提交`8101fad4376b7df0e3ec18db2db8cfa32746ad3a`，
+仅setenv_r.c、37增37删、100644及blob与验收一致；嵌套内容/index干净，原850
+执行位差异保留。root此前报告/diff为1dbf841，本次只补确认/提交回执与索引。
+无新产品测试、无push，不重复完成快照。60已修均确认提交；后续唯一入口仍为
+TASK_QUEUE#crp-next，用户本次只授权接续F0089一个单元，新结果不自动提交。
+local/submit-precheck.json、submit-nested-receipt.json和submit-receipt.json保存
+精确归属及实际提交；ignored/.agent仍不由commit备份。

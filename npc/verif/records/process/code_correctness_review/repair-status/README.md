@@ -124,7 +124,7 @@
 | CCR-F0080 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
 | CCR-F0081 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
 | CCR-F0082 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
-| CCR-F0083 | Confirmed / Medium | 已修 / Completed，代码结果确认及nested commit Pending | [setenv失败保持/所有权/实际新库](../crp-f0083/README.md) |
+| CCR-F0083 | Confirmed / Medium | 已修 / Completed，用户确认、nested 8101fad；root文档1dbf841 | [setenv失败保持/所有权/实际新库](../crp-f0083/README.md) |
 | CCR-F0084 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0084) |
 | CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) |
 | CCR-F0086 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0086) |
@@ -334,3 +334,5 @@ loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例�
 ### 2026-10-20 框架/OS 修复 diff 文档补充
 
 [盘点与核验](../framework-diffs-20261020/README.md)：25 份原验收文档内嵌 48 份逐文件 diff，覆盖 41 个相关 ID（含 F0040 已实施部分），附仓库/版本及语句级实现说明；正反应用与历史补丁一致，生产代码不变。用户授权补充完后提交文档；F0083 报告及内嵌 diff 纳入根文档提交，生产结果确认/嵌套源码提交仍 Pending，不将根提交等同于代码提交。累计 60/59 不变，后续只沿 TASK_QUEUE 唯一入口，未开始 F0089/M2。
+
+2026-10-20 用户“提交后继续”确认F0083并授权提交后一个单元；nested实际8101fad，root报告原1dbf841，本次回执见[F0083提交附记](../crp-f0083/README.md#submit-20261020)。60已修均确认提交，复用原验收/清理，无push；随后仅F0089。
