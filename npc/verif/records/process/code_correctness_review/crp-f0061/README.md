@@ -246,3 +246,11 @@ index ac82d334963e97c8bd7d04f120c901ed1b12b935..b86091d31d628421ce584fccd926933d
  #undef USTACK_TO_PA
    return 0;
 ```
+
+
+<a id="submit-20261020"></a>
+## 2026-10-20 确认与实际提交附记
+
+用户“提交修改后继续CRP修复”确认本组及会话建议规则，并授权提交后续一个单元。实际根提交`0ddd35c1b4deeaa14a6b771dd3f96bcc6516d10f`，7文件305增36删，实际路径/mode/blob与暂存及已验收生产patch一致；69项manifest身份、387既有终检复用，7处空白均为内嵌原样diff空上下文。提交时root工作树/index干净，nested8101fad内容/index干净且850原mode保持，未push。local/submit-receipt.json及submit-staged.txt为回执；后续导航/本附记改变旧manifest中的文档身份有来源，不覆盖旧验收身份。
+
+提交落档建议：可在当前对话继续，理由是新Session恢复入口完整且下一组仍在loader调用链。本轮按用户同句授权执行ELF组，不从提交本身推定续作或自动提交新组；当前状态/唯一下一入口见TASK_QUEUE#crp-next。本组新源完整commit以上述回执补足，原WORKTREE标注保留当时事实；local/.agent/WORKFLOW_POLICY继续忽略，不由commit备份。

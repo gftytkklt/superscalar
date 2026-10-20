@@ -155,6 +155,12 @@ long fs_lseek(int fd, long offset, int whence) {
   return fp_offt[fd];
 }
 
+long fs_filesz(int fd) {
+  if (fd < 0 || fd >= filenum || file_table[fd].read != NULL ||
+      file_table[fd].write != NULL || file_table[fd].size > (size_t)LONG_MAX) return -1;
+  return (long)file_table[fd].size;
+}
+
 int fs_close(int fd) {
   if (fd < 0 || fd >= filenum) { return -1; }
   fp_offt[fd] = 0;

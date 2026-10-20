@@ -92,6 +92,25 @@ size_t __am_map_table_pages(AddrSpace *as, uintptr_t start, uintptr_t end) {
   return pages;
 }
 
+// Read-only loader helpers: inspect the supported user domain and reuse leaves.
+Area __am_user_area(void) {
+  return USER_SPACE;
+}
+
+void *__am_lookup_page(AddrSpace *as, uintptr_t va) {
+  PTE *pt = (PTE *)as->ptr;
+  for (int shift = 30; shift >= 12; shift -= 9) {
+    PTE pte = pt[(va >> shift) & 0x1ff];
+    if (!(pte & PTE_V)) return NULL;
+    // map() creates only 4 KiB leaves in this address space.
+    if (shift != 12 && (pte & (PTE_R | PTE_W | PTE_X))) return NULL;
+    uintptr_t pa = ((pte >> 10) & 0xfffffffff) << 12;
+    if (shift == 12) return (void *)pa;
+    pt = (PTE *)pa;
+  }
+  return NULL;
+}
+
 void map(AddrSpace *as, void *va, void *pa, int prot) {
   // Sv39 three-level page table: VPN[2]=va[38:30], VPN[1]=va[29:21], VPN[0]=va[20:12]
   uintptr_t vaddr = (uintptr_t)va;

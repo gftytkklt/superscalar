@@ -31,6 +31,15 @@ void init_disk() {
 #endif
 }
 
+// The raw TEST_DUMMY loader has no filesystem extent to bound its reads.
+size_t disk_size(void) {
+  if (!disk_present) return embed_size;
+  AM_DISK_CONFIG_T cfg = io_read(AM_DISK_CONFIG);
+  if (cfg.blksz <= 0 || cfg.blkcnt <= 0 ||
+      (size_t)cfg.blkcnt > SIZE_MAX / (size_t)cfg.blksz) return 0;
+  return (size_t)cfg.blksz * (size_t)cfg.blkcnt;
+}
+
 static size_t embed_read(void *buf, size_t offset, size_t len) {
   if (offset >= embed_size) return 0;
   if (len > embed_size - offset) len = embed_size - offset;

@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复64（前63项均已确认提交，F0062/F0063/F0089根27b5bd8；本组F0061 Completed，结果确认及commit Pending）；未修完55，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
+全部已有功能修复67（前64项已确认提交，F0061根0ddd35c；本组F0057/F0058/F0059 Completed，结果确认及commit Pending）；未修完52，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -98,11 +98,11 @@
 | CCR-F0054 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0054) |
 | CCR-F0055 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0055) |
 | CCR-F0056 | Robustness / Low | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
-| CCR-F0057 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0057) |
-| CCR-F0058 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0058) |
-| CCR-F0059 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0059) |
+| CCR-F0057 | Confirmed / High | 已修 / Completed，结果确认及commit Pending | [ELF组报告](../crp-f0057-f0058-f0059/README.md) |
+| CCR-F0058 | Confirmed / High | 已修 / Completed，结果确认及commit Pending | [ELF组报告](../crp-f0057-f0058-f0059/README.md) |
+| CCR-F0059 | Confirmed / Medium | 已修 / Completed，结果确认及commit Pending | [ELF组报告](../crp-f0057-f0058-f0059/README.md) |
 | CCR-F0060 | Confirmed / Medium | 已修 / 已确认提交7b83685 | [本组报告](../crp-f0060/README.md) |
-| CCR-F0061 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [参数预算/无VLA/实际exec](../crp-f0061/README.md) |
+| CCR-F0061 | Robustness / Medium | 已修 / 已确认提交0ddd35c | [参数预算/提交回执](../crp-f0061/README.md#submit-20261020) |
 | CCR-F0062 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0063 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0064 | Robustness / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
@@ -356,3 +356,8 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 两模式各112、实际RV64七拒绝/24KiB CRT参数/空argv/恰容量汇编exec、标准三前台/hello34→149、
 167preclean与清理完成；64已修/55未修完，本组结果确认/commit Pending。未来只沿TASK_QUEUE，
 不自动commit/push/下一组/M2。建议本组确认提交后新对话接续，建议本身不新增门槛。
+
+
+### 2026-10-20 F0061提交与ELF组合修复完成
+
+用户“提交修改后继续CRP修复”确认F0061和会话规则，根实际0ddd35c已核对；继而完成F0057/F0058/F0059一个单元。五源199增83删，ELF全预检先于替换/固定尺寸读/同页复用；137host、真实27坏映像加设备保持/同页执行、标准三前台及hello36→159、263preclean和清理通过。累计67已修/52未修完；本组三项待确认/commit，正式旧盘F0074未自动记修。完整diff/身份/限制/清理见[报告](../crp-f0057-f0058-f0059/README.md)，未来仅TASK_QUEUE#crp-next；无自动新组/push/M2。

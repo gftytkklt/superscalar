@@ -11,94 +11,176 @@
 # define Elf_Phdr Elf32_Phdr
 #endif
 
-static uintptr_t loader(PCB *pcb, const char *filename) {
-  #ifdef TEST_DUMMY
-  Elf_Ehdr ehdr = {};
-  Elf_Phdr phdr = {};
-  // naive version: the disk image's first file is dummy
+// The image stays open between validation and loading. The fixed ramdisk is
+// unchanged during this single-core, non-yielding operation.
+typedef struct {
+  int fd;
+  size_t size;
+} ElfImage;
+
+#ifdef HAS_VME
+// Internal NEMU VME helpers; no change to the AM map() interface.
+extern Area __am_user_area(void);
+extern void *__am_lookup_page(AddrSpace *as, uintptr_t va);
+#endif
+
+static bool image_read(ElfImage *image, size_t offset, void *buf, size_t len) {
+  if (offset > image->size || len > image->size - offset) return false;
+#ifdef TEST_DUMMY
   size_t disk_read(void *buf, size_t offset, size_t len);
-  disk_read(&ehdr, 0, sizeof(ehdr));
-  assert(*(uint32_t*)&ehdr.e_ident == 0x464c457f);
-  uint64_t phoff = ehdr.e_phoff;
-  uint16_t phentsize = ehdr.e_phentsize;
-  for (uint16_t i=0;i< ehdr.e_phnum; i++){
-    disk_read(&phdr, phoff, phentsize);
-    if (phdr.p_type == PT_LOAD){
-      size_t filesz = phdr.p_filesz;
-      size_t vaddr = phdr.p_vaddr;
-      size_t offset = phdr.p_offset;
-      size_t memsz = phdr.p_memsz;
-      disk_read((void*)vaddr, offset, filesz);
-      memset((void*)vaddr + filesz, 0, memsz-filesz);
+  return disk_read(buf, offset, len) == len;
+#else
+  return fs_lseek(image->fd, offset, SEEK_SET) == (long)offset &&
+         fs_read(image->fd, buf, len) == (long)len;
+#endif
+}
+
+static void image_close(ElfImage *image) {
+#ifndef TEST_DUMMY
+  fs_close(image->fd);
+#endif
+}
+
+static bool read_phdr(ElfImage *image, const Elf_Ehdr *ehdr,
+                      size_t i, Elf_Phdr *phdr) {
+  return image_read(image, ehdr->e_phoff + i * sizeof(*phdr), phdr, sizeof(*phdr));
+}
+
+static bool validate_elf(ElfImage *image, Elf_Ehdr *ehdr) {
+  if (!image_read(image, 0, ehdr, sizeof(*ehdr))) return false;
+#ifdef __LP64__
+  const int elf_class = ELFCLASS64;
+#else
+  const int elf_class = ELFCLASS32;
+#endif
+#if defined(__riscv)
+  const int machine = EM_RISCV;
+#elif defined(__x86_64__)
+  const int machine = EM_X86_64;
+#elif defined(__i386__)
+  const int machine = EM_386;
+#elif defined(__mips__)
+  const int machine = EM_MIPS;
+#else
+  const int machine = EM_NONE;
+  return false;
+#endif
+  if (memcmp(ehdr->e_ident, "\177ELF", 4) != 0 ||
+      ehdr->e_ident[EI_CLASS] != elf_class ||
+      ehdr->e_ident[EI_DATA] != ELFDATA2LSB ||
+      ehdr->e_ident[EI_VERSION] != EV_CURRENT || ehdr->e_version != EV_CURRENT ||
+      ehdr->e_machine != machine || ehdr->e_type != ET_EXEC ||
+      ehdr->e_ehsize != sizeof(*ehdr) || ehdr->e_phentsize != sizeof(Elf_Phdr) ||
+      ehdr->e_phnum == 0 || ehdr->e_phnum == PN_XNUM ||
+      ehdr->e_phoff > image->size ||
+      ehdr->e_phnum > (image->size - ehdr->e_phoff) / sizeof(Elf_Phdr)) return false;
+
+#ifdef HAS_VME
+  Area user = __am_user_area();
+  uintptr_t lower = (uintptr_t)user.start;
+  uintptr_t upper = (uintptr_t)user.end;
+  if (upper < STACK_SIZE || lower >= upper - STACK_SIZE) return false;
+  upper -= STACK_SIZE;
+#endif
+  // Current RISC-V targets use IALIGN=32 (no compressed instructions).
+  if (machine == EM_RISCV && (ehdr->e_entry & 3)) return false;
+  bool entry_ok = false;
+  for (size_t i = 0; i < ehdr->e_phnum; i++) {
+    Elf_Phdr phdr;
+    if (!read_phdr(image, ehdr, i, &phdr)) return false;
+    // This loader supports static executables, without an interpreter/relocator.
+    if (phdr.p_type == PT_INTERP || phdr.p_type == PT_DYNAMIC) return false;
+    if (phdr.p_type != PT_LOAD) continue;
+    uintptr_t va = phdr.p_vaddr;
+    if (phdr.p_filesz > phdr.p_memsz || phdr.p_offset > image->size ||
+        phdr.p_filesz > image->size - phdr.p_offset ||
+        phdr.p_memsz > UINTPTR_MAX - va ||
+        ((va ^ phdr.p_offset) & (PGSIZE - 1)) != 0 ||
+        (phdr.p_align > 1 && ((phdr.p_align & (phdr.p_align - 1)) != 0 ||
+         ((va ^ phdr.p_offset) & (phdr.p_align - 1)) != 0))) return false;
+    uintptr_t end = va + phdr.p_memsz;
+    if (phdr.p_memsz && end > UINTPTR_MAX - (PGSIZE - 1)) return false;
+#ifdef HAS_VME
+    if (phdr.p_memsz && (va < lower || va >= upper || end > upper)) return false;
+#endif
+    // The entry must point to a file-backed instruction in an executable load.
+    if ((phdr.p_flags & PF_X) && ehdr->e_entry >= va &&
+        ehdr->e_entry - va < phdr.p_filesz) entry_ok = true;
+    // Read all declared bytes before replacing the old PCB/address space.
+    char scratch[256];
+    for (size_t done = 0; done < phdr.p_filesz;) {
+      size_t n = phdr.p_filesz - done;
+      if (n > sizeof(scratch)) n = sizeof(scratch);
+      if (!image_read(image, phdr.p_offset + done, scratch, n)) return false;
+      done += n;
     }
-    phoff += phentsize;
   }
-  return ehdr.e_entry;
-  #elif defined(TEST_FILE) || defined(TEST_NTERM) || defined(MULTIPROGRAM) || defined(TIME_SHARING) || defined(FG_PROCESS)
-  Elf_Ehdr ehdr = {};
-  Elf_Phdr phdr = {};
-  int fd = fs_open(filename, 0, 0);
-  if(fd<0){return -1;}
-  fs_read(fd, &ehdr, 64);
-  assert(*(uint32_t*)&ehdr.e_ident == 0x464c457f);
-  uint64_t phoff = ehdr.e_phoff;
-  uint16_t phentsize = ehdr.e_phentsize;
-  for (uint16_t i=0;i< ehdr.e_phnum; i++){
-    fs_lseek(fd, phoff, SEEK_SET);
-    fs_read(fd, &phdr, phentsize);
-    if (phdr.p_type == PT_LOAD){
-      size_t filesz = phdr.p_filesz;
-      size_t vaddr = phdr.p_vaddr;
-      size_t offset = phdr.p_offset;
-      size_t memsz = phdr.p_memsz;
-      #ifdef HAS_VME
-      // load the segment page by page: allocate a physical page, map it to the
-      // segment's virtual page, then copy the file content into the physical page
-      uintptr_t page_start = ROUNDDOWN(vaddr, PGSIZE);
-      for (uintptr_t va = page_start;
-           va < ROUNDUP(vaddr + memsz, PGSIZE); va += PGSIZE) {
-        void *pa = new_page(1);
+  return entry_ok;
+}
+
+static int image_open(ElfImage *image, Elf_Ehdr *ehdr, const char *filename) {
+#ifdef TEST_DUMMY
+  size_t disk_size(void);
+  image->fd = -1;
+  image->size = disk_size();
+#else
+  image->fd = fs_open(filename, 0, 0);
+  if (image->fd < 0) return -ENOENT;
+  long size = fs_filesz(image->fd);
+  if (size < 0) { image_close(image); return -ENOEXEC; }
+  image->size = size;
+#endif
+  if (validate_elf(image, ehdr)) return 0;
+  image_close(image);
+  return -ENOEXEC;
+}
+
+static uintptr_t load_elf(PCB *pcb, ElfImage *image, const Elf_Ehdr *ehdr) {
+  for (size_t i = 0; i < ehdr->e_phnum; i++) {
+    Elf_Phdr phdr;
+    panic_on(!read_phdr(image, ehdr, i, &phdr), "ELF changed after validation");
+    if (phdr.p_type != PT_LOAD || phdr.p_memsz == 0) continue;
+    uintptr_t vaddr = phdr.p_vaddr, end = vaddr + phdr.p_memsz;
+    uintptr_t file_end = vaddr + phdr.p_filesz;
+#ifdef HAS_VME
+    for (uintptr_t va = ROUNDDOWN(vaddr, PGSIZE); va < ROUNDUP(end, PGSIZE); va += PGSIZE) {
+      void *pa = __am_lookup_page(&pcb->as, va);
+      if (pa == NULL) {
+        pa = new_page(1);
         panic_on(pa == NULL, "Out of physical pages loading ELF");
+        memset(pa, 0, PGSIZE);
         map(&pcb->as, (void *)va, pa, MMAP_READ | MMAP_WRITE);
-
-        // copy the file part of this page (if any). Note the segment may start
-        // mid-page, so the file offset must be computed from the virtual address.
-        if (va < vaddr + filesz) {
-          uintptr_t fstart = (va > vaddr) ? va : vaddr;   // first vaddr in page that has file data
-          size_t n = (vaddr + filesz - fstart < PGSIZE - (fstart - va)) ?
-                     (vaddr + filesz - fstart) : (PGSIZE - (fstart - va));
-          if (n > 0) {
-            fs_lseek(fd, offset + (fstart - vaddr), SEEK_SET);
-            fs_read(fd, (char *)pa + (fstart - va), n);
-          }
-        }
-
-        // zero the bss part of this page (if any)
-        uintptr_t z0 = (vaddr + filesz > va) ? (vaddr + filesz) : va;
-        uintptr_t z1 = (vaddr + memsz < va + PGSIZE) ? (vaddr + memsz) : (va + PGSIZE);
-        if (z1 > z0) memset((char *)pa + (z0 - va), 0, z1 - z0);
       }
-      // record the peak program break (page-aligned) for mm_brk()
-      uintptr_t brk = ROUNDUP(vaddr + memsz, PGSIZE);
-      if (brk > pcb->max_brk) pcb->max_brk = brk;
-      if (vaddr + memsz > pcb->brk_start) pcb->brk_start = vaddr + memsz;
-      #else
-      fs_lseek(fd, offset, SEEK_SET);
-      fs_read(fd, (void *)vaddr, filesz);
-      memset((void *)(vaddr + filesz), 0, (memsz-filesz));
-      #endif
+      uintptr_t f0 = (va > vaddr ? va : vaddr);
+      uintptr_t f1 = (va + PGSIZE < file_end ? va + PGSIZE : file_end);
+      if (f1 > f0) {
+        panic_on(!image_read(image, phdr.p_offset + (f0 - vaddr),
+                            (char *)pa + (f0 - va), f1 - f0), "ELF changed after validation");
+      }
+      uintptr_t z0 = (file_end > va ? file_end : va);
+      uintptr_t z1 = (end < va + PGSIZE ? end : va + PGSIZE);
+      if (z1 > z0) memset((char *)pa + (z0 - va), 0, z1 - z0);
     }
-    phoff += phentsize;
+    uintptr_t brk = ROUNDUP(end, PGSIZE);
+    if (brk > pcb->max_brk) pcb->max_brk = brk;
+    if (end > pcb->brk_start) pcb->brk_start = end;
+#else
+    panic_on(!image_read(image, phdr.p_offset, (void *)vaddr, phdr.p_filesz),
+             "ELF changed after validation");
+    memset((void *)file_end, 0, end - file_end);
+#endif
   }
-  return ehdr.e_entry;
-  #else
-  panic("No test macro defined for loader");
-  #endif
+  image_close(image);
+  return ehdr->e_entry;
 }
 
 void naive_uload(PCB *pcb, const char *filename) {
   Log("Open %s", filename);
-  uintptr_t entry = loader(pcb, filename);
+  ElfImage image;
+  Elf_Ehdr ehdr;
+  int status = image_open(&image, &ehdr, filename);
+  panic_on(status < 0, "Invalid executable");
+  uintptr_t entry = load_elf(pcb, &image, &ehdr);
   Log("Jump to entry = %p", entry);
   ((void(*)())entry) ();
 }
@@ -125,11 +207,10 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
       count_args(envp, &envc, &used) < 0) return -E2BIG;
   // The page-aligned stack top and STACK_SIZE are multiples of 16.
   // Rounding a validated used <= STACK_SIZE up to 16 still fits the stack.
-  // Reject a missing executable before replacing the caller's address space
-  // or context. fs_open() uses a fixed file table; the loader opens it again.
-  int fd = fs_open(filename, 0, 0);
-  if (fd < 0) return -ENOENT;
-  fs_close(fd);
+  ElfImage image;
+  Elf_Ehdr ehdr;
+  int status = image_open(&image, &ehdr, filename);
+  if (status < 0) return status;
 #ifdef HAS_VME
   protect(&pcb->as);
 #endif
@@ -192,8 +273,7 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
   envp_addr[envc] = 0;
 
   // load the new program (may overwrite the calling process's static data)
-  uintptr_t entry = loader(pcb, filename);
-  assert(entry != (uintptr_t)-1); // preflight found this file in the fixed table
+  uintptr_t entry = load_elf(pcb, &image, &ehdr);
   Log("Jump to entry = %p", entry);
 
   Context *cp = ucontext(&pcb->as, kstack, (void *)entry);

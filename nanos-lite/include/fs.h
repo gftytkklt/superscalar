@@ -10,6 +10,8 @@ int fs_open(const char *pathname, int flags, int mode);
 long fs_read(int fd, void *buf, size_t len);
 long fs_lseek(int fd, long offset, int whence);
 int fs_close(int fd);
+// Size of a regular file, or -1 for invalid descriptors/devices.
+long fs_filesz(int fd);
 long fs_write(int fd, const void *buf, size_t len);
 size_t ramdisk_read(void *buf, size_t offset, size_t len);
 size_t ramdisk_write(const void *buf, size_t offset, size_t len);

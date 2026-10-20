@@ -593,3 +593,8 @@ exec与标准update→run三前台/hello34→152、165项preclean通过。Comple
 preclean通过。已清理9475文件656204844逻辑字节、零tracked删除。Completed，结果确认/commit
 Pending；64已修/55未修完。同轮将每次提交落档会话建议固化到AGENTS及WORKFLOW_POLICY/CRP引用，
 依据上下文长度与相关性提醒，不增审批门槛。唯一未来TASK_QUEUE#crp-next，无自动提交/push/M2。
+
+
+### 2026-10-20 CRP F0057/F0058/F0059 ELF组合修复
+
+F0061及会话规则已确认提交0ddd35c，[实际回执](code_correctness_review/crp-f0061/README.md#submit-20261020)复用既有验收。用户同句授权后完成[ELF组](code_correctness_review/crp-f0057-f0058-f0059/README.md)：头/表/段/entry及短读预检在进程替换前，坏映像ENOEXEC且旧进程保持，合法同页段保留；五源完整diff与语句解释/正反应用。137host、实际27坏映像/设备/同页执行、标准update→run三前台/hello36→159、263preclean及清理完成。累计67已修/52未修完，本组三项待结果确认/commit；F0074正式旧盘仍独立，未来只沿TASK_QUEUE#crp-next，未push/安装/M2推进。
