@@ -98,3 +98,71 @@ local/.agent继续忽略；本轮到此停止，等待结果确认/commit，不�
 ## 用户确认与实际提交（2026-10-20）
 
 用户“提交后继续”确认本组已报告范围/限制并授权提交后执行唯一下一组。100项manifest保持，原28preclean/18终检/7判据负例及产品验收/清理复用，不重复Completion或动态测试。嵌套两源实际提交5d9ffdb869f36282452a8f48a4655f53fb1745d5，11增1删，暂存/实际blob及原100644模式核对一致；仅原mode差异保留，内容/index干净。根仓库仅提交本组报告/.gitignore、process索引和逐项台账4文件，实际回执见local/submit-receipt.json。无push；原Pending为交付时截面，忽略资产/.agent不随普通commit备份。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0079/F0080 — navy-apps/libs/libc
+
+两项分别对应零大小写入及数组分配乘法溢出；原报告的 host/实际新库与消费者验收不变。
+
+- 差异路径相对于仓库 `navy-apps/libs/libc`；旧版本：`b7d992afd8335f89107787fcc75d7e483a9afa9d`；新版本：`5d9ffdb869f36282452a8f48a4655f53fb1745d5`。
+
+#### `src/stdio/fwrite.c`
+
+F0079：入口新增 `if (size == 0 || count == 0) return 0;`，在两个编译分支共同入口结束零请求。原默认分支可能走到除以 `size`，stream 分支可能把零大小请求错误报告为 `count`；提前返回既消除除零，又保证返回零且不进入流初始化/写入。非零请求仍走原写入及短写计算，不扩展为任意 `size * count` 溢出修复。
+
+```diff
+diff --git a/src/stdio/fwrite.c b/src/stdio/fwrite.c
+index aa14421db6e2cfcbde95a0e48246b30229897aa0..52d3b9ee6b6d0320b6f51e84efed5c345e5e8f11 100644
+--- a/src/stdio/fwrite.c
++++ b/src/stdio/fwrite.c
+@@ -114,6 +114,9 @@ _fwrite_r (struct _reent * ptr,
+        size_t count,
+        FILE * __restrict fp)
+ {
++  if (size == 0 || count == 0)
++    return 0;
++
+   size_t n;
+ #ifdef _FVWRITE_IN_STREAMIO
+   struct __suio uio;
+```
+
+#### `src/stdlib/mallocr.h`
+
+F0080：将 `sz = n * elem_size` 延后；先用 `n != 0 && elem_size > (size_t)-1 / n` 判断数学乘积是否超出 size_t，短路避免除零。超限直接写既有 `RERRNO = ENOMEM` 并返回空指针，不调用分配器；校验后才形成 `sz`，原分配/清零逻辑继续工作。零维度保留原 allocator 语义，不把绕回的小块当作完整数组。
+
+```diff
+diff --git a/src/stdlib/mallocr.h b/src/stdlib/mallocr.h
+index 0a51549740e23423a31170ba8e68501ca2f2cd85..b8fe9d3980f23cc66fcc5c590cc49a78e2e39485 100644
+--- a/src/stdlib/mallocr.h
++++ b/src/stdlib/mallocr.h
+@@ -3194,7 +3194,7 @@ Void_t* cALLOc(RARG n, elem_size) RDECL size_t n; size_t elem_size;
+   mchunkptr p;
+   INTERNAL_SIZE_T csz;
+ 
+-  INTERNAL_SIZE_T sz = n * elem_size;
++  INTERNAL_SIZE_T sz;
+ 
+ #if MORECORE_CLEARS
+   mchunkptr oldtop;
+@@ -3202,6 +3202,13 @@ Void_t* cALLOc(RARG n, elem_size) RDECL size_t n; size_t elem_size;
+ #endif
+   Void_t* mem;
+ 
++  if (n != 0 && elem_size > (size_t) -1 / n)
++  {
++    RERRNO = ENOMEM;
++    return 0;
++  }
++  sz = n * elem_size;
++
+   /* check if expand_top called, in which case don't need to clear */
+ #if MORECORE_CLEARS
+   MALLOC_LOCK;
+```

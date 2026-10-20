@@ -81,3 +81,39 @@ observer.patch/repair.patch、源/输入/构建/运行身份及退出码。复�
 ## 用户确认及提交授权（2026-10-20）
 
 用户“提交后继续”确认本组已报告范围/验证/限制，授权提交后执行唯一F0064/F0065单元。58条manifest及18项终检保持，复用技术验收与清理，不重跑/重建。本节随提交落盘，实际SHA/文件集合见local/submit-receipt.json及.agent；不push、不自动提交新组。原Pending为完成时截面，ignored/.agent不由Git备份。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0060 — 根仓库
+
+只展示已验收的五行栈布局修复。
+
+- 差异路径相对于仓库 `.`；旧版本：`e58bbd0a37e4d9c0680d047297ca4ea73eb51e94`；新版本：`7b836855c4aeaacbbf399aa86b3829f79bac599f`。
+
+#### `nanos-lite/src/loader.c`
+
+F0060：`args_size = (argc + envc + 3) * sizeof(uintptr_t)` 计入 argc、两组指针及两项 NULL；`ROUNDDOWN(sp - args_size, 16) + args_size` 在字符串与表之间留出 padding。后续原代码依次压表/argc 后，入口 sp 正好为 16 字节对齐，字符串与已保存指针无需搬移。此处修对齐，不声称参数总容量/F0061 或异常指针已防护。
+
+```diff
+diff --git a/nanos-lite/src/loader.c b/nanos-lite/src/loader.c
+index ef52e542d423d9579301ced9c265318d17b2763e..8db005a6e6799bedbc47066ac90ab432b7de80c6 100755
+--- a/nanos-lite/src/loader.c
++++ b/nanos-lite/src/loader.c
+@@ -168,6 +168,11 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
+   }
+   envp_addr[envc] = 0;
+ 
++  // Leave padding above the pointer tables so argc (and the initial sp)
++  // is 16-byte aligned without moving any of the strings.
++  size_t args_size = ((size_t)argc + (size_t)envc + 3) * sizeof(uintptr_t);
++  sp = ROUNDDOWN(sp - args_size, 16) + args_size;
++
+   // 2. envp[] pointer array (with NULL)
+   sp -= (envc + 1) * sizeof(uintptr_t);
+   memcpy(USTACK_TO_PA(sp), envp_addr, (envc + 1) * sizeof(uintptr_t));
+```

@@ -53,3 +53,77 @@ Navy/生成器未改，nanos复用当前完整`navy-apps/build/ramdisk.img`与he
 用户在核对MPP/mscratch及sp保存逻辑后，以“提交，然后继续CRP修复”确认本组已报告范围/限制并授权提交。3,958项manifest无漂移，原18项终检及生产patch相同，复用真实验收未重跑。仅提交生产cte.c、本组报告/局部ignore及3份相关索引/维护回执；ignored测试/.agent仍本地，不代表已备份。实际提交回执见local/submit-receipt及.agent；同条明确指令授权提交后执行F0024一个单元，新修复不自动提交，不push/M2。
 
 实际提交补充：F0023已提交c9be8980d76b85f4f517f2c5ac21d8cf9e181def（6文件69增16删），提交检查点root/index干净、未push。随后按同条指令执行F0024；本组原3,958项证据在后组终检仍无漂移。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0023 — 根仓库
+
+对应 AM 的 NEMU 平台 trap 适配，不是新增特权模式能力。
+
+- 差异路径相对于仓库 `.`；旧版本：`47063cd2155083ed8e0a3b71791c426ebf0f733e`；新版本：`c9be8980d76b85f4f517f2c5ac21d8cf9e181def`。
+
+#### `abstract-machine/am/src/riscv/nemu/cte.c`
+
+F0023：按保存的 `mstatus.MPP` 设置 `c->np`，不再用 trap.S 已交换成旧 sp 的 mscratch 值猜测来源。处理入口立即清 mscratch，保证嵌套内核 trap 使用内核栈规则；返回前根据所选 Context 的 np 写用户内核栈顶或零。`(uintptr_t)(c + 1)` 代替写死 288 字节，随 Context 布局确定栈顶；cte_init 初始清零 mscratch。保留事件分类及地址空间切换。
+
+```diff
+diff --git a/abstract-machine/am/src/riscv/nemu/cte.c b/abstract-machine/am/src/riscv/nemu/cte.c
+index 54d7f6e1027453d335cdce9bb1d7b23bf749d119..904a8208a51619de3891ffba998b1ee0e1d90232 100755
+--- a/abstract-machine/am/src/riscv/nemu/cte.c
++++ b/abstract-machine/am/src/riscv/nemu/cte.c
+@@ -1,24 +1,18 @@
+ #include <am.h>
+ #include <riscv/riscv.h>
+ #include <klib.h>
+-#define CONTEXT_SIZE 288
+ static Context* (*user_handler)(Event, Context*) = NULL;
+ 
+ Context* __am_irq_handle(Context *c) {
+-  uintptr_t ksp = 0;
++  // trap.S leaves the interrupted sp in mscratch for both M and U traps.
++  // The saved MPP, rather than that exchanged pointer, identifies the source.
++  c->np = ((c->mstatus >> 11) & 3) == MODE_M ? KERNEL_MODE : USER_MODE;
++  asm volatile("csrw mscratch, zero"); // kernel execution, including nested CTE
+   // record the current address space into the context
+   __am_get_cur_as(c);
+ 
+   if (user_handler) {
+     Event ev = {0};
+-    // Determine the next privilege (np): trap.S swapped mscratch into sp, so
+-    // mscratch now holds the original sp. It is non-zero for a user trap and
+-    // 0 for a kernel trap (kernel threads never have mscratch armed).
+-    asm volatile("csrr %0, mscratch" : "=r"(ksp));
+-    c->np = (ksp == 0) ? KERNEL_MODE : USER_MODE;
+-    ksp = 0;
+-    asm volatile("csrw mscratch, %0" : : "r"(ksp)); // support re-entry of CTE
+-
+     switch (c->mcause) {
+       case 0x0b: case 0x8: c->mepc += 4;ev.event = (c->gpr[17] == -1) ? EVENT_YIELD : EVENT_SYSCALL; break;
+       case 0x8000000000000007: ev.event = EVENT_IRQ_TIMER; break;
+@@ -34,10 +28,8 @@ Context* __am_irq_handle(Context *c) {
+ 
+   // Before returning to a user context, arm mscratch with that context's kernel
+   // stack top, so the next user trap can switch to the kernel stack.
+-  if (c->np == USER_MODE) {
+-    ksp = (uintptr_t)c + CONTEXT_SIZE;
+-    asm volatile("csrw mscratch, %0" : : "r"(ksp));
+-  }
++  uintptr_t ksp = c->np == USER_MODE ? (uintptr_t)(c + 1) : 0;
++  asm volatile("csrw mscratch, %0" : : "r"(ksp));
+ 
+   return c;
+ }
+@@ -45,6 +37,7 @@ Context* __am_irq_handle(Context *c) {
+ extern void __am_asm_trap(void);
+ 
+ bool cte_init(Context*(*handler)(Event, Context*)) {
++  asm volatile("csrw mscratch, zero"); // establish the initial kernel-stack rule
+   // initialize exception entry
+   asm volatile("csrw mtvec, %0" : : "r"(__am_asm_trap));
+ 
+```

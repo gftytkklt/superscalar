@@ -89,3 +89,110 @@ before-fd-observation.patch、repair.patch、配置/源/输入身份与实际命
 ## 用户确认及提交授权（2026-10-20）
 
 用户“提交，继续”确认本组已报告结果/限制，授权提交后执行唯一F0066/F0067。72条manifest及19项终检保持，复用技术验收及清理，不重跑或重建。仅提交本组可归属6文件，本节随提交落盘；实际SHA/范围见local/submit-receipt.json及.agent。旧Pending为完成时截面，ignored/.agent不由commit备份，不push，不自动提交下一组。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0064/F0065 — 根仓库
+
+头文件和实现同时留档，避免只还原一侧签名。
+
+- 差异路径相对于仓库 `.`；旧版本：`7b836855c4aeaacbbf399aa86b3829f79bac599f`；新版本：`5941586720da24f51af299274f0220e23c2206a0`。
+
+#### `nanos-lite/include/fs.h`
+
+F0065：`fs_lseek` 的 offset 参数由 size_t 改为 long，与实现和 syscall 的有符号位移语义一致，使 SEEK_CUR/END 的负偏移可表达；返回类型和其他接口保持。
+
+```diff
+diff --git a/nanos-lite/include/fs.h b/nanos-lite/include/fs.h
+index f6084485e2048592ed50a06350c8aaf9601e75af..6f2183b383f55c3a29e72893e5e7fcf2497beb8b 100755
+--- a/nanos-lite/include/fs.h
++++ b/nanos-lite/include/fs.h
+@@ -8,7 +8,7 @@ enum {SEEK_SET, SEEK_CUR, SEEK_END};
+ #endif
+ int fs_open(const char *pathname, int flags, int mode);
+ long fs_read(int fd, void *buf, size_t len);
+-long fs_lseek(int fd, size_t offset, int whence);
++long fs_lseek(int fd, long offset, int whence);
+ int fs_close(int fd);
+ long fs_write(int fd, const void *buf, size_t len);
+ size_t ramdisk_read(void *buf, size_t offset, size_t len);
+```
+
+#### `nanos-lite/src/fs.c`
+
+F0064：read/write/lseek/close 先执行 `fd < 0 || fd >= filenum` 检查，非法 fd 在索引表或调用设备前返回 -1。F0065：先按 whence 选局部 base；负位移用 `-(offset + 1) + 1` 的无符号幅值处理 LONG_MIN，并要求 back 不大于 base；非负位移先检查 `base > LONG_MAX-offset` 再相加。最终要求 next 在文件尺寸及 long 可表示域内，全部通过才写 `fp_offt[fd]`，因此失败保留旧游标。允许恰 EOF，拒绝越界，不引入文件扩容/errno 新协议。
+
+```diff
+diff --git a/nanos-lite/src/fs.c b/nanos-lite/src/fs.c
+index 7c9b91fdd7ee4b7e7574e2e55b55234f5ff87010..e55821e2eb7c9572523f9a11182f272ebf7966ac 100755
+--- a/nanos-lite/src/fs.c
++++ b/nanos-lite/src/fs.c
+@@ -1,4 +1,5 @@
+ #include <fs.h>
++#include <limits.h>
+ 
+ typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
+ typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
+@@ -93,7 +94,7 @@ int fs_open(const char *pathname, int flags, int mode) {
+ }
+ 
+ long fs_read(int fd, void *buf, size_t len) {
+-
++  if (fd < 0 || fd >= filenum) { return -1; }
+   long rd_offt = fp_offt[fd] + file_table[fd].disk_offset;
+   long offt_incr = 0;
+   // normal file
+@@ -111,6 +112,7 @@ long fs_read(int fd, void *buf, size_t len) {
+ }
+ 
+ long fs_write(int fd, const void *buf, size_t len) {
++  if (fd < 0 || fd >= filenum) { return -1; }
+   long wr_offt = fp_offt[fd] + file_table[fd].disk_offset;
+   long offt_incr = 0;
+   if (file_table[fd].write == NULL) {
+@@ -126,17 +128,35 @@ long fs_write(int fd, const void *buf, size_t len) {
+   return offt_incr;
+ }
+ 
+-long fs_lseek(int fd, size_t offset, int whence) {
++long fs_lseek(int fd, long offset, int whence) {
++  if (fd < 0 || fd >= filenum) { return -1; }
++  size_t base;
+   switch(whence) {
+-    case SEEK_SET: fp_offt[fd] = offset;break;
+-    case SEEK_CUR: fp_offt[fd] += offset;break;
+-    case SEEK_END: fp_offt[fd] = file_table[fd].size + offset;break;
++    case SEEK_SET: base = 0; break;
++    case SEEK_CUR:
++      if (fp_offt[fd] < 0) { return -1; }
++      base = (size_t)fp_offt[fd];
++      break;
++    case SEEK_END: base = file_table[fd].size; break;
+     default: return -1;
+   }
++  size_t next;
++  if (offset < 0) {
++    // Form the magnitude without negating LONG_MIN.
++    size_t back = (size_t)(-(offset + 1)) + 1;
++    if (back > base) { return -1; }
++    next = base - back;
++  } else {
++    if (base > (size_t)LONG_MAX - (size_t)offset) { return -1; }
++    next = base + (size_t)offset;
++  }
++  if (next > file_table[fd].size || next > (size_t)LONG_MAX) { return -1; }
++  fp_offt[fd] = (long)next;
+   return fp_offt[fd];
+ }
+ 
+ int fs_close(int fd) {
++  if (fd < 0 || fd >= filenum) { return -1; }
+   fp_offt[fd] = 0;
+   return 0;
+ }
+```

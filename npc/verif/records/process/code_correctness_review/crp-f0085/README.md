@@ -224,3 +224,45 @@ ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-sto
 精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
 结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
 事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0085 — 根仓库
+
+Navy 的 Makefile 已由根仓库跟踪；本处仍直接给出两行修复差异。
+
+- 差异路径相对于仓库 `.`；旧版本：`8f48825b2748031c693294c4c1c59d4428ce536e`；新版本：`b7391768dd6c3060f455a4b1ab9470ead37b2134`。
+
+#### `navy-apps/Makefile`
+
+F0085：库构建和 fsimg 安装循环的每次递归 make 后增加 `|| exit $$?`，第一处失败立即以原非零码退出 shell，避免后续成功覆盖前面的失败。fsimg recipe 将忽略错误前缀 `-` 改为静默前缀 `@`，使该失败真正传到上层 make/update。正常目标与命令接口保持；此前已安装的文件允许留存，未提供 fsimg 全事务回滚。
+
+```diff
+diff --git a/navy-apps/Makefile b/navy-apps/Makefile
+index d5fc27d911ac7c3db47fd0bb51ab2125a6e98ee5..0bef147470486e0235bdce7349466bebad6e3338 100755
+--- a/navy-apps/Makefile
++++ b/navy-apps/Makefile
+@@ -117,7 +117,7 @@ $(DST_DIR)/%.o: %.S
+ 
+ ### Rule (recursive make): build dependent libraries (libc, libos, ...)
+ libs:
+-	@for t in $(LIBS); do $(MAKE) -s -C $(NAVY_HOME)/libs/$$t archive; done
++	@for t in $(LIBS); do $(MAKE) -s -C $(NAVY_HOME)/libs/$$t archive || exit $$?; done
+ 
+ ### Rule (link): objects (`*.o`) and libraries (`*.a`) -> `$(APP)`, the final ELF binary to be packed into application (ld)
+ $(APP): $(OBJS) libs
+@@ -170,7 +170,7 @@ APPS = nslider menu nterm bird pal nplayer busybox
+ TESTS = hello bmp-test file-test timer-test event-test audiotest cpp-test exec-test busybox-test execvp-test
+ 
+ fsimg: $(addprefix apps/, $(APPS)) $(addprefix tests/, $(TESTS))
+-	-for t in $^; do $(MAKE) -s -C $(NAVY_HOME)/$$t install; done
++	@for t in $^; do $(MAKE) -s -C $(NAVY_HOME)/$$t install || exit $$?; done
+ 
+ RAMDISK = build/ramdisk.img
+ RAMDISK_H = build/ramdisk.h
+```

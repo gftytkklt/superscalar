@@ -99,3 +99,74 @@ ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-sto
 精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
 结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
 事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0037/F0038 — 根仓库
+
+保留原 bump allocator/free 能力边界与 atoi 非法/超范围限制。
+
+- 差异路径相对于仓库 `.`；旧版本：`bc2d2d00f05d504673ab5a112d68d947c2a88c56`；新版本：`0aa1dca5a49716461a1b09bf02f14fe26faa9dc9`。
+
+#### `abstract-machine/klib/src/stdlib.c`
+
+F0037：malloc 在 uintptr_t 地址域按 `_Alignof(max_align_t)` 算 padding，先检查 start/end、padding 与 size 是否超剩余容量，全部成功才发布共享 `heap.start = addr + size`；失败不推进 nanos new_page 共用游标，支持恰好用尽容量。F0038：atoi 跳过空格及 tab～CR，消费单个 +/-；`x = x * 10 - digit` 负向累计，使 INT_MIN 不必先形成不可表示的正数，最后按符号返回。仍不定义超出 int 范围输入的溢出处理。
+
+```diff
+diff --git a/abstract-machine/klib/src/stdlib.c b/abstract-machine/klib/src/stdlib.c
+index 2e8ef7aac318560a99023c82ad32b64d0f864a3f..683ffa1fa9e07e30c7959a369f0c0b28280fdc40 100755
+--- a/abstract-machine/klib/src/stdlib.c
++++ b/abstract-machine/klib/src/stdlib.c
+@@ -21,12 +21,15 @@ int abs(int x) {
+ 
+ int atoi(const char* nptr) {
+   int x = 0;
+-  while (*nptr == ' ') { nptr ++; }
++  while (*nptr == ' ' || (*nptr >= '\t' && *nptr <= '\r')) { nptr ++; }
++  int negative = (*nptr == '-');
++  if (*nptr == '+' || *nptr == '-') { nptr ++; }
++  // Accumulate negatively so INT_MIN does not require a positive int value.
+   while (*nptr >= '0' && *nptr <= '9') {
+-    x = x * 10 + *nptr - '0';
++    x = x * 10 - (*nptr - '0');
+     nptr ++;
+   }
+-  return x;
++  return negative ? x : -x;
+ }
+ 
+ void *malloc(size_t size) {
+@@ -34,18 +37,15 @@ void *malloc(size_t size) {
+   // Therefore do not call panic() here, else it will yield a dead recursion:
+   //   panic() -> putchar() -> (glibc) -> malloc() -> panic()
+ #if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
+-  // panic("Not implemented");
+-  // if(size == 0){return NULL;}
+-  
+-  // size_t remainder = size % 8;
+-  // size_t incr = (remainder == 0) ? size : (size + 8 - remainder);
+-  // void *addr = heap.start;
+-  // if (addr + incr >= heap.end){addr = NULL;}
+-  // heap.start += incr;
+-  void *addr = heap.start;
+-  heap.start += size;
+-  return addr;
+-  
++  uintptr_t start = (uintptr_t)heap.start, end = (uintptr_t)heap.end;
++  const size_t alignment = _Alignof(max_align_t);
++  size_t padding = (alignment - start % alignment) % alignment;
++  if (start > end || padding > end - start) { return NULL; }
++  uintptr_t addr = start + padding;
++  if (size > end - addr) { return NULL; }
++  // nanos new_page() shares heap.start; publish only a successful allocation.
++  heap.start = (void *)(addr + size);
++  return (void *)addr;
+ #endif
+   return NULL;
+ }
+```

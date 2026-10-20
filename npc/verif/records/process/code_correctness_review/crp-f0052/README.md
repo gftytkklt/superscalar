@@ -216,3 +216,99 @@ F0051发布策略仍待下一单元分析裁决；本次确认不代替该裁决
 ## 2026-10-18 终态归属补充
 
 原修复/确认及c1ba0bb提交保留。后续真实NPC DIFF=1发现REF附加终态导致假ERROR、REF-only又可假PASS；独立[补充单元](../crp-f0052-ref-terminal/README.md)已完成按ARCH计数及42项定向、NPC/NEMU真实全集各36PASS+1XFAIL/两次make exit0。本补充结果确认/新commit Pending，不覆盖原历史截面；唯一后续入口在TASK_QUEUE。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0052 — am-kernels
+
+本报告保存原修复，不以较新的终态修复覆盖历史版本；当前最终判据还需下一份补充。
+
+- 差异路径相对于仓库 `am-kernels`；旧版本：`9c433f7cf4b4e05d09543bf7e269b23502d1b2b6`；新版本：`c1ba0bb884eaefc75925401759c9fbdfa6f86124`。
+
+#### `tests/cpu-tests/Makefile`
+
+F0052：每次 mktemp 创建独立结果目录，避免旧 PASS 复用；发现失败加入哨兵使构建不能静默成零例。记录 make 状态、NEMU 原始退出码和完整日志，awk 结合唯一且格式合法的终态、无 ABORT/预算退出及平台退出约定分类；wrong 只有预期失败才为 XFAIL，意外成功为 XPASS。最终汇总要求每行格式正确、名字不重复、条数等于非零预期，且只允许 PASS/XFAIL；不再用管道 grep 错判。非 run 路径直接传播递归 make 状态。此为第一版已提交修复，当时 host/fake 验收边界保留；NPC+REF 双终态后续问题由独立补充修复。
+
+```diff
+diff --git a/tests/cpu-tests/Makefile b/tests/cpu-tests/Makefile
+index add58c7b979097a2d07a234f399e8c4233f21a53..467166c888c00660da37a58a2ffb41f883703441 100644
+--- a/tests/cpu-tests/Makefile
++++ b/tests/cpu-tests/Makefile
+@@ -1,13 +1,12 @@
+ .PHONY: all run gdb clean latest $(ALL)
+ 
+-RESULT = .result
+-$(shell > $(RESULT))
++# Per-invocation logs: never reuse a previous run's PASS or truncate its evidence.
++RESULT := $(shell mktemp -d /tmp/cpu-tests.XXXXXX)
++ifeq ($(RESULT),)
++$(error Cannot create cpu-tests result directory)
++endif
+ 
+-COLOR_RED   = \033[1;31m
+-COLOR_GREEN = \033[1;32m
+-COLOR_NONE  = \033[0m
+-
+-ALL = $(basename $(notdir $(shell find tests/. -name "*.c")))
++ALL = $(basename $(notdir $(shell find tests/. -name "*.c" || echo __discovery_failed__)))
+ 
+ all: $(addprefix Makefile., $(ALL))
+ 	@echo "test list [$(words $(ALL)) item(s)]:" $(ALL)
+@@ -16,16 +15,44 @@ $(ALL): %: Makefile.%
+ 
+ Makefile.%: tests/%.c latest
+ 	@/bin/echo -e "NAME = $*\nSRCS = $<\ninclude $${AM_HOME}/Makefile" > $@
+-	@if make -s -f $@ ARCH=$(ARCH) $(MAKECMDGOALS); then \
+-		printf "[%14s] $(COLOR_GREEN)PASS$(COLOR_NONE)\n" $* >> $(RESULT); \
+-	else \
+-		printf "[%14s] $(COLOR_RED)***FAIL***$(COLOR_NONE)\n" $* >> $(RESULT); \
+-	fi
++	@# Keep NEMU's exit separate from make errors; BAD TRAP and ABORT both exit 1.
++	@if [ -z "$(filter run,$(MAKECMDGOALS))" ]; then \
++	  $(MAKE) -s -f $@ ARCH=$(ARCH) $(MAKECMDGOALS); exit $$?; \
++	fi; \
++	rc=0; \
++	$(MAKE) -s -f $@ ARCH=$(ARCH) $(MAKECMDGOALS) \
++	  'NEMU_EXEC=$$(BINARY) $$(ARGS) $$(IMG); rc=$$$$?; printf "%s\n" "$$$$rc" > $(RESULT)/$*.status' \
++	  > $(RESULT)/$*.log 2>&1 || rc=$$?; \
++	printf '%s\n' "$$rc" > $(RESULT)/$*.make-status || exit 1; \
++	cat $(RESULT)/$*.log || exit 1; \
++	  tool=0; \
++	  case "$(ARCH)" in *-nemu) tool=$$(cat $(RESULT)/$*.status 2>/dev/null) || tool=missing;; esac; \
++	  awk -v name='$*' -v arch='$(ARCH)' -v rc="$$rc" -v tool="$$tool" '\
++	    { gsub(/\033\[[0-9;]*m/, "") } \
++	    /ABORT|reach SIM_END|finish requested by RTL/ { aborted=1 } \
++	    /HIT (GOOD|BAD) TRAP/ { terminal++ } \
++	    /nemu: HIT GOOD TRAP at pc = 0x[[:xdigit:]]+$$|^[0-9]+: HIT GOOD TRAP at pc = 0x[[:xdigit:]]+$$/ { good++ } \
++	    /nemu: HIT BAD TRAP at pc = 0x[[:xdigit:]]+$$|^[0-9]+: HIT BAD TRAP at pc = 0x[[:xdigit:]]+, ret code=0x[[:xdigit:]]+h$$/ { bad++; if (/ret code=0x0*1h$$/) code1++ } \
++	    END { \
++	      status="ERROR"; \
++	      if (rc == 0 && tool ~ /^[01]$$/ && terminal == 1 && good+bad == 1 && !aborted) { \
++	        if (good && tool == 0) status=(name == "wrong" ? "XPASS" : "PASS"); \
++	        if (bad && ((arch ~ /-nemu$$/ && tool == 1) || (arch ~ /-npc$$/ && tool == 0))) \
++	          status=(name == "wrong" && (arch ~ /-nemu$$/ || code1 == 1) ? "XFAIL" : "FAIL"); \
++	      } \
++	      printf "[%s] %s\n", name, status; \
++	    }' $(RESULT)/$*.log >> $(RESULT)/summary
+ 	-@rm -f Makefile.$*
+ 
+ run: all
+-	@cat $(RESULT)
+-	@grep -q "FAIL" $(RESULT) | grep -v "wrong\]"; FAIL=$$?; rm $(RESULT); test $$FAIL -ne 0
++	@echo "cpu-tests logs: $(RESULT)"
++	@test -s $(RESULT)/summary || { echo "ERROR: no test results"; exit 1; }
++	@cat $(RESULT)/summary
++	@awk -v expected='$(words $(ALL))' '\
++	  NF != 2 || $$1 !~ /^\[[^][]+\]$$/ || seen[$$1]++ { failed=1 } \
++	  $$2 != "PASS" && $$2 != "XFAIL" { failed=1 } \
++	  END { printf "results: %d/%d\n", NR, expected; \
++	        exit (failed || expected == 0 || NR != expected) }' $(RESULT)/summary
+ 
+ gdb: all
+ 
+```

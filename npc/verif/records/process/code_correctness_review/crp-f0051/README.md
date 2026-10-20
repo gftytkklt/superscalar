@@ -246,3 +246,163 @@ WORKFLOW_POLICY及.agent继续本地持久化，不force-add或宣称已随commi
 
 用户明确要求直接处理既往同类冗余测试提交。保留implementation/check.py的13项失败传播/发布边界回归；原版分析probe.py、一次guest运行采集脚本及5组生成C/mk共12份移出Git跟踪，全部原路径/原字节保留本地，旧commit仍可查回。新增本批局部忽略规则防止再次误加，不改变生产生成器或原验收。
 分类、原字节/索引核对和范围见[维护报告](../repair-maintenance-20261018/README.md)。本次不重跑产品回归、不改写历史完成/提交快照；本轮维护尚未提交，旧修复的确认/提交保持。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0051 — 根仓库
+
+根提交 4ab9f3f 首次跟踪本脚本，父提交中无此文件；因此使用当时 implementation/repair.patch，而不是把整文件新增当成功能 diff。旧文件 SHA256 从 implementation/baseline.json 验证，新文件与 4ab9f3f blob 一致。
+
+- 差异路径相对于仓库 `.`；旧版本：`未跟踪旧文件（baseline SHA256）`；新版本：`4ab9f3f04c12f6e09adf2dab2d873626db51a511`。
+- 旧文件 SHA256：`3775d2d5d0109f0bb0a9953b9e6dcf9509fb5d82ebb834496a1c7ef3d6e72166`；新文件 SHA256：`32fcba79da06ca97ed5091599097c81f17caa61446b6b4a0df1191eadea08b10`。原旧文件没有可引用的根 Git blob，不虚构父版本。
+
+#### `rt/bsp/abstract-machine/integrate-am-apps.py`
+
+F0051：`run_tool` 以参数数组和 check=True 统一执行 make/nm/objcopy，任何工具失败抛异常，主入口诊断并 exit(1)；不再忽略 os.system 返回值。mkdtemp 在当前 ARCH 下创建独立 generation，复制对象、排序符号并拒绝空对象集，把 C/对象与 mk 作为一代生成；全成功后仅用 os.replace 发布 mk，使它引用同代完整 C/对象。异常删除本次 generation、保留旧发布入口，旧代由既有 clean 回收。此策略保护发布入口，不承诺回滚工具此前对上游 build 的所有副作用，也未新增 Make 目标或用户步骤。
+
+```diff
+--- a/rt/bsp/abstract-machine/integrate-am-apps.py
++++ b/rt/bsp/abstract-machine/integrate-am-apps.py
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ 
+-import sys, os, shutil, subprocess
++import sys, os, shutil, subprocess, tempfile
+ from pathlib import Path
+ 
+ # global settings
+@@ -29,9 +29,6 @@
+     exit(-1)
+ CROSS_COMPILE = sys.argv[2][14:]
+ 
+-Path("build").mkdir(exist_ok=True)
+-am_app_mk_fp = open(f"build/{ARCH}/am-apps.mk", "w")
+-am_app_c_fp  = open("build/am-apps.c" , "w")
+ lib_sym = [
+   "memset", "memcpy", "memmove", "memcmp",
+   "strlen", "strcat", "strcpy", "strncpy", "strcmp", "strncmp",
+@@ -40,36 +37,44 @@
+ ]
+ am_init_sym = [ "trm_init", "ioe_init", "cte_init", "vme_init", "mpe_init" ]
+ 
++def run_tool(argv, **kwargs):
++    print("+ " + " ".join(argv), flush=True)
++    return subprocess.run(argv, check=True, **kwargs)
++
+ def read_lib_symbols(lib):
+     libfile = AM_HOME / lib / "build" / f"{lib}-{ARCH}.a"
+     if (not libfile.exists()):
+-        os.system("make -j ARCH=" + ARCH + " -C " + str(AM_HOME / lib))
+-    cmd = f"{CROSS_COMPILE}nm -g --defined-only --format=just-symbols {str(libfile)}"
+-    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
++        run_tool(["make", "-j", f"ARCH={ARCH}", "-C", str(AM_HOME / lib), "archive"])
++    res = run_tool([f"{CROSS_COMPILE}nm", "-g", "--defined-only",
++                    "--format=just-symbols", str(libfile)], stdout=subprocess.PIPE, text=True)
+     global lib_sym
+-    lib_sym = list(set(lib_sym + res.stdout.strip().split('\n')))
++    lib_sym = sorted(set(lib_sym + res.stdout.split()))
+ 
+-def integrate(app_dir):
++def integrate(app_dir, generation, am_app_mk_fp, am_app_c_fp):
+     app_name = app_dir.name.replace("-", "_")
+-    os.system(f"make -j ARCH={ARCH} -C {str(app_dir)}")
+-    dst = Path("build") / ARCH / "am-apps" / app_name
+-    dst.mkdir(parents=True, exist_ok=True)
+-    shutil.copytree(app_dir / "build" / ARCH / "", dst, dirs_exist_ok=True)
+-    objs = dst.rglob("*.o")
+-    redefine_sym_file = "redefine_sym.txt"
+-    redefine_sym_fp = open(redefine_sym_file, "w")
+-    for f in lib_sym:
+-        if f in am_init_sym:
+-            redefine_sym_fp.write(f"__am_{app_name}_{f} __dummy_{f}\n")
+-        elif f == "halt":
+-            redefine_sym_fp.write(f"__am_{app_name}_{f} __rt_am_halt\n")
+-        else:
+-            redefine_sym_fp.write(f"__am_{app_name}_{f} {f}\n")
+-    redefine_sym_fp.close()
++    run_tool(["make", "-j", f"ARCH={ARCH}", "-C", str(app_dir)])
++    dst = generation / app_name
++    shutil.copytree(app_dir / "build" / ARCH, dst)
++    objs = sorted(dst.rglob("*.o"))
++    if not objs:
++        raise RuntimeError(f"{app_name}: no object files in {dst}")
++    redefine_sym_file = generation / "redefine_sym.txt"
++    with redefine_sym_file.open("w") as redefine_sym_fp:
++        for f in lib_sym:
++            if f in am_init_sym:
++                redefine_sym_fp.write(f"__am_{app_name}_{f} __dummy_{f}\n")
++            elif f == "halt":
++                redefine_sym_fp.write(f"__am_{app_name}_{f} __rt_am_halt\n")
++            else:
++                redefine_sym_fp.write(f"__am_{app_name}_{f} {f}\n")
+     for obj in objs:
+-        os.system(f"{CROSS_COMPILE}objcopy --prefix-symbols=__am_{app_name}_ --set-section-flags .text*=readonly,noload --set-section-flags .*rodata*=readonly,noload {str(obj)}")
+-        os.system(f"{CROSS_COMPILE}objcopy --redefine-syms=redefine_sym.txt --prefix-alloc-sections=__am_apps {str(obj)}")
+-        os.system(f"{CROSS_COMPILE}objcopy --set-section-flags .text*=readonly,code,alloc --set-section-flags .*rodata*=readonly,data,alloc {str(obj)}")
++        run_tool([f"{CROSS_COMPILE}objcopy", f"--prefix-symbols=__am_{app_name}_",
++                  "--set-section-flags", ".text*=readonly,noload",
++                  "--set-section-flags", ".*rodata*=readonly,noload", str(obj)])
++        run_tool([f"{CROSS_COMPILE}objcopy", f"--redefine-syms={redefine_sym_file}",
++                  "--prefix-alloc-sections=__am_apps", str(obj)])
++        run_tool([f"{CROSS_COMPILE}objcopy", "--set-section-flags", ".text*=readonly,code,alloc",
++                  "--set-section-flags", ".*rodata*=readonly,data,alloc", str(obj)])
+         am_app_mk_fp.write("SRCS += " + str(obj.relative_to("build/" + ARCH)) + "\n")
+     os.remove(redefine_sym_file)
+     am_app_c_fp.write(f"""extern int __am_{app_name}_main(const char *);
+@@ -79,11 +84,7 @@
+ MSH_CMD_EXPORT(am_{app_name}, AM {app_name});
+ """)
+ 
+-read_lib_symbols("am")
+-read_lib_symbols("klib")
+-
+-am_app_mk_fp.write("SRCS += build/am-apps.c\n")
+-am_app_c_fp.write("""#include <am.h>
++AM_APP_C = """#include <am.h>
+ #include <klib.h>
+ #include <rtthread.h>
+ extern Area am_apps_heap, am_apps_data, am_apps_bss;
+@@ -109,8 +110,32 @@
+   void rt_thread_exit(void);
+   rt_thread_exit();
+ }
+-""")
+-for app in app_dir_list:
+-    integrate(app)
+-am_app_mk_fp.close()
+-am_app_c_fp.close()
++"""
++
++def generate():
++    build_dir = Path("build") / ARCH
++    generations = build_dir / "am-apps"
++    generations.mkdir(parents=True, exist_ok=True)
++    generation = Path(tempfile.mkdtemp(prefix="gen-", dir=generations)).resolve().relative_to(Path.cwd())
++    try:
++        read_lib_symbols("am")
++        read_lib_symbols("klib")
++        with (generation / "am-apps.mk").open("w") as mk_fp, \
++             (generation / "am-apps.c").open("w") as c_fp:
++            mk_fp.write(f"SRCS += {generation / 'am-apps.c'}\n")
++            c_fp.write(AM_APP_C)
++            for app in app_dir_list:
++                integrate(app, generation, mk_fp, c_fp)
++        # The mk is the single publication point for its immutable C/object set.
++        os.replace(generation / "am-apps.mk", build_dir / "am-apps.mk")
++    except BaseException:
++        shutil.rmtree(generation, ignore_errors=True)
++        raise
++    # Previous generations remain available until the existing `make clean`.
++
++if __name__ == "__main__":
++    try:
++        generate()
++    except (subprocess.CalledProcessError, OSError, RuntimeError) as error:
++        print(f"AM application integration failed: {error}", file=sys.stderr)
++        sys.exit(1)
+```

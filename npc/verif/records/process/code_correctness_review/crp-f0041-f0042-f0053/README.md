@@ -38,3 +38,159 @@
 ## 实际提交回执（2026-10-18）
 
 按本轮连续预授权提交：root e83df62d7b7b3d0b37e42ab2cdbecce27bc0e278（6文件62增9删）；am-kernels 6dc302a117ae282c7f3f50a593b46134f77b2b86（单一devscan.c21增）。提交后root/index干净，nested既有untracked保留；复用本组已完成验收，未无故重跑，未push。整体收尾冻结的[人工guard](../repair-status/README.md#manual-start-guard)须下一次Start前明确决定或豁免。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0041/F0042 — 根仓库
+
+F0053 的消费者修复属于 am-kernels，见同报告下一块。
+
+- 差异路径相对于仓库 `.`；旧版本：`dd015ef94a4bf81f7af93496567e2112ce600b17`；新版本：`e83df62d7b7b3d0b37e42ab2cdbecce27bc0e278`。
+
+#### `abstract-machine/am/src/platform/nemu/ioe/gpu.c`
+
+F0041：把 `outl(SYNC_ADDR, 1)` 移到像素复制完成之后，避免刷新时读取旧帧；宽或高为零的分支仍按 sync 单独写刷新寄存器，保持只刷新不绘制的调用。
+
+```diff
+diff --git a/abstract-machine/am/src/platform/nemu/ioe/gpu.c b/abstract-machine/am/src/platform/nemu/ioe/gpu.c
+index 17ae911b52ebfbdf9646da5c9e058d5cc94f9bdf..b7ea97d3e42c0d885696a211d5b6b05bf5d9461c 100755
+--- a/abstract-machine/am/src/platform/nemu/ioe/gpu.c
++++ b/abstract-machine/am/src/platform/nemu/ioe/gpu.c
+@@ -24,14 +24,14 @@ void __am_gpu_config(AM_GPU_CONFIG_T *cfg) {
+ }
+ 
+ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
+-  if (ctl->sync) {
+-    outl(SYNC_ADDR, 1);
+-  }
+   int x = ctl->x;
+   int y = ctl->y;
+   int blk_w = ctl->w;
+   int blk_h = ctl->h;
+-  if(blk_w == 0 || blk_h == 0) {return;}
++  if(blk_w == 0 || blk_h == 0) {
++    if (ctl->sync) outl(SYNC_ADDR, 1);
++    return;
++  }
+   // printf("%d, %d: %d*%d\n", x, y, blk_w, blk_h);
+   int *pixels = (int *)ctl->pixels;
+   int base = w*y+x;
+@@ -49,6 +49,7 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *ctl) {
+     }
+     // base += w*4;
+   }
++  if (ctl->sync) outl(SYNC_ADDR, 1);
+ }
+ 
+ void __am_gpu_status(AM_GPU_STATUS_T *status) {
+```
+
+#### `abstract-machine/am/src/riscv/npc/ioe.c`
+
+F0042：补 UART_TX 到 putch 的处理函数及分发表槽；对音频/磁盘/网络配置查询返回初始化的 present=false（并清音频容量/磁盘字段），使客户端可探测缺失设备。没有给不存在设备补数据通路，其他未支持访问仍失败。
+
+```diff
+diff --git a/abstract-machine/am/src/riscv/npc/ioe.c b/abstract-machine/am/src/riscv/npc/ioe.c
+index b954045da20e7d0622a7c022ec637d0adbbfcfa4..c07ef194692b4a1e79938808fb0b02ae944b764b 100755
+--- a/abstract-machine/am/src/riscv/npc/ioe.c
++++ b/abstract-machine/am/src/riscv/npc/ioe.c
+@@ -18,6 +18,16 @@ void __am_gpu_fbdraw(AM_GPU_FBDRAW_T *);
+ static void __am_timer_config(AM_TIMER_CONFIG_T *cfg) { cfg->present = true; cfg->has_rtc = true; }
+ static void __am_input_config(AM_INPUT_CONFIG_T *cfg) { cfg->present = true; }
+ static void __am_uart_config(AM_UART_CONFIG_T *cfg) { cfg->present = true; }
++static void __am_uart_tx(AM_UART_TX_T *tx) { putch(tx->data); }
++static void __am_audio_config(AM_AUDIO_CONFIG_T *cfg) {
++  *cfg = (AM_AUDIO_CONFIG_T) { .present = false, .bufsize = 0 };
++}
++static void __am_disk_config(AM_DISK_CONFIG_T *cfg) {
++  *cfg = (AM_DISK_CONFIG_T) { .present = false, .blksz = 0, .blkcnt = 0 };
++}
++static void __am_net_config(AM_NET_CONFIG_T *cfg) {
++  *cfg = (AM_NET_CONFIG_T) { .present = false };
++}
+ 
+ // AM_UART_RX：读 UART RBR，无数据返回 0xff（AM 规范）。
+ static void __am_uart_rx(AM_UART_RX_T *rx) {
+@@ -36,10 +46,14 @@ static void *lut[128] = {
+   [AM_INPUT_CONFIG] = __am_input_config,
+   [AM_INPUT_KEYBRD] = __am_input_keybrd,
+   [AM_UART_CONFIG ] = __am_uart_config,
++  [AM_UART_TX     ] = __am_uart_tx,
+   [AM_UART_RX     ] = __am_uart_rx,
+   [AM_GPU_CONFIG  ] = __am_gpu_config,
+   [AM_GPU_STATUS  ] = __am_gpu_status,
+   [AM_GPU_FBDRAW  ] = __am_gpu_fbdraw,
++  [AM_AUDIO_CONFIG] = __am_audio_config,
++  [AM_DISK_CONFIG ] = __am_disk_config,
++  [AM_NET_CONFIG  ] = __am_net_config,
+ };
+ 
+ static void fail(void *buf) { panic("access nonexist register"); }
+@@ -52,4 +66,4 @@ bool ioe_init() {
+ }
+ 
+ void ioe_read (int reg, void *buf) { ((handler_t)lut[reg])(buf); }
+-void ioe_write(int reg, void *buf) { ((handler_t)lut[reg])(buf); }
+\ No newline at end of file
++void ioe_write(int reg, void *buf) { ((handler_t)lut[reg])(buf); }
+```
+
+
+### F0053 — am-kernels
+
+本差异在独立 am-kernels 仓库，根提交 e83df62 不包含这份源码。
+
+- 差异路径相对于仓库 `am-kernels`；旧版本：`c1ba0bb884eaefc75925401759c9fbdfa6f86124`；新版本：`6dc302a117ae282c7f3f50a593b46134f77b2b86`。
+
+#### `tests/am-tests/src/tests/devscan.c`
+
+F0053：video_test 先检 present/正尺寸，无设备明确 SKIP；无加速能力时只绘制不大于 64×64 的 framebuffer 色块并返回，不调用 GPU 加速接口。storage_test 先检 present，再验证 blksz 为正、不大于 512、整除 512 且总块数足够，才请求完整样本。避免缺设备 panic、除零及读取未填充样本；SKIP 不算硬件加速或磁盘功能通过。
+
+```diff
+diff --git a/tests/am-tests/src/tests/devscan.c b/tests/am-tests/src/tests/devscan.c
+index d2c1a54a6f859bdc63ffaa10971176e1af672eb3..5997e05538045a5f80f39dc92ff4feb27ac3a509 100644
+--- a/tests/am-tests/src/tests/devscan.c
++++ b/tests/am-tests/src/tests/devscan.c
+@@ -24,8 +24,20 @@ static inline gpuptr_t to_guest(void *ptr) { return ptr ? (uint8_t *)ptr - vmem
+ 
+ static void video_test() {
+   AM_GPU_CONFIG_T info = io_read(AM_GPU_CONFIG);
++  if (!info.present || info.width <= 0 || info.height <= 0) {
++    printf("SKIP video: no usable display.\n");
++    return;
++  }
+   int w = info.width, h = info.height;
+   printf("Screen size: %d x %d\n", w, h);
++  if (!info.has_accel) {
++    printf("SKIP GPU acceleration: testing framebuffer instead.\n");
++    int bw = w < 64 ? w : 64, bh = h < 64 ? h : 64;
++    uint32_t *pixels = (void *)vmem;
++    for (int i = 0; i < bw * bh; i++) pixels[i] = 0x00ff8000;
++    io_write(AM_GPU_FBDRAW, 0, 0, pixels, bw, bh, true);
++    return;
++  }
+ 
+   struct gpu_canvas *cv = (void *)vmem;
+ 
+@@ -50,6 +62,15 @@ static void storage_test() {
+   #define nbytes 512
+   static char buf[nbytes];
+   AM_DISK_CONFIG_T info = io_read(AM_DISK_CONFIG);
++  if (!info.present) {
++    printf("SKIP storage: no disk.\n");
++    return;
++  }
++  if (info.blksz <= 0 || info.blksz > nbytes || nbytes % info.blksz != 0 ||
++      info.blkcnt < nbytes / info.blksz) {
++    printf("SKIP storage: cannot read a full 512-byte sample.\n");
++    return;
++  }
+   printf("Storage: %d blocks of %d size. Show first 512 bytes\n", info.blkcnt, info.blksz);
+   io_write(AM_DISK_BLKIO, false, buf, 0, nbytes / info.blksz);
+   for (uint32_t i = 0; i < nbytes; i += 2) {
+```

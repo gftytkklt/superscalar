@@ -70,3 +70,79 @@ CPU-tests与nanos未受此RT生成模板影响，按既有回归契约不重跑�
 用户“提交后继续”确认已报告F0049范围并授权提交后执行唯一下一入口。复用既有收尾及host 8/8、真实RT 11场景/生成hello/75分配释放验收；提交前101份本地证据与已测生产源码无漂移，未重复产品测试或完成快照。提交只含生产模板、报告/局部忽略及process索引；一次性测试/镜像/日志、.agent和进展总表本地保存，实际提交回执见local/submit-20261018与.agent。未push。
 
 前轮时长澄清：541.76秒含专项场景及16次反复恢复data/清零bss；这些循环/故障注入/统计钩子只在隔离测试副本，不进入日常镜像，不要求以后普通RT到msh回归都执行。本轮未做同条件性能对比，不声称精确保持160秒或以专项时长认定性能退化。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0049 — 根仓库
+
+这是 Python 字符串模板内生成 C 的修改，diff 中双反斜杠属于模板转义，不应手工删改。
+
+- 差异路径相对于仓库 `.`；旧版本：`e9a71f3cd3d11205f2616129747dba888dd0ab64`；新版本：`d9a3d423928bfbc6e008500a0c2cbd36d4121cbb`。
+
+#### `rt/bsp/abstract-machine/integrate-am-apps.py`
+
+F0049：模板使用一个 rt_malloc 块保存类型正确的 `int (*main)(const char *)` 和柔性数组字符串副本，替代栈上 `void *args[2]` 与借用 argv；wrapper 返回后线程仍可安全读取。分配失败直接返回，create 失败释放块；成功后在 startup 前挂 `tid->cleanup`，正常退出/启动前删除等均由 RT 生命周期清理 parameter 并置空。startup 失败调用 rt_thread_delete，复用同一清理路径。共享 AM 数据/BSS/heap 的初始化保持，不推定多个 AM 应用可并发隔离。
+
+```diff
+diff --git a/rt/bsp/abstract-machine/integrate-am-apps.py b/rt/bsp/abstract-machine/integrate-am-apps.py
+index 5554add0ee24efee414c0b41b0aa1c98c3a1fd6f..3d76ebe8bc1538e9ddbb00c8068a44a9628ecf67 100644
+--- a/rt/bsp/abstract-machine/integrate-am-apps.py
++++ b/rt/bsp/abstract-machine/integrate-am-apps.py
+@@ -89,18 +89,43 @@ AM_APP_C = """#include <am.h>
+ #include <rtthread.h>
+ extern Area am_apps_heap, am_apps_data, am_apps_bss;
+ extern uint8_t * am_apps_data_content;
+-static void am_app_start_thread(void *args) {
+-  void (*fn)(const char *mainargs) = ((void **)args)[0];
+-  const char *mainargs = ((void **)args)[1];
+-  fn(mainargs);
++struct am_app_args {
++  int (*main)(const char *);
++  char mainargs[];
++};
++static void am_app_cleanup(struct rt_thread *thread) {
++  rt_free(thread->parameter);
++  thread->parameter = RT_NULL;
+ }
+-static void am_app_start_wrapper(const char *app_name, void *app_main, int argc, char *argv[]) {
++static void am_app_start_thread(void *parameter) {
++  struct am_app_args *args = parameter;
++  args->main(args->mainargs);
++}
++static void am_app_start_wrapper(const char *app_name, int (*app_main)(const char *), int argc, char *argv[]) {
++  const char *mainargs = (argc >= 2 ? argv[1] : "");
++  rt_size_t size = rt_strlen(mainargs) + 1;
++  struct am_app_args *args = rt_malloc(sizeof(*args) + size);
++  if (args == RT_NULL) {
++    rt_kprintf("AM app %s: no memory for arguments\\n", app_name);
++    return;
++  }
++  args->main = app_main;
++  rt_memcpy(args->mainargs, mainargs, size);
++  rt_thread_t tid = rt_thread_create(app_name, am_app_start_thread, args, 0x4000, 0, 20);
++  if (tid == RT_NULL) {
++    rt_free(args);
++    rt_kprintf("AM app %s: thread creation failed\\n", app_name);
++    return;
++  }
++  // RT's idle cleanup owns the record, including exit/delete before entry.
++  tid->cleanup = am_app_cleanup;
+   memcpy(am_apps_data.start, am_apps_data_content, am_apps_data.end - am_apps_data.start);
+   memset(am_apps_bss.start, 0, am_apps_bss.end - am_apps_bss.start);
+   heap = am_apps_heap;
+-  void *args[2] = { app_main, (argc >= 2 ? argv[1] : "") };
+-  rt_thread_t tid = rt_thread_create(app_name, am_app_start_thread, args, 0x4000, 0, 20);
+-  rt_thread_startup(tid);
++  if (rt_thread_startup(tid) != RT_EOK) {
++    rt_thread_delete(tid);
++    rt_kprintf("AM app %s: thread startup failed\\n", app_name);
++  }
+ }
+ bool __dummy_ioe_init() { return true; }
+ bool __dummy_cte_init(Context *(*handler)(Event ev, Context *ctx)) { return true; }
+```

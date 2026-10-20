@@ -103,3 +103,76 @@ ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-sto
 精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
 结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
 事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0033/F0056 — 根仓库
+
+两项分别保证有界读/零填充与重叠移动的常量栈空间。
+
+- 差异路径相对于仓库 `.`；旧版本：`0aa1dca5a49716461a1b09bf02f14fe26faa9dc9`；新版本：`5b7a0454f38c3f69ddd1591bb072ee06cc9960ca`。
+
+#### `abstract-machine/klib/src/string.c`
+
+F0033：strncpy 把 `i < n` 放在读 src[i] 前，n=0 不读源；遇到 NUL 后循环把剩余 n 字节全部填零，替代仅写一个终止符。F0056：memmove 删除 `char tmp[n]`，n=0/同址直接返回；目标地址低于源时前向复制，否则从末端向前复制，避免覆盖仍需读取的重叠字节。使用固定局部变量，栈占用不再随 n 增长。
+
+```diff
+diff --git a/abstract-machine/klib/src/string.c b/abstract-machine/klib/src/string.c
+index 2667b0ee713239e17a2d82ec2e599e270868fe5b..e757be7f12069a0027a4dd09efe77c6e6d91ee0f 100755
+--- a/abstract-machine/klib/src/string.c
++++ b/abstract-machine/klib/src/string.c
+@@ -25,15 +25,15 @@ char *strcpy(char *dst, const char *src) {
+ }
+ 
+ char *strncpy(char *dst, const char *src, size_t n) {
+-  //panic("Not implemented");
+   size_t i = 0;
+-  while((src[i] != '\0') && (i<n)){
++  while ((i < n) && (src[i] != '\0')) {
+     dst[i] = src[i];
+     i++;
+   }
+-  if(i<n){dst[i] = '\0';}
++  while (i < n) {
++    dst[i++] = '\0';
++  }
+   return dst;
+-  
+ }
+ 
+ char *strcat(char *dst, const char *src) {
+@@ -84,16 +84,18 @@ void *memset(void *s, int c, size_t n) {
+ }
+ 
+ void *memmove(void *dst, const void *src, size_t n) {
+-  //panic("Not implemented");
+-  char tmp[n];
+-  char *pdst = dst;
+-  const char *psrc = src;
+-  size_t i;
+-  for(i=0;i<n;i++){
+-    tmp[i]=psrc[i];
+-  }
+-  for(i=0;i<n;i++){
+-    pdst[i]=tmp[i];
++  if (n == 0 || dst == src) return dst;
++  unsigned char *pdst = dst;
++  const unsigned char *psrc = src;
++  if ((uintptr_t)pdst < (uintptr_t)psrc) {
++    for (size_t i = 0; i < n; i++) {
++      pdst[i] = psrc[i];
++    }
++  } else {
++    while (n > 0) {
++      n--;
++      pdst[n] = psrc[n];
++    }
+   }
+   return dst;
+ }
+```

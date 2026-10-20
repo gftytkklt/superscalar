@@ -81,3 +81,113 @@ local保留before源、host前后/夹具、guest源码及5镜像/原反例、SDL
 ## 实际提交回执（2026-10-18）
 
 WR核对完成后按用户指令实际提交1603f888371578d987925aa296bb26c801a2d163（8文件136增28删），提交后root/index干净，199份既有证据/生产patch无漂移；不重复测试或Completion，未push。随后按同条明确指令开始独立F0010/F0011；F0040仍Partial。local/submit-20261018保存实际回执。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0040（部分）/F0044 — 根仓库
+
+仅展示确实落地的两文件修复；撤回的 F0043 尝试没有进入本 diff。
+
+- 差异路径相对于仓库 `.`；旧版本：`f9adcc7bddd1e3db00273cfeb73a74c1ea6c3b3b`；新版本：`1603f888371578d987925aa296bb26c801a2d163`。
+
+#### `abstract-machine/am/src/platform/nemu/ioe/audio.c`
+
+F0044：用 uintptr_t 起止求 remaining，反向区间断言；零长度返回，非空且 bufsize=0 断言。外层每次取 `min(remaining, bufsize)`，等待该片可写后逐字节写环形区，发布 count，再推进源指针/remaining。原请求大于总容量时会永远等待足够空间，新版可分片提交；保留既有 count 读改写协议，F0043 异步竞争没有因此修复。
+
+```diff
+diff --git a/abstract-machine/am/src/platform/nemu/ioe/audio.c b/abstract-machine/am/src/platform/nemu/ioe/audio.c
+index 41f25f69577335bf2aca5728ac42565ad8d6f641..597d3e3555a5ea91af35573245bcb3dd543baffb 100755
+--- a/abstract-machine/am/src/platform/nemu/ioe/audio.c
++++ b/abstract-machine/am/src/platform/nemu/ioe/audio.c
+@@ -1,5 +1,6 @@
+ #include <am.h>
+ #include <nemu.h>
++#include <klib.h>
+ 
+ #define AUDIO_FREQ_ADDR      (AUDIO_ADDR + 0x00)
+ #define AUDIO_CHANNELS_ADDR  (AUDIO_ADDR + 0x04)
+@@ -32,20 +33,25 @@ void __am_audio_status(AM_AUDIO_STATUS_T *stat) {
+ }
+ 
+ void __am_audio_play(AM_AUDIO_PLAY_T *ctl) {
+-  uint32_t len = ctl->buf.end-ctl->buf.start;
+-  char *play_buf = (char *)ctl->buf.start;
+-  // wait until enough buf len for write
+-  //printf("2\n");
+-  while(bufsize - inl(AUDIO_COUNT_ADDR) < len);
+-  // write audio to buf
+-  //printf("3\n");
+-  for (uint32_t i=0;i<len;i++) {
+-    if (wr_index >= bufsize) {wr_index = wr_index - bufsize;}
+-    outb(AUDIO_SBUF_ADDR+wr_index,play_buf[i]);
+-    wr_index ++;
++  uintptr_t start = (uintptr_t)ctl->buf.start;
++  uintptr_t end = (uintptr_t)ctl->buf.end;
++  assert(end >= start);
++  size_t remaining = end - start;
++  if (remaining == 0) return;
++  assert(bufsize != 0);
++  const uint8_t *play_buf = ctl->buf.start;
++  while (remaining != 0) {
++    uint32_t len = remaining < bufsize ? remaining : bufsize;
++    while (bufsize - inl(AUDIO_COUNT_ADDR) < len);
++    for (uint32_t i = 0; i < len; i++) {
++      if (wr_index >= bufsize) wr_index -= bufsize;
++      outb(AUDIO_SBUF_ADDR + wr_index, play_buf[i]);
++      wr_index++;
++    }
++    // Preserve the existing count interface; its asynchronous update race is
++    // tracked separately as F0043.
++    outl(AUDIO_COUNT_ADDR, inl(AUDIO_COUNT_ADDR) + len);
++    play_buf += len;
++    remaining -= len;
+   }
+-  //printf("4\n");
+-  // update count
+-  outl(AUDIO_COUNT_ADDR,inl(AUDIO_COUNT_ADDR)+len);
+-
+ }
+```
+
+#### `abstract-machine/klib/src/cpp.c`
+
+F0040 已实施部分：把函数形式的 `__dso_handle` 改为有存储的自引用对象；`__cxa_guard_acquire(uint64_t*)` 返回完成字节是否为零，release 写 1，实现串行静态初始化一次。`__cxa_atexit` 补齐参数/返回类型但仍 assert(0)，不声称支持析构注册。并发初始化同步与 guard abort 未补齐，F0040 仍 Partial，不能把这份 diff 当成全部修复。
+
+```diff
+diff --git a/abstract-machine/klib/src/cpp.c b/abstract-machine/klib/src/cpp.c
+index 9c57751862f54accd8d0cc9ed0b5b4189251e748..db624d53fdbeefd86f130cf8a4b0a258f7cf4ace 100755
+--- a/abstract-machine/klib/src/cpp.c
++++ b/abstract-machine/klib/src/cpp.c
+@@ -3,17 +3,21 @@
+ 
+ #ifndef __ISA_NATIVE__
+ 
+-void __dso_handle() {
+-}
++void *__dso_handle = &__dso_handle;
+ 
+-void __cxa_guard_acquire() {
++// Completion-byte protocol for non-concurrent initialization. Synchronization
++// across concurrent constructors is not supplied by this minimal runtime.
++int __cxa_guard_acquire(uint64_t *guard) {
++  return *(unsigned char *)guard == 0;
+ }
+ 
+-void __cxa_guard_release() {
++void __cxa_guard_release(uint64_t *guard) {
++  *(unsigned char *)guard = 1;
+ }
+ 
+-void __cxa_atexit() {
++int __cxa_atexit(void (*destructor)(void *), void *arg, void *dso) {
+   assert(0);
++  return -1;
+ }
+ 
+ #endif
+```

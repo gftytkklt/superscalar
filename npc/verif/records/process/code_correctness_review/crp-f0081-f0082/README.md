@@ -102,3 +102,212 @@ nested实际`d923fa4be105c14ffdf8c1bab0b613a0e3b8a64c`，四源60增36删、原1
 local/submit-receipt.json。59项均确认提交，剩余60未修完；无push。
 本地测试/原始证据/.agent继续忽略，commit不是备份；未测限制保持。
 随后仅沿TASK_QUEUE开始F0083，新结果不自动提交。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0081/F0082 — navy-apps/libs/libc
+
+三个参数 wrapper 与路径拼接均保留固定栈缓冲；实际成功 exec 的内核容量证明范围仍以原报告为准。
+
+- 差异路径相对于仓库 `navy-apps/libs/libc`；旧版本：`71fac82b295316c80acf5bd3dc825ff2ff202a46`；新版本：`d923fa4be105c14ffdf8c1bab0b613a0e3b8a64c`。
+
+#### `src/posix/execl.c`
+
+F0081：`argv[0] = arg0; i = 0; while (argv[i] != NULL)` 先检查已有参数；arg0 为 NULL 时不再额外取参。每次 `argv[++i] = va_arg(...)` 前检查是否已处于最后槽位；若最后槽位仍非 NULL，执行 `va_end`、设 `E2BIG`、返回 -1，不调用 execve。256 指针容纳最多 255 个非 NULL 参数及一个终止 NULL；恰好 255 个参数时可读取终止项到槽位 255。
+
+```diff
+diff --git a/src/posix/execl.c b/src/posix/execl.c
+index e22bdc09cdd7b324af0b94910785e837b218ebf2..88cc26161a55e38c63f3c24a2d74e4995192a015 100644
+--- a/src/posix/execl.c
++++ b/src/posix/execl.c
+@@ -7,6 +7,7 @@
+ 
+ #include <_ansi.h>
+ #include <unistd.h>
++#include <errno.h>
+ 
+ /* Only deal with a pointer to environ, to work around subtle bugs with shared
+    libraries and/or small data systems where the user declares his own
+@@ -28,10 +29,17 @@ execl (const char *path,
+ 
+   va_start (args, arg0);
+   argv[0] = arg0;
+-  i = 1;
+-  do
+-      argv[i] = va_arg (args, const char *);
+-  while (argv[i++] != NULL);
++  i = 0;
++  while (argv[i] != NULL)
++    {
++      if (i == sizeof (argv) / sizeof (argv[0]) - 1)
++        {
++          va_end (args);
++          errno = E2BIG;
++          return -1;
++        }
++      argv[++i] = va_arg (args, const char *);
++    }
+   va_end (args);
+ 
+   return execve (path, (char * const  *) argv, *p_environ);
+```
+
+#### `src/posix/execlp.c`
+
+F0081：与 execl 相同的写前容量检查和 `va_end/errno=E2BIG/-1`，保护本函数自己的 256 指针表；合法参数继续交给 `execvp` 进行 PATH 搜索。arg0 为 NULL 直接终止参数表，超限不进入 execvp。
+
+```diff
+diff --git a/src/posix/execlp.c b/src/posix/execlp.c
+index 23c65366b7445bdf80df024b1d5c1dd67f20975e..662804ece7e55d340ce4479822abb0a88bc3148a 100644
+--- a/src/posix/execlp.c
++++ b/src/posix/execlp.c
+@@ -7,6 +7,7 @@
+ 
+ #include <_ansi.h>
+ #include <unistd.h>
++#include <errno.h>
+ 
+ 
+ #include <stdarg.h>
+@@ -23,10 +24,17 @@ execlp (const char *path,
+ 
+   va_start (args, arg0);
+   argv[0] = arg0;
+-  i = 1;
+-  do
+-      argv[i] = va_arg (args, const char *);
+-  while (argv[i++] != NULL);
++  i = 0;
++  while (argv[i] != NULL)
++    {
++      if (i == sizeof (argv) / sizeof (argv[0]) - 1)
++        {
++          va_end (args);
++          errno = E2BIG;
++          return -1;
++        }
++      argv[++i] = va_arg (args, const char *);
++    }
+   va_end (args);
+ 
+   return execvp (path, (char * const *) argv);
+```
+
+#### `src/posix/execle.c`
+
+F0081：同样从槽位 0 检查并在取下一参前验证容量；循环结束后 `envp = va_arg(args, const char * const *)` 读取紧随终止 NULL 的环境指针。因 arg0=NULL 不再多读一项，零参数时也能正确读取 envp；超限在读取环境前就清理 va_list 并返回 E2BIG。
+
+```diff
+diff --git a/src/posix/execle.c b/src/posix/execle.c
+index 7e12ab4a1e50b5010cf030206d1d14522c9b9e71..5a1631ab8af7c600b188ffbe0aa69aa38d20139d 100644
+--- a/src/posix/execle.c
++++ b/src/posix/execle.c
+@@ -7,6 +7,7 @@
+ 
+ #include <_ansi.h>
+ #include <unistd.h>
++#include <errno.h>
+ 
+ 
+ #include <stdarg.h>
+@@ -24,10 +25,17 @@ execle (const char *path,
+ 
+   va_start (args, arg0);
+   argv[0] = arg0;
+-  i = 1;
+-  do
+-    argv[i] = va_arg (args, const char *);
+-  while (argv[i++] != NULL);
++  i = 0;
++  while (argv[i] != NULL)
++    {
++      if (i == sizeof (argv) / sizeof (argv[0]) - 1)
++        {
++          va_end (args);
++          errno = E2BIG;
++          return -1;
++        }
++      argv[++i] = va_arg (args, const char *);
++    }
+   envp = va_arg (args, const char * const *);
+   va_end (args);
+ 
+```
+
+#### `src/posix/execvp.c`
+
+F0082：删除无界 `strccpy/strcat`。PATH 组件扫描最多 sizeof(buf)，到上界即 ENAMETOOLONG；`strnlen(file, sizeof(buf))` 限制文件名扫描。`sizeof(buf)-1-path_len` 先预留 NUL，再减可选 slash，以剩余容量比较避免加法溢出；短路确保减 slash 时不会下溢。验证后 memcpy 组件，按需写斜杠，再复制 `file_len+1` 含终止符，允许最多 1023 字节有效路径。仅拒绝本地拼接超限；含斜杠/无 PATH 的直接路径、原空段和 ENOENT 搜索规则保留，前面已尝试的合法候选不回滚。
+
+```diff
+diff --git a/src/posix/execvp.c b/src/posix/execvp.c
+index fb4699afbe5e746f249205d018a6ab4de3af17ca..c7f39f3c0dffa09c94c061dac710f208c52602b4 100644
+--- a/src/posix/execvp.c
++++ b/src/posix/execvp.c
+@@ -15,25 +15,6 @@
+ 
+ #define PATH_DELIM ':'
+ 
+-/*
+- * Copy string, until c or <nul> is encountered.
+- * NUL-terminate the destination string (s1).
+- */
+-
+-static char *
+-strccpy (char *s1,
+-	char *s2,
+-	char c)
+-{
+-  char *dest = s1;
+-
+-  while (*s2 && *s2 != c)
+-    *s1++ = *s2++;
+-  *s1 = 0;
+-
+-  return dest;
+-}
+-
+ int
+ execvp (const char *file,
+ 	char * const argv[])
+@@ -52,11 +33,30 @@ execvp (const char *file,
+ 
+   while (*path)
+     {
+-      strccpy (buf, path, PATH_DELIM);
+-      /* An empty entry means the current directory.  */
+-      if (*buf != 0 && buf[strlen(buf) - 1] != '/')
+-	strcat (buf, "/");
+-      strcat (buf, file);
++      size_t path_len = 0;
++      size_t file_len;
++      size_t slash;
++
++      while (path_len < sizeof (buf) && path[path_len]
++             && path[path_len] != PATH_DELIM)
++        path_len++;
++      if (path_len == sizeof (buf))
++        {
++          errno = ENAMETOOLONG;
++          return -1;
++        }
++      slash = path_len != 0 && path[path_len - 1] != '/';
++      file_len = strnlen (file, sizeof (buf));
++      if (slash > sizeof (buf) - 1 - path_len
++          || file_len > sizeof (buf) - 1 - path_len - slash)
++        {
++          errno = ENAMETOOLONG;
++          return -1;
++        }
++      memcpy (buf, path, path_len);
++      if (slash)
++        buf[path_len++] = '/';
++      memcpy (buf + path_len, file, file_len + 1);
+       if (execv (buf, argv) == -1 && errno != ENOENT)
+ 	return -1;
+       while (*path && *path != PATH_DELIM)
+```

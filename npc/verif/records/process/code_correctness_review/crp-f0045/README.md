@@ -39,3 +39,110 @@ F0045 Completed，按用户连续提交预授权交付；代理验收不记作�
 前文把CONFIG_TARGET_AM音频三处读WR称作严格检查后会panic的兼容性边界，遗漏Kconfig/filelist门槛：HAS_AUDIO只在!TARGET_AM可选，audio.c仅按HAS_AUDIO编译。TARGET_AM是把NEMU本身作为AM应用运行，不能与运行AM guest混淆。因此原先描述不构成当前受支持配置的可达回归，也不应要求人工确认“是否纳入NEMU-on-AM音频”才能继续。原历史检查/日志不改写；[本轮完整核对](../crp-compatibility-20261018/README.md)记录归因、更正及撤回删除MUXDEF候选，最终NEMU设备音频源码保持原字节。
 
 WR复核补充（2026-10-18）：WR是AM写请求接口，不是RW；native共用handler/丢弃perm不产生读回契约。底层MMIO读写权限另按设备定义。[官方声卡说明](https://nju-projectn.github.io/ics-pa-gitbook/ics2024/2.5.html#声卡)与[本轮回执](../crp-compatibility-20261018/README.md#wr-submit-20261018)保留依据。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0045 — 根仓库
+
+这是两个平台各自的边界防护，不把原报告已知消费者限制抹去。
+
+- 差异路径相对于仓库 `.`；旧版本：`e83df62d7b7b3d0b37e42ab2cdbecce27bc0e278`；新版本：`f4e3c0cf840c0edeff5a3fbef1f3d75ce8283745`。
+
+#### `abstract-machine/am/src/platform/nemu/ioe/ioe.c`
+
+F0045：按 amdev.h 的 WR 声明建立 write_only 元数据；ioe_read/write 在索引 lut 前通过短路条件检查 `1 <= reg < LENGTH(lut)` 和调用方向，不合法调用进入 fail。合法槽仍派发原 handler，未实现槽沿用初始化的 fail，不在表外读取函数指针。
+
+```diff
+diff --git a/abstract-machine/am/src/platform/nemu/ioe/ioe.c b/abstract-machine/am/src/platform/nemu/ioe/ioe.c
+index cdf35d17e2809dc0b9afb3bdc1da08d5540ec57d..7cbfca9779af9a7fc15b9bf892746c6246c8ccbe 100755
+--- a/abstract-machine/am/src/platform/nemu/ioe/ioe.c
++++ b/abstract-machine/am/src/platform/nemu/ioe/ioe.c
+@@ -44,6 +44,15 @@ static void *lut[128] = {
+   [AM_NET_CONFIG  ] = __am_net_config,
+ };
+ 
++// Direction follows the WR declarations in amdev.h; all other known registers are RD.
++static const bool write_only[LENGTH(lut)] = {
++  [AM_UART_TX] = true,
++  [AM_GPU_FBDRAW] = true, [AM_GPU_MEMCPY] = true, [AM_GPU_RENDER] = true,
++  [AM_AUDIO_CTRL] = true, [AM_AUDIO_PLAY] = true,
++  [AM_DISK_BLKIO] = true,
++  [AM_NET_TX] = true, [AM_NET_RX] = true,
++};
++
+ static void fail(void *buf) { panic("access nonexist register"); }
+ 
+ bool ioe_init() {
+@@ -55,5 +64,17 @@ bool ioe_init() {
+   return true;
+ }
+ 
+-void ioe_read (int reg, void *buf) { ((handler_t)lut[reg])(buf); }
+-void ioe_write(int reg, void *buf) { ((handler_t)lut[reg])(buf); }
++void ioe_read(int reg, void *buf) {
++  if (reg < 1 || reg >= (int)LENGTH(lut) || write_only[reg]) {
++    fail(buf);
++    return;
++  }
++  ((handler_t)lut[reg])(buf);
++}
++void ioe_write(int reg, void *buf) {
++  if (reg < 1 || reg >= (int)LENGTH(lut) || !write_only[reg]) {
++    fail(buf);
++    return;
++  }
++  ((handler_t)lut[reg])(buf);
++}
+```
+
+#### `abstract-machine/am/src/riscv/npc/ioe.c`
+
+F0045：NPC 采用相同 write_only 元数据和索引/方向前置检查，保护其独立 lut；不改变各设备 handler 的功能。原报告指出 NEMU-on-AM 还有错误的 AUDIO_CTRL 读取消费者，本改动不代表该未测分支已兼容。
+
+```diff
+diff --git a/abstract-machine/am/src/riscv/npc/ioe.c b/abstract-machine/am/src/riscv/npc/ioe.c
+index c07ef194692b4a1e79938808fb0b02ae944b764b..ff79d4b12e64b6e0c75b2a07119e1cf17f4389ed 100755
+--- a/abstract-machine/am/src/riscv/npc/ioe.c
++++ b/abstract-machine/am/src/riscv/npc/ioe.c
+@@ -56,6 +56,15 @@ static void *lut[128] = {
+   [AM_NET_CONFIG  ] = __am_net_config,
+ };
+ 
++// Direction follows the WR declarations in amdev.h; all other known registers are RD.
++static const bool write_only[LENGTH(lut)] = {
++  [AM_UART_TX] = true,
++  [AM_GPU_FBDRAW] = true, [AM_GPU_MEMCPY] = true, [AM_GPU_RENDER] = true,
++  [AM_AUDIO_CTRL] = true, [AM_AUDIO_PLAY] = true,
++  [AM_DISK_BLKIO] = true,
++  [AM_NET_TX] = true, [AM_NET_RX] = true,
++};
++
+ static void fail(void *buf) { panic("access nonexist register"); }
+ 
+ bool ioe_init() {
+@@ -65,5 +74,17 @@ bool ioe_init() {
+   return true;
+ }
+ 
+-void ioe_read (int reg, void *buf) { ((handler_t)lut[reg])(buf); }
+-void ioe_write(int reg, void *buf) { ((handler_t)lut[reg])(buf); }
++void ioe_read(int reg, void *buf) {
++  if (reg < 1 || reg >= (int)LENGTH(lut) || write_only[reg]) {
++    fail(buf);
++    return;
++  }
++  ((handler_t)lut[reg])(buf);
++}
++void ioe_write(int reg, void *buf) {
++  if (reg < 1 || reg >= (int)LENGTH(lut) || !write_only[reg]) {
++    fail(buf);
++    return;
++  }
++  ((handler_t)lut[reg])(buf);
++}
+```

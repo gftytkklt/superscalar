@@ -159,3 +159,100 @@ nested实际`71fac82b295316c80acf5bd3dc825ff2ff202a46`，仅Makefile/sysopen.c�
 57项结果已确认，剩余62未修完；未测/原warning/旧memory未复现误编译等限制保持。
 新对话可输入“继续CRP修复”，按CURRENT_STATE→TASK_QUEUE#crp-next恢复，读取该入口
 范围/资料/验收，执行一个单元；不要重跑已验收的本组、不要切换M2。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0077/F0088 — navy-apps/libs/libc
+
+此块属于独立 libc 仓库；同组 libos 修改在下一块列出。
+
+- 差异路径相对于仓库 `navy-apps/libs/libc`；旧版本：`5d9ffdb869f36282452a8f48a4655f53fb1745d5`；新版本：`71fac82b295316c80acf5bd3dc825ff2ff202a46`。
+
+#### `Makefile`
+
+F0077：`-D_COMPILING_NEWLIB` 使库自身编译时能看到 newlib 内部低层接口原型，避免 `_read/_write/_lseek` 被当作隐式 int 返回。`$(OBJS): Makefile` 把宏所在 Makefile 加入对象依赖，选项改动后沿原 update 流程重编旧对象，不需要新增 clean 步骤。只保证原报告涉及的原型告警闭合，并不宣称整个 newlib 无 warning。
+
+```diff
+diff --git a/Makefile b/Makefile
+index 5b9ca05093a55b8d491976834b1f3731875b9261..0acf0d25e187762b1292c677caa18a7f77d55746 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,5 +1,7 @@
+ NAME = libc
+-CFLAGS = -DNO_FLOATING_POINT -DHAVE_INITFINI_ARRAY
++CFLAGS = -DNO_FLOATING_POINT -DHAVE_INITFINI_ARRAY -D_COMPILING_NEWLIB
+ CFLAGS += -U_FORTIFY_SOURCE  # fix compile error on ubuntu
+ SRCS = $(shell find src/ -name "*.c" -o -name "*.S" -o -name "*.cpp")
+ include $(NAVY_HOME)/Makefile
++
++$(OBJS): Makefile
+```
+
+#### `src/syscalls/sysopen.c`
+
+F0088：`mode` 默认置零；只有 `O_CREAT` 或已定义且完整匹配的 `O_TMPFILE` 标志才执行 `va_start/va_arg(ap, mode_t)/va_end`。普通二参 open 不再读取并不存在的第三实参；完整位匹配避免把仅有 O_DIRECTORY 的 flags 当作 O_TMPFILE。最后统一 `_open_r(..., mode)` 透传返回值。测试观察 mode 传递，nanos 仍不实现文件创建，不能从此推定内核支持这些 flags。
+
+```diff
+diff --git a/src/syscalls/sysopen.c b/src/syscalls/sysopen.c
+index bc8d9d59f866eb9e4765d6cd669a2f3e08060c30..ecdeda83264afcd60cf530ecbd25ad08ec38a9cc 100644
+--- a/src/syscalls/sysopen.c
++++ b/src/syscalls/sysopen.c
+@@ -12,12 +12,19 @@ int
+ open (const char *file,
+         int flags, ...)
+ {
+-  va_list ap;
+-  int ret;
++  int mode = 0;
+ 
+-  va_start (ap, flags);
+-  ret = _open_r (_REENT, file, flags, va_arg (ap, int));
+-  va_end (ap);
+-  return ret;
++  if ((flags & O_CREAT)
++#ifdef O_TMPFILE
++      || (flags & O_TMPFILE) == O_TMPFILE
++#endif
++      )
++    {
++      va_list ap;
++      va_start (ap, flags);
++      mode = va_arg (ap, mode_t);
++      va_end (ap);
++    }
++  return _open_r (_REENT, file, flags, mode);
+ }
+ 
+```
+
+
+### F0078 — 根仓库
+
+libos 此文件实际由根仓库跟踪；不把所有框架文件一概记为未跟踪。
+
+- 差异路径相对于仓库 `.`；旧版本：`7a8150e51105eae3ebc3f04f992ec48d336c3370`；新版本：`23b031327d97e9cd3cecf2fa6eee4a6fc23ef736`。
+
+#### `navy-apps/libs/libos/src/syscall.c`
+
+F0078：在 `asm volatile (SYSCALL ... : "memory")` 中加入 memory clobber，向编译器声明系统调用可能读写寄存器参数指向的内存，使输入缓冲写入与输出缓冲读取不能沿用错误的跨调用假设。`volatile` 只保证该汇编不能被随意删除，不能独自表达这类内存副作用。寄存器约束、返回值与弱 hook 不变；它不是 CPU 硬件 fence。本组旧优化用例未复现误编译，不能声称本轮新增了旧版失败见证。
+
+```diff
+diff --git a/navy-apps/libs/libos/src/syscall.c b/navy-apps/libs/libos/src/syscall.c
+index 666c1d46545f93ff6d74e09c664002078b4790d6..f8e32bb23ad9b13030557c635d4b18dc45d1ade2 100755
+--- a/navy-apps/libs/libos/src/syscall.c
++++ b/navy-apps/libs/libos/src/syscall.c
+@@ -62,7 +62,7 @@ intptr_t _syscall_(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2) {
+   register intptr_t _gpr3 asm (GPR3) = a1;
+   register intptr_t _gpr4 asm (GPR4) = a2;
+   register intptr_t ret asm (GPRx);
+-  asm volatile (SYSCALL : "=r" (ret) : "r"(_gpr1), "r"(_gpr2), "r"(_gpr3), "r"(_gpr4));
++  asm volatile (SYSCALL : "=r" (ret) : "r"(_gpr1), "r"(_gpr2), "r"(_gpr3), "r"(_gpr4) : "memory");
+   return ret;
+ }
+ 
+```

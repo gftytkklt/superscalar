@@ -100,3 +100,129 @@ ramdisk或一次性完整raw测试快照已按[清理记录](../../workspace-sto
 精确删除，原路径/尺寸/SHA见该记录local/deletion-manifest.json；原文本验收/命令/
 结果与哈希保留，历史manifest缺失项须结合该授权清单解释，不视为源码漂移或验收
 事实变更。旧产物字节不再本地保留，需复核时按原版本/配置重建或重新运行测试。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0034/F0035/F0036 — 根仓库
+
+格式解析、数值转换与输出缓冲三项共用一个文件，保留原 helper 与公开入口验收区别。
+
+- 差异路径相对于仓库 `.`；旧版本：`5b7a0454f38c3f69ddd1591bb072ee06cc9960ca`；新版本：`71c6cf84f0b58fd44df005494b06629daefae40a`。
+
+#### `abstract-machine/klib/src/stdio.c`
+
+F0034：保存 `conversion = *tmp++` 再判断 u/X，避免读取转换符后一个字符来判有符号和大写。F0035：取参按指针/有符号/无符号及 long 分类；负数幅值通过 `0UL - (unsigned long)val` 形成，num2str 接收 unsigned long 幅值及独立 negative，不再把负值直接当巨大无符号数打印，也不对 LONG_MIN 做有符号取负。补零时先 emit 符号或非零指针前缀，再输出 padding 与剩余数字，避免出现 00-123/000x...。F0036：数字缓冲扩大为 `sizeof(unsigned long)*CHAR_BIT+3`，容纳最坏逐位数位、符号/0x 和 NUL。保留原零指针表示和已支持格式集合，未扩展完整 printf。
+
+```diff
+diff --git a/abstract-machine/klib/src/stdio.c b/abstract-machine/klib/src/stdio.c
+index 4f7d2eaa76d698eb40543663ac6fa4acab972b4e..8ad3d0c130d021639cde879edaaba0901a724fd3 100755
+--- a/abstract-machine/klib/src/stdio.c
++++ b/abstract-machine/klib/src/stdio.c
+@@ -2,6 +2,8 @@
+ #include <klib.h>
+ #include <klib-macros.h>
+ #include <stdarg.h>
++#include <stdint.h>
++#include <limits.h>
+ 
+ #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
+ enum {INVALID_TYPE, STR, NUMBER, CHAR, };
+@@ -40,7 +42,8 @@ static int decode_fmt(const char* fmt, formatinfo* info){
+   if(*tmp == 'l') {info->islong = true; tmp++;}
+   // as behavior of invalid fmt as %lp/%ls is UB, deal them with valid info is OK
+   // info in struct formatinfo is invalid when meet inv fmt above
+-  switch (*tmp++) {
++  char conversion = *tmp++;
++  switch (conversion) {
+     case 'c':
+       info->argtype = CHAR;
+       break;
+@@ -56,7 +59,7 @@ static int decode_fmt(const char* fmt, formatinfo* info){
+     case 'd': case 'i': case 'u':
+       info->argtype = NUMBER;
+       info->radix = 10;
+-      info->issigned = (*tmp == 'u') ? false : true;
++      info->issigned = (conversion != 'u');
+       break;
+     case 'o':
+       info->argtype = NUMBER;
+@@ -65,7 +68,7 @@ static int decode_fmt(const char* fmt, formatinfo* info){
+     case 'x': case 'X':
+       info->argtype = NUMBER;
+       info->radix = 16;
+-      info->isupperdigit = (*tmp == 'X') ? true : false;
++      info->isupperdigit = (conversion == 'X');
+       break;
+     default:
+       info->argtype = INVALID_TYPE;// as a result, invalid fmt will be ignored
+@@ -75,18 +78,18 @@ static int decode_fmt(const char* fmt, formatinfo* info){
+ }
+ // get str of number
+ // e.g, -123456 -> "-123456"
+-static void num2str(char* dst, long val, bool issigned, bool isupper, bool ispointer, int radix){
++static void num2str(char* dst, unsigned long val, bool negative, bool isupper, bool ispointer, int radix){
+   assert(radix != 0);
+   const char* lowerstr = "0123456789abcdef";
+   const char* upperstr = "0123456789ABCDEF";
+   const char* usestr = isupper ? upperstr : lowerstr;
+   char *tmp = dst;
+   if (val == 0){*tmp++ = '0';*tmp = '\0';return;}
+-  else if(issigned && (val < 0)){*tmp++ = '-';}
++  else if(negative){*tmp++ = '-';}
+   else if(ispointer){*tmp++ = '0';*tmp++ = 'x';}
+   // tmp points to lsb digit, p points to wr pos
+   char *p = tmp;
+-  unsigned long val_abs = (unsigned long) val;
++  unsigned long val_abs = val;
+   while(val_abs != 0){
+     *p++ = usestr[val_abs % radix];
+     val_abs /= radix;
+@@ -138,14 +141,30 @@ static void vformat(emit_f emit, void *arg, const char *fmt, va_list ap) {
+         break;
+       }
+       case NUMBER:{
+-        long val_num = info.islong ? va_arg(ap, long) : (long) va_arg(ap, int);
+-        char numstr[21] = {0};
++        unsigned long val_num;
++        bool negative = false;
++        if (info.ispointer) {
++          val_num = (uintptr_t)va_arg(ap, void *);
++        } else if (info.issigned) {
++          long val = info.islong ? va_arg(ap, long) : (long)va_arg(ap, int);
++          negative = val < 0;
++          val_num = negative ? 0UL - (unsigned long)val : (unsigned long)val;
++        } else {
++          val_num = info.islong ? va_arg(ap, unsigned long) : (unsigned long)va_arg(ap, unsigned int);
++        }
++        // One character per bit, a sign or pointer prefix, and the terminator.
++        char numstr[sizeof(unsigned long) * CHAR_BIT + 3];
+         char padding = info.zeropad ? '0' : ' ';
+-        num2str(numstr, val_num, info.issigned, info.isupperdigit, info.ispointer, info.radix);
+-        for(int i=strlen(numstr);i<info.width;i++){
++        num2str(numstr, val_num, negative, info.isupperdigit, info.ispointer, info.radix);
++        int len = strlen(numstr);
++        char *p = numstr;
++        if (info.zeropad) {
++          int prefix = negative ? 1 : (info.ispointer && val_num != 0 ? 2 : 0);
++          while (prefix-- > 0) emit(arg, *p++);
++        }
++        for(int i=len;i<info.width;i++){
+           emit(arg, padding);
+         }
+-        char *p = numstr;
+         while(*p){
+           emit(arg, *p++);
+         }
+@@ -216,4 +235,4 @@ int snprintf(char *out, size_t n, const char *fmt, ...) {
+   return ret;
+ }
+ 
+-#endif
+\ No newline at end of file
++#endif
+```

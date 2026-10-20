@@ -118,3 +118,148 @@ CPU首次显式`all`被AM子make拒绝（exit2，未执行用例），保留cpu-
 用户“提交现有改动后继续CRP修复任务”确认本组已报告范围（含DUT依赖及规则维护），授权提交后执行唯一下一入口F0049。复用既有完成/补充验收，不重复归档或重跑产品测试。提交前复核三份manifest共346条及7个源码/REF身份均无漂移，git diff --check通过；回执见local/submit-20261018及.agent。
 
 提交仅含四份生产源码、现有入口的mret_status.S、报告/局部忽略和受影响导航/规则文档；一次性夹具、生成C/h/mk、日志/JSON/镜像仍本地保存。实际提交hash记本地回执，避免为回填自身hash重复提交；未push，未测能力仍沿原限制。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0046/F0048/F0050 — 根仓库
+
+保留早期撤回候选历史；这里引用之后最终验收并提交的组合版本。
+
+- 差异路径相对于仓库 `.`；旧版本：`71c6cf84f0b58fd44df005494b06629daefae40a`；新版本：`e9a71f3cd3d11205f2616129747dba888dd0ab64`。
+
+#### `rt/bsp/abstract-machine/src/interrupt.c`
+
+F0046：包含 rthw.h 对齐真实原型；disable 在清 MIE 前用 ienabled 保存 level 并返回，enable(level) 按 level 是否非零恢复。嵌套临界区的内层返回 0，因此释放内层不会提前打开中断；最外层按原状态恢复。
+
+```diff
+diff --git a/rt/bsp/abstract-machine/src/interrupt.c b/rt/bsp/abstract-machine/src/interrupt.c
+index 1652c5d09deffd53801659e83c0683a4bfeee1a0..36db1aa945e061e089d1b63b5fe494d796d6cf8c 100755
+--- a/rt/bsp/abstract-machine/src/interrupt.c
++++ b/rt/bsp/abstract-machine/src/interrupt.c
+@@ -1,10 +1,12 @@
+ #include <am.h>
+-#include <klib.h>
++#include <rthw.h>
+ 
+-void rt_hw_interrupt_enable() {
+-  iset(1);
++void rt_hw_interrupt_enable(rt_base_t level) {
++  iset(level != 0);
+ }
+ 
+-void rt_hw_interrupt_disable() {
++rt_base_t rt_hw_interrupt_disable(void) {
++  rt_base_t level = ienabled();
+   iset(0);
++  return level;
+ }
+```
+
+#### `rt/bsp/abstract-machine/src/init.c`
+
+F0048：分配循环成功立即 break，避免 for 更新表达式把实际成功大小再除二，RANGE(p,p+size) 才与实际分配容量一致；全部失败 assert，不发布空地址范围。F0050：保存 rt_hw_uart_init 的返回值并断言 RT_EOK，让初始化失败不能被静默忽略。
+
+```diff
+diff --git a/rt/bsp/abstract-machine/src/init.c b/rt/bsp/abstract-machine/src/init.c
+index 93e2711546914eeffb82cdcdc78054a5e29f4205..4cbb1fce0e4b7b67c762aaacd45ccbffdae518d0 100755
+--- a/rt/bsp/abstract-machine/src/init.c
++++ b/rt/bsp/abstract-machine/src/init.c
+@@ -12,7 +12,8 @@ uint8_t * am_apps_data_content = NULL;
+ 
+ void rt_hw_board_init() {
+   int rt_hw_uart_init(void);
+-  rt_hw_uart_init();
++  int uart_result = rt_hw_uart_init();
++  assert(uart_result == RT_EOK);
+ 
+ #ifdef RT_USING_HEAP
+   /* initialize memory system */
+@@ -21,7 +22,11 @@ void rt_hw_board_init() {
+ 
+   uint32_t size = AM_APPS_HEAP_SIZE;
+   void *p = NULL;
+-  for (; p == NULL && size != 0; size /= 2) { p = rt_malloc(size); }
++  for (; size != 0; size /= 2) {
++    p = rt_malloc(size);
++    if (p != NULL) break;
++  }
++  assert(p != NULL);
+   am_apps_heap = RANGE(p, p + size);
+ 
+   extern char __am_apps_data_start, __am_apps_data_end;
+```
+
+#### `rt/bsp/abstract-machine/src/uart.c`
+
+F0050：预置命令耗尽后先读 AM_UART_CONFIG，present=false 返回 -1 而不访问 RX；有 UART 时维持 0xff 表示无输入的映射。初始化直接 return rt_hw_serial_register(...)，把真实注册状态交给 board_init，而不是无条件返回成功。
+
+```diff
+diff --git a/rt/bsp/abstract-machine/src/uart.c b/rt/bsp/abstract-machine/src/uart.c
+index 2dfa87f4a82d2b6816d24bb06d7c95d7420a95d1..9aec11e03a918ad7f9cf6cb841f2ca4a75ce97b8 100755
+--- a/rt/bsp/abstract-machine/src/uart.c
++++ b/rt/bsp/abstract-machine/src/uart.c
+@@ -40,6 +40,9 @@ static int _uart_getc(struct rt_serial_device *serial) {
+   // 阶段 F/G 演示：先自动执行预置命令串；跑完后读 AM_UART_RX（NVBoard 终端键入，阶段 J2）。
+   static const char *p = "help\ndate\nversion\nfree\nps\npwd\nls\nmemtrace\nmemcheck\nutest_list\nam_hello\n";
+   if (*p != '\0') return *(p ++);
++  AM_UART_CONFIG_T cfg;
++  ioe_read(AM_UART_CONFIG, &cfg);
++  if (!cfg.present) return -1;
+   AM_UART_RX_T rx;
+   ioe_read(AM_UART_RX, &rx);
+   return (rx.data == 0xff) ? -1 : rx.data;
+@@ -70,11 +73,10 @@ int rt_hw_uart_init(void) {
+   uart->hw_base = (rt_ubase_t)uart0_base;
+   uart->irqno = 0x0a;
+ 
+-  rt_hw_serial_register(serial,
++  return rt_hw_serial_register(serial,
+       RT_CONSOLE_DEVICE_NAME,
+       RT_DEVICE_FLAG_STREAM | RT_DEVICE_FLAG_RDWR,
+       uart);
+-  return 0;
+ }
+ 
+ /* WEAK for SDK 0.5.6 */
+```
+
+#### `npc/vsrc/ysyx_22040750.v`
+
+F0046 验收所需的配套 RTL 修复：trap 入口清 MIE/MPP/MPIE 掩码后按当前 M-only 内核写 MPP=M、MPIE=旧 MIE；mret 清 MPP，将 MPIE 复制到 MIE 并置 MPIE=1，若保存 MPP 非 M 还清 MPRV。使 BSP 读取 mstatus 时与 REF 的状态栈约定一致。只列该组实际差异，不宣称增加低特权执行能力或本轮重新验证 RTL。
+
+```diff
+diff --git a/npc/vsrc/ysyx_22040750.v b/npc/vsrc/ysyx_22040750.v
+index cfed22a187618a55fcc7443883605c0894a5bc25..d639a6911187dff4dedcf93bf92a81de6c26e4e3 100755
+--- a/npc/vsrc/ysyx_22040750.v
++++ b/npc/vsrc/ysyx_22040750.v
+@@ -1528,7 +1528,10 @@ module ysyx_22040750_csr(
+             endcase
+         else if(csr_intr_wr) begin
+             satp <= satp;
+-            mstatus <= {mstatus[63:8],mstatus_mie,mstatus[6:4],1'b0,mstatus[2:0]};
++            // The current core executes in M-mode only: trap entry saves M in MPP.
++            // This must also hold after an earlier mret has cleared MPP.
++            mstatus <= (mstatus & ~64'h1888) | 64'h1800 |
++                       (mstatus_mie ? 64'h80 : 64'h0);
+             mie <= mie;
+             mtvec <= mtvec;
+             mepc <= {32'b0, I_intr_pc};
+@@ -1538,7 +1541,11 @@ module ysyx_22040750_csr(
+         end
+         else if(csr_mret_wr) begin
+             satp <= satp;
+-            mstatus <= {mstatus[63:8],1'b1,mstatus[6:4],mstatus_mpie,mstatus[2:0]};
++            // Match the RV64 M/S/U status-stack convention; this does not add
++            // lower-privilege execution support to the current M-mode core.
++            mstatus <= (mstatus & ~(64'h1888 |
++                        ((mstatus[12:11] != 2'b11) ? 64'h20000 : 64'h0))) |
++                       64'h80 | (mstatus_mpie ? 64'h8 : 64'h0);
+             mie <= mie;
+             mtvec <= mtvec;
+             mepc <= mepc;
+```

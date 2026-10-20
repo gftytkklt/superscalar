@@ -99,3 +99,61 @@ F0018。未来候选F0060原用户栈参数对齐，当前源码仍直接在字�
 ## 用户确认与提交授权（2026-10-20）
 
 用户“同意你提交以后进入下一项”确认本组已报告范围/验证/限制并授权提交，随后执行唯一下一F0060。提交前75条本组manifest及21份文档身份保持，15项最终核对全部通过；复用已完成动态验收及清理，不重跑/重建。仅提交本组可归属代码/文档；本节随实际提交落盘，SHA及文件集合见local/submit-receipt.json与.agent，不push。本组此前Pending为完成时历史截面；ignored文档/.agent仍不由commit备份。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0069 — 根仓库
+
+只保存本项实际修复差异，原报告中的历史配置勘误保持。
+
+- 差异路径相对于仓库 `.`；旧版本：`7e0c97e66977bc8d2326dc153856ef09064c3de7`；新版本：`e58bbd0a37e4d9c0680d047297ca4ea73eb51e94`。
+
+#### `nanos-lite/src/proc.c`
+
+F0069：先 `current->cp = prev` 保存被打断现场，用局部 `next` 选候选：FG_PROCESS 保留 99:1；TEST_KLOAD/MULTIPROGRAM/TIME_SHARING 在 pcb[0]/pcb[1] 间轮转；TEST_NTERM 固定 pcb[0]。只有 `next != NULL && next->cp != NULL` 才更新 current，最后始终返回 `current->cp`，避免原代码把 current 改为无现场 PCB 却返回旧 prev 的身份失配。未新增进程或调度模式，99:1 是前置独立改动而非本项新增。
+
+```diff
+diff --git a/nanos-lite/src/proc.c b/nanos-lite/src/proc.c
+index 61c5ca61981a0a58ad171a5980bfb49e127510e6..743308e7bbb0ce9715b26399b16181ce7b5fcd07 100755
+--- a/nanos-lite/src/proc.c
++++ b/nanos-lite/src/proc.c
+@@ -93,22 +93,27 @@ void context_kload(PCB *pcb, void (*entry)(void *), void *arg) {
+ 
+ Context* schedule(Context *prev) {
+   current->cp = prev;
++  PCB *next;
+ #ifdef FG_PROCESS
+   // Give hello one dispatch in every 100; use the current foreground for
+   // the other 99, including after F1/F2/F3 changes fg_pcb.
+   static unsigned dispatch_count = 0;
+   if (++dispatch_count == 100) {
+     dispatch_count = 0;
+-    current = &pcb[3];
++    next = &pcb[3];
+   } else {
+-    current = fg_pcb;
++    next = fg_pcb;
+   }
++#elif defined(TEST_KLOAD) || defined(MULTIPROGRAM) || defined(TIME_SHARING)
++  next = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
++#elif defined(TEST_NTERM)
++  next = &pcb[0];
+ #else
+-  current = (current == fg_pcb ? &pcb[3] : fg_pcb);
++  next = current;
+ #endif
+-  // single-process case (e.g. TEST_NTERM): if the target PCB has no context,
+-  // stay on the current one instead of switching into a dead PCB.
+-  return (current->cp ? current->cp : prev);
++  // Keep the PCB and returned frame together if the target is not runnable.
++  if (next != NULL && next->cp != NULL) { current = next; }
++  return current->cp;
+ }
+ 
+ void set_fg_pcb(int idx) {
+```

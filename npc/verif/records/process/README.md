@@ -559,3 +559,13 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 [本组计划/交付](code_correctness_review/crp-f0081-f0082/README.md)：前组nested71fac82/root23b0313已确认提交，用户“继续CRP修复”授权本单元。四posix源60增36删，argv255+NULL与PATH1023+NUL容量保护，E2BIG/ENAMETOOLONG明确失败；四原ASan栈越界反例、43场景169断言host/RV64、三次真实exec参数/环境链及标准update→run三前台hello34→149通过。145preclean/4890源/850链接身份，9398文件约483.5MiB清理；夹具声明/结束方式更正、原空PATH/尾段保留及未测见报告。59已修/60未修完，新2项结果确认/commit Pending，未来仅TASK_QUEUE。
 
 2026-10-20 F0081/F0082获用户“提交后继续”确认并授权，nested实际d923fa4，root实际回执见本组local/submit-receipt.json；复用验收/清理，不重复完成事件，随后执行唯一F0083入口，无push。
+
+
+### 2026-10-20 CRP F0083 setenv失败恢复
+
+[本组计划/交付](code_correctness_review/crp-f0083/README.md)：前组nested d923fa4/root5423bd7已确认提交，用户“提交后继续”授权本单元。setenv_r.c37增37删，自有向量指针识别、临时分配/成功发布、失败保留原环境；原4host失败、8场景259host/273RV64断言和七exec环境交接、标准update→run/三前台hello34→153通过。146preclean/4890源/850链接身份，9396产物约483.3MiB清理。host leaf夹具更正/未测/不回收借用字符串等限制见报告；60已修/59未修完，本组待确认提交，未来仅TASK_QUEUE。
+
+
+### 2026-10-20 CRP 框架/OS 组件代码 diff 留档
+
+[本轮盘点、覆盖与验证](code_correctness_review/framework-diffs-20261020/README.md)：25 份原问题验收报告补齐 48 份完整逐文件 diff 与语句级功能说明，覆盖 newlib/libos、Navy、nanos、AM/klib、RT 及 am-kernels 的 41 个已实施相关 ID（F0040 仅部分）。逐个与 Git/历史补丁正反应用核对；明确独立仓库及 F0051 首次跟踪前基线。仅文档修改并按授权提交，F0083 代码确认/嵌套提交门槛仍保留，未启动下一修复单元。

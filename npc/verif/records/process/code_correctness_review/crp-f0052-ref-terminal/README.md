@@ -48,3 +48,53 @@ NEMU沿用此前真实CPU测试兼容配置：`--eval=export LDFLAGS += --defsym
 ## 2026-10-19 测试符号依赖原因勘误
 
 上文NEMU CPU测试附加_heap_end的实际消费者是am-kernels/tests/cpu-tests/tests/mem-test.c的extern声明；malloc读取AM的heap Area，不依赖该链接符号。此前“共享malloc所需”的原因表述不准确，原测试配置/命令/结果仍成立；本次仅纠正原因，不重写旧证据或重跑该单元。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0052（终态补充） — am-kernels
+
+此补丁以前一份 F0052 修复为基线，串行应用两份才得到最终 cpu-tests 判据。
+
+- 差异路径相对于仓库 `am-kernels`；旧版本：`6dc302a117ae282c7f3f50a593b46134f77b2b86`；新版本：`22791cfe514a5302b17a9ede62fb27fb77576996`。
+
+#### `tests/cpu-tests/Makefile`
+
+F0052 补充：先对全部日志维护 seen_good/seen_bad，再以架构识别 primary：NEMU 的 nemu: 行或 NPC 的数字前缀行。非 primary 不计 terminal/good/bad，因此 REF 附加 GOOD 不会成为第二次 DUT 终态；缺少 DUT 终态也不能由 REF 冒充。PASS 额外要求全日志无 seen_bad，XFAIL 要求无 seen_good，保持对互相冲突的 REF/DUT 结果拒绝；原 make/tool 状态与唯一主终态约束保留。
+
+```diff
+diff --git a/tests/cpu-tests/Makefile b/tests/cpu-tests/Makefile
+index 467166c888c00660da37a58a2ffb41f883703441..cfcb1c63de4788e226e5eebd2e5a073101362b25 100644
+--- a/tests/cpu-tests/Makefile
++++ b/tests/cpu-tests/Makefile
+@@ -30,14 +30,20 @@ Makefile.%: tests/%.c latest
+ 	  awk -v name='$*' -v arch='$(ARCH)' -v rc="$$rc" -v tool="$$tool" '\
+ 	    { gsub(/\033\[[0-9;]*m/, "") } \
+ 	    /ABORT|reach SIM_END|finish requested by RTL/ { aborted=1 } \
+-	    /HIT (GOOD|BAD) TRAP/ { terminal++ } \
+-	    /nemu: HIT GOOD TRAP at pc = 0x[[:xdigit:]]+$$|^[0-9]+: HIT GOOD TRAP at pc = 0x[[:xdigit:]]+$$/ { good++ } \
+-	    /nemu: HIT BAD TRAP at pc = 0x[[:xdigit:]]+$$|^[0-9]+: HIT BAD TRAP at pc = 0x[[:xdigit:]]+, ret code=0x[[:xdigit:]]+h$$/ { bad++; if (/ret code=0x0*1h$$/) code1++ } \
++	    /HIT GOOD TRAP/ { seen_good=1 } \
++	    /HIT BAD TRAP/ { seen_bad=1 } \
++	    /HIT (GOOD|BAD) TRAP/ { \
++	      primary=(arch ~ /-nemu$$/ && /nemu: HIT (GOOD|BAD) TRAP/) || (arch ~ /-npc$$/ && /^[0-9]+: HIT (GOOD|BAD) TRAP/); \
++	      if (!primary) next; \
++	      terminal++; \
++	      if (/nemu: HIT GOOD TRAP at pc = 0x[[:xdigit:]]+$$|^[0-9]+: HIT GOOD TRAP at pc = 0x[[:xdigit:]]+$$/) good++; \
++	      if (/nemu: HIT BAD TRAP at pc = 0x[[:xdigit:]]+$$|^[0-9]+: HIT BAD TRAP at pc = 0x[[:xdigit:]]+, ret code=0x[[:xdigit:]]+h$$/) { bad++; if (/ret code=0x0*1h$$/) code1++ } \
++	    } \
+ 	    END { \
+ 	      status="ERROR"; \
+ 	      if (rc == 0 && tool ~ /^[01]$$/ && terminal == 1 && good+bad == 1 && !aborted) { \
+-	        if (good && tool == 0) status=(name == "wrong" ? "XPASS" : "PASS"); \
+-	        if (bad && ((arch ~ /-nemu$$/ && tool == 1) || (arch ~ /-npc$$/ && tool == 0))) \
++	        if (good && !seen_bad && tool == 0) status=(name == "wrong" ? "XPASS" : "PASS"); \
++	        if (bad && !seen_good && ((arch ~ /-nemu$$/ && tool == 1) || (arch ~ /-npc$$/ && tool == 0))) \
+ 	          status=(name == "wrong" && (arch ~ /-nemu$$/ || code1 == 1) ? "XFAIL" : "FAIL"); \
+ 	      } \
+ 	      printf "[%s] %s\n", name, status; \
+```

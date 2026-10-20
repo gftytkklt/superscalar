@@ -137,3 +137,87 @@ NDL/AM写入往返平均约1.24～1.60 ms；四例每次完整提交均4096 B，
 用户最新“提交”确认本组F0066/F0067设备read修复、99:1音频补查及已披露限制，授权提交归属明确的本批改动；不授权下一组或push。复用原功能19终检、音频补充15终检与13项测量核对/3判据负例，提交前9项身份核对通过，原60份非README证据及补充64份manifest项无漂移、48源输入及生产repair.patch保持，未重跑已验收测试或重复Completion/清理。
 
 本次仅纳入device.c、报告/.gitignore、process索引和repair-status共5个文件；测试源/原始证据及.agent沿用本地忽略约定，不由commit备份。实际提交身份以包含本节的Git提交和local/submit-receipt.json为准；提交后核对文件/blob集合与root/index干净状态，并记录实际回执。51已修/68未修完，已报告范围获用户确认；F0043、旧流畅版身份未知、实体听音未测及其他剩余项仍保留。按本条指令提交后停止，不进入F0068或M2/M3。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0066/F0067 — 根仓库
+
+两个设备读取修复均直接包含在同一文件差异。
+
+- 差异路径相对于仓库 `.`；旧版本：`5941586720da24f51af299274f0220e23c2206a0`；新版本：`07bba7481b1910c00bbfd634d0df513122dc0ab6`。
+
+#### `nanos-lite/src/device.c`
+
+F0066：`len==0` 在 yield/读取按键前返回；校验 keycode 为正、未超 keyname 且条目非 NULL 后才索引。把三段事件文本逐字节按 `n < len` 复制；有余量才追加 NUL，返回实际写入字节数，满缓冲不额外写终止符；原 F 键切前台逻辑保持。F0067：音频状态零长度不访问设备，`len` 仅截到 sizeof(int)，用 `memcpy(buf, &free, len)` 支持短缓冲与非对齐地址，返回实际复制长度。空闲样本字节数 free 是状态内容，不再被错误当作状态结构可读长度；free=0 仍可读出四字节整数零。本补充不把原音频预算诊断改写为流畅播放验收。
+
+```diff
+diff --git a/nanos-lite/src/device.c b/nanos-lite/src/device.c
+index 073df470f46eb9b2a18f29a1267cca0f06fe5de2..484f5c5c0e3f8d3a6335c477ade4f4050b95aa23 100755
+--- a/nanos-lite/src/device.c
++++ b/nanos-lite/src/device.c
+@@ -29,6 +29,7 @@ size_t serial_write(const void *buf, size_t offset, size_t len) {
+ }
+ 
+ size_t events_read(void *buf, size_t offset, size_t len) {
++  if (len == 0) { return 0; }
+   MULTIPROGRAM_YIELD();
+   AM_INPUT_KEYBRD_T kbd = {};
+   bool keydown = 0;
+@@ -36,10 +37,9 @@ size_t events_read(void *buf, size_t offset, size_t len) {
+   kbd = io_read(AM_INPUT_KEYBRD);
+   keydown = kbd.keydown;
+   keycode = kbd.keycode;
+-  if(!keycode) {return 0;}
+-  char *tmp = (char *)buf;
+-  char *down_const = "kd ";
+-  char *up_const = "ku ";
++  if (keycode <= 0 || keycode >= LENGTH(keyname) || keyname[keycode] == NULL) {
++    return 0;
++  }
+ 
+   #ifdef FG_PROCESS
+   // PA4.5: F1/F2/F3 switch the foreground process. The key is consumed by the
+@@ -51,11 +51,15 @@ size_t events_read(void *buf, size_t offset, size_t len) {
+   }
+   #endif
+ 
+-  if(keydown){strcpy(tmp, down_const);}
+-  else{strcpy(tmp, up_const);}
+-  strcat(tmp, keyname[keycode]);
+-  strcat(tmp, "\n");
+-  return strlen(tmp);
++  const char *parts[] = {keydown ? "kd " : "ku ", keyname[keycode], "\n"};
++  size_t n = 0;
++  for (int i = 0; i < LENGTH(parts); i++) {
++    for (const char *p = parts[i]; *p && n < len; p++) {
++      ((char *)buf)[n++] = *p;
++    }
++  }
++  if (n < len) { ((char *)buf)[n] = '\0'; }
++  return n;
+ }
+ 
+ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
+@@ -93,13 +97,13 @@ size_t audio_init() {
+ }
+ 
+ size_t audio_read(void *buf, size_t offset, size_t len) {
++  if (len == 0) { return 0; }
+   AM_AUDIO_STATUS_T stat = io_read(AM_AUDIO_STATUS);
+   int free = audio_sbuf_size - stat.count;
+   if (free < 0) free = 0;
+   if (len > sizeof(int)) len = sizeof(int);
+-  if (len > (size_t)free) len = free;
+-  *(int *)buf = free;
+-  return sizeof(int);
++  memcpy(buf, &free, len);
++  return len;
+ }
+ 
+ size_t audio_ctrl_write(const void *buf, size_t offset, size_t len) {
+```

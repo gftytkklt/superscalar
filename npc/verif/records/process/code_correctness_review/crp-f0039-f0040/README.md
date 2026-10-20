@@ -67,3 +67,74 @@ host对helper对象重命名，防止参考表达式/UBSan运行时回调解析�
 ## F0040后续条件修复（2026-10-18）
 
 原“只分析”保留为当时决定；用户后续授权先核对原入口影响、兼容部分直接修复。本轮已做ABI签名/完成字节/DSO及串行修正，[报告](../crp-compatibility-20261018/README.md)记录真实RV64与链接闭包。线程同步/异常/析构未实现，F0040仍Partial、未计全部已修，修改未提交。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0039 — 根仓库
+
+本报告同名 F0040 当时未实施；其后已实施的串行 ABI 部分见 compatibility 报告，不合并为已完全修复。
+
+- 差异路径相对于仓库 `.`；旧版本：`d9a3d423928bfbc6e008500a0c2cbd36d4121cbb`；新版本：`b2229ef5cfb17224b5987f087af17266192961f1`。
+
+#### `abstract-machine/klib/src/int64.c`
+
+F0039：符号掩码、绝对幅值与恢复符号的异或/减法改在 du_int 域执行，INT64_MIN 的幅值可以无符号表示；调用 __udivmoddi4 后再转换回 di_int。divmod 的 `a - d*b` 也在 du_int 中形成，消除中间有符号乘减溢出。保持既有位模式结果；不由此赋予 C 除零或不可表示商新的语言语义。
+
+```diff
+diff --git a/abstract-machine/klib/src/int64.c b/abstract-machine/klib/src/int64.c
+index 13376f429deb9d9855355c6a45adeabb980c1b29..41a9ce685d06a512c315ec28d08ce8d2e26b218d 100755
+--- a/abstract-machine/klib/src/int64.c
++++ b/abstract-machine/klib/src/int64.c
+@@ -370,12 +370,12 @@ COMPILER_RT_ABI di_int
+ __divdi3(di_int a, di_int b)
+ {
+     const int bits_in_dword_m1 = (int)(sizeof(di_int) * CHAR_BIT) - 1;
+-    di_int s_a = a >> bits_in_dword_m1;           /* s_a = a < 0 ? -1 : 0 */
+-    di_int s_b = b >> bits_in_dword_m1;           /* s_b = b < 0 ? -1 : 0 */
+-    a = (a ^ s_a) - s_a;                         /* negate if s_a == -1 */
+-    b = (b ^ s_b) - s_b;                         /* negate if s_b == -1 */
++    du_int s_a = (du_int)(a >> bits_in_dword_m1); /* unsigned sign mask */
++    du_int s_b = (du_int)(b >> bits_in_dword_m1);
++    du_int a_u = ((du_int)a ^ s_a) - s_a;         /* includes magnitude of MIN */
++    du_int b_u = ((du_int)b ^ s_b) - s_b;
+     s_a ^= s_b;                                  /*sign of quotient */
+-    return (__udivmoddi4(a, b, (du_int*)0) ^ s_a) - s_a;  /* negate if s_a == -1 */
++    return (di_int)((__udivmoddi4(a_u, b_u, (du_int*)0) ^ s_a) - s_a);
+ }
+ 
+ /* Returns: a / b, *rem = a % b  */
+@@ -384,7 +384,7 @@ COMPILER_RT_ABI di_int
+ __divmoddi4(di_int a, di_int b, di_int* rem)
+ {
+   di_int d = __divdi3(a,b);
+-  *rem = a - (d*b);
++  *rem = (di_int)((du_int)a - (du_int)d * (du_int)b);
+   return d;
+ }
+ 
+@@ -394,13 +394,13 @@ COMPILER_RT_ABI di_int
+ __moddi3(di_int a, di_int b)
+ {
+     const int bits_in_dword_m1 = (int)(sizeof(di_int) * CHAR_BIT) - 1;
+-    di_int s = b >> bits_in_dword_m1;  /* s = b < 0 ? -1 : 0 */
+-    b = (b ^ s) - s;                   /* negate if s == -1 */
+-    s = a >> bits_in_dword_m1;         /* s = a < 0 ? -1 : 0 */
+-    a = (a ^ s) - s;                   /* negate if s == -1 */
++    du_int s = (du_int)(b >> bits_in_dword_m1);
++    du_int b_u = ((du_int)b ^ s) - s;
++    s = (du_int)(a >> bits_in_dword_m1);
++    du_int a_u = ((du_int)a ^ s) - s;
+     du_int r;
+-    __udivmoddi4(a, b, &r);
+-    return ((di_int)r ^ s) - s;                /* negate if s == -1 */
++    __udivmoddi4(a_u, b_u, &r);
++    return (di_int)((r ^ s) - s);
+ }
+ 
+ /* Returns: a / b */
+```

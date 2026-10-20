@@ -49,3 +49,41 @@
 用户“提交”确认已报告F0024范围与限制并授权提交；545项文件清单无漂移、原21项验收/生产patch保持，复用既有动态验收，不重复测试/Completion。仅六份归属文件入库；实际提交回执见local/submit-receipt及.agent，未push，不启动下一组。
 
 文件计数澄清：F0023所述“3,958项证据”实际为隔离目录的3,958条逐文件SHA清单，包含AM-kernels源树输入1,944份、RT源树输入1,434份，其余580份为AM/nanos输入、构建产物、日志/截图、脚本、快照/元数据等；不是3,958个测试用例或独立结论，F0023最终检查为18项。早期复制了较完整的源码树，清单粒度偏粗。F0024只复制小BSP/四应用必需源，公共RT源引用原树，本组545份归档文件/21项检查分别统计；外部引用不等同本地字节备份。此次只解释计数，不删除或重写历史存档。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0024 — 根仓库
+
+该差异只修现场记录，未扩展页表回收或权限契约。
+
+- 差异路径相对于仓库 `.`；旧版本：`c9be8980d76b85f4f517f2c5ac21d8cf9e181def`；新版本：`fc7835ed53caf187d38c8937e9fb4ca82c697d3c`。
+
+#### `abstract-machine/am/src/riscv/nemu/vme.c`
+
+F0024：删除 `if (c->pdir == NULL) return;`。新 trap 栈帧的该槽位尚未由 trap.S 初始化，不能拿旧零值充当内核线程标记；每次入口都按 vme_enable 保存真实 get_satp() 或 NULL，恢复时才能返回原地址空间。kcontext 初始 NULL 的恢复策略仍由 __am_switch 处理，未改变它。
+
+```diff
+diff --git a/abstract-machine/am/src/riscv/nemu/vme.c b/abstract-machine/am/src/riscv/nemu/vme.c
+index ca4e90e6cf7d9a04639b3b7d4781283648b10b32..b25904f6fcf27248baaa14029ff5f2de73ededba 100755
+--- a/abstract-machine/am/src/riscv/nemu/vme.c
++++ b/abstract-machine/am/src/riscv/nemu/vme.c
+@@ -57,10 +57,9 @@ void unprotect(AddrSpace *as) {
+ }
+ 
+ void __am_get_cur_as(Context *c) {
+-  // pdir == NULL marks a kernel-thread context (created by kcontext()).
+-  // Keep the marker so that __am_switch() does not switch the address space
+-  // when resuming a kernel thread (all address spaces share the kernel mapping).
+-  if (c->pdir == NULL) return;
++  // This is a fresh trap frame: slot 0 has not been initialized by trap.S.
++  // Save the address space actually used, including by nested kernel traps.
++  // kcontext()'s initial NULL marker is handled only when restoring that context.
+   c->pdir = (vme_enable ? (void *)get_satp() : NULL);
+ }
+ 
+```

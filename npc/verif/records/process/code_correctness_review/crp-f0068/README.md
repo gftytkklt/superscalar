@@ -92,3 +92,68 @@ M2推进。未来候选与门槛只见[唯一入口](../../../../../../.agent/TA
 ## 用户确认与提交收尾（2026-10-20）
 
 用户“提交后继续”确认本组已报告范围/限制并授权提交后执行唯一下一组。复用原27preclean/15终检及清理，69项现存manifest身份无漂移，不重复产品测试/Completion/清理。只提交本组两生产源、报告/.gitignore、process索引及逐项台账6文件；local/.agent仍忽略。实际commit/文件blob及干净状态见local/submit-receipt.json，后续执行只按TASK_QUEUE唯一入口；无push。原报告中的Pending为交付时截面。
+
+
+<a id="framework-diff-20261020"></a>
+## 框架代码前后 diff 与实现说明（2026-10-20 补充）
+
+按本轮用户要求追加；保留上文验收时间、结果及限制。以下为实际修复差异，`-` 是修复前，`+` 是修复后，未省略所列文件的修复 hunks。仓库路径和前后版本分开标明；旧版本指本批修复前版本，不等同于框架最初上游版本。原产品测试不在本轮重跑；本轮只核验差异/源码身份、可正反应用及说明一致性。全范围盘点见[留档记录](../framework-diffs-20261020/README.md)。
+
+
+### F0068 — 根仓库
+
+容量校验在初始化与实际写入两侧保持一致。
+
+- 差异路径相对于仓库 `.`；旧版本：`07bba7481b1910c00bbfd634d0df513122dc0ab6`；新版本：`9fb8831caab7b1e79d279f7a9026e983204de41c`。
+
+#### `nanos-lite/src/device.c`
+
+F0068：先拒绝非正宽高，再以 `width > LONG_MAX / 4 / height` 检查容量乘法，短路保证不除零；合法后计算屏幕总字节数。offset 已到尾部返回 0，len 按 `size-offset` 截断，再进入原按行写像素循环，防止向屏幕外发起绘制。原 len/4 的整像素计数语义保持。
+
+```diff
+diff --git a/nanos-lite/src/device.c b/nanos-lite/src/device.c
+index 484f5c5c0e3f8d3a6335c477ade4f4050b95aa23..e689f25dae0594677b55b5b290be1f27a5a50c3c 100755
+--- a/nanos-lite/src/device.c
++++ b/nanos-lite/src/device.c
+@@ -1,5 +1,6 @@
+ #include <common.h>
+ #include <proc.h>
++#include <limits.h>
+ 
+ #if defined(MULTIPROGRAM) && !defined(TIME_SHARING)
+ # define MULTIPROGRAM_YIELD() yield()
+@@ -78,6 +79,11 @@ size_t dispinfo_read(void *buf, size_t offset, size_t len) {
+ size_t fb_write(const void *buf, size_t offset, size_t len) {
+   MULTIPROGRAM_YIELD();
+   cfg = io_read(AM_GPU_CONFIG);
++  if (cfg.width <= 0 || cfg.height <= 0 ||
++      (size_t)cfg.width > (size_t)LONG_MAX / 4 / (size_t)cfg.height) { return 0; }
++  size_t size = (size_t)cfg.width * cfg.height * 4;
++  if (offset >= size) { return 0; }
++  if (len > size - offset) { len = size - offset; }
+   size_t px = offset / 4, left = len / 4, done = 0;
+   while (left > 0) {
+     int y = px / cfg.width, x = px % cfg.width;
+```
+
+#### `nanos-lite/src/fs.c`
+
+F0068：init_fs 使用同样的宽高/容量判断设置 `/dev/fb` 尺寸，不合法配置记 0；先转 size_t 后乘法，避免原 int 乘积溢出，保证文件 seek 上界与 fb_write 的容量一致。
+
+```diff
+diff --git a/nanos-lite/src/fs.c b/nanos-lite/src/fs.c
+index e55821e2eb7c9572523f9a11182f272ebf7966ac..e6e3323390f1d3120ea0d72345ed0f2cd8372196 100755
+--- a/nanos-lite/src/fs.c
++++ b/nanos-lite/src/fs.c
+@@ -167,7 +167,9 @@ void init_fs() {
+   for(int i=0;i<filenum;i++){fp_offt[i] = 0;}
+   // initialize the size of /dev/fb (screen_w * screen_h * 4)
+   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
+-  file_table[FD_FB].size = cfg.width * cfg.height * 4;
++  file_table[FD_FB].size = (cfg.width > 0 && cfg.height > 0 &&
++      (size_t)cfg.width <= (size_t)LONG_MAX / 4 / (size_t)cfg.height)
++    ? (size_t)cfg.width * cfg.height * 4 : 0;
+   // initialize the sound card
+   audio_init();
+ }
+```
