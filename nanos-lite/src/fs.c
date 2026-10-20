@@ -167,7 +167,9 @@ void init_fs() {
   for(int i=0;i<filenum;i++){fp_offt[i] = 0;}
   // initialize the size of /dev/fb (screen_w * screen_h * 4)
   AM_GPU_CONFIG_T cfg = io_read(AM_GPU_CONFIG);
-  file_table[FD_FB].size = cfg.width * cfg.height * 4;
+  file_table[FD_FB].size = (cfg.width > 0 && cfg.height > 0 &&
+      (size_t)cfg.width <= (size_t)LONG_MAX / 4 / (size_t)cfg.height)
+    ? (size_t)cfg.width * cfg.height * 4 : 0;
   // initialize the sound card
   audio_init();
 }

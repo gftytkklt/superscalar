@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复51（前49已确认提交；F0066/F0067含音频补查Completed，用户已确认并授权本次提交）；未修完68，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树历史镜像/截图/编译产物及生产源码副本已按用户要求清理；旧manifest的预期缺失与Git再生入口见[F0009清理回执](../crp-f0009/README.md#artifact-cleanup-20261019)。
+全部已有功能修复52（前51项已确认提交；F0068 Completed，已确认并授权本次提交，实际回执见报告）；未修完67，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树已完成产物按用户要求清理，旧manifest合并对应批次清理回执解释预期缺失；旧实现从Git重建，不依赖历史二进制。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -109,7 +109,7 @@
 | CCR-F0065 | Confirmed / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
 | CCR-F0066 | Confirmed / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
 | CCR-F0067 | Robustness / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
-| CCR-F0068 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0068) |
+| CCR-F0068 | Confirmed / Medium | 已修 / 已确认，提交回执见报告 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
 | CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
 | CCR-F0070 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0070) |
 | CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
@@ -306,3 +306,6 @@ loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例�
 
 
 2026-10-20 用户“提交”确认F0066/F0067及99:1音频补查的已报告范围/限制，授权本批5文件提交；原19/补充15终检及技术验收复用，9项提交前核对通过、原60与补充64 manifest项/48源输入/patch保持，不重跑或重复归档。实际commit/暂存与最终blob核对见[提交回执](../crp-f0066-f0067/README.md#submit-20261020)及local/submit-receipt.json，未来仅TASK_QUEUE；本轮提交后停止，不开始F0068，不push。51/68不变，ignored/.agent不由commit备份。
+
+
+2026-10-20 F0068：用户“继续CRP修复”授权单元，前51项确认提交07bba74；FB实际容量限写/安全初始化、原反例/两分支host/真实旧新ecall/三前台与hello通过，[报告](../crp-f0068/README.md)记录RGBA观察夹具更正/未测/清理。52/67，本组确认/commit Pending，无push/M2推进；未来仅TASK_QUEUE。

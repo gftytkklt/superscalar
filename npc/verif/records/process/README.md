@@ -533,3 +533,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 
 
 2026-10-20 用户确认并授权提交[F0066/F0067及音频补查](code_correctness_review/crp-f0066-f0067/README.md#submit-20261020)：复用既有技术收尾，9项提交前核对及原60/补充64证据身份保持，只纳入5份可归属代码/报告/索引文件。实际commit回执见本组local；51/68不变，提交后停止，F0068未Start，无push，ignored证据/.agent不随commit备份。
+
+
+### 2026-10-20 CRP F0068帧缓冲写入边界
+
+[本组计划/交付](code_correctness_review/crp-f0068/README.md)：前51项已确认提交07bba74，用户“继续CRP修复”授权一个单元。device/fs共9增1删，FB尺寸/容量安全计算、EOF/越界零写/跨末端截短，整像素与逐行sync保持。原4host失败/两分支各55场景、真实旧EOF存储访问异常mcause7/mtval0xa11d4c00与新ecall PASS、默认三前台/hello37→156及补充PAL标题动画通过；RGBA缩略图误黑已按RGB更正，原帧正常。27preclean/159源身份，353产物约306.1MiB已清理。52已修/67未修完，本组待确认/commit；未测/原蓝边/再生与清理见报告，未来仅TASK_QUEUE。
