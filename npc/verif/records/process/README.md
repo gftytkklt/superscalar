@@ -538,3 +538,8 @@ F0040真实RV64重复初始化与FUNC DSO证据已确认，用户选择本轮只
 ### 2026-10-20 CRP F0068帧缓冲写入边界
 
 [本组计划/交付](code_correctness_review/crp-f0068/README.md)：前51项已确认提交07bba74，用户“继续CRP修复”授权一个单元。device/fs共9增1删，FB尺寸/容量安全计算、EOF/越界零写/跨末端截短，整像素与逐行sync保持。原4host失败/两分支各55场景、真实旧EOF存储访问异常mcause7/mtval0xa11d4c00与新ecall PASS、默认三前台/hello37→156及补充PAL标题动画通过；RGBA缩略图误黑已按RGB更正，原帧正常。27preclean/159源身份，353产物约306.1MiB已清理。52已修/67未修完，本组待确认/commit；未测/原蓝边/再生与清理见报告，未来仅TASK_QUEUE。
+
+
+### 2026-10-20 CRP F0079/F0080 newlib边界
+
+[本组计划/交付](code_correctness_review/crp-f0079-f0080/README.md)：前F0068已确认提交9fb8831；嵌套newlib两源11增1删，fwrite任一零维度先返回/流状态保持，calloc乘前拒绝溢出并按RERRNO设ENOMEM。原3host见证、新58场景/两模板及unlocked；真实旧只读零请求状态污染/旧calloc错误小分配失败，新完整libc guest及实际新库重建四应用/三前台hello33→148通过。19成功构建、28preclean/7判据负例、1187源及738链接身份；2914产物约189.3MiB已清理。54已修/65未修完，本组待确认/commit；嵌套HEADb7d992a/原mode噪声/优化旧UB表现/未测与再生见报告，未来仅TASK_QUEUE。

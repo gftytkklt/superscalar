@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复52（前51项已确认提交；F0068 Completed，已确认并授权本次提交，实际回执见报告）；未修完67，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。F0003保持c920dbe已确认提交。CCR树已完成产物按用户要求清理，旧manifest合并对应批次清理回执解释预期缺失；旧实现从Git重建，不依赖历史二进制。
+全部已有功能修复54（前52项均确认提交，F0068实际9fb8831；F0079/F0080已确认并授权提交，嵌套5d9ffdb，根记录回执见报告）；未修完65，其中契约待定5、F0040部分修复1。总计119；技术事实见对应报告，不从方案批准推定最终结果人工复核。CCR树已完成产物按用户要求清理，旧manifest合并批次清理回执解释缺失，旧实现从Git重建。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -109,7 +109,7 @@
 | CCR-F0065 | Confirmed / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
 | CCR-F0066 | Confirmed / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
 | CCR-F0067 | Robustness / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
-| CCR-F0068 | Confirmed / Medium | 已修 / 已确认，提交回执见报告 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
+| CCR-F0068 | Confirmed / Medium | 已修 / 已确认提交9fb8831 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
 | CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
 | CCR-F0070 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0070) |
 | CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
@@ -120,8 +120,8 @@
 | CCR-F0076 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0076) |
 | CCR-F0077 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0077) |
 | CCR-F0078 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0078) |
-| CCR-F0079 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0079) |
-| CCR-F0080 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0080) |
+| CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
+| CCR-F0080 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
 | CCR-F0081 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0081) |
 | CCR-F0082 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0082) |
 | CCR-F0083 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0083) |
@@ -309,3 +309,6 @@ loader仅5行参数表padding；原PAL/NTERM四host失败、VME/非VME各99例�
 
 
 2026-10-20 F0068：用户“继续CRP修复”授权单元，前51项确认提交07bba74；FB实际容量限写/安全初始化、原反例/两分支host/真实旧新ecall/三前台与hello通过，[报告](../crp-f0068/README.md)记录RGBA观察夹具更正/未测/清理。52/67，本组确认/commit Pending，无push/M2推进；未来仅TASK_QUEUE。
+
+
+2026-10-20 F0079/F0080：前F0068已确认提交9fb8831，本组授权来自“提交后继续”。两嵌套newlib源/原反例/58host/真实libc与重建三前台验证完成，54/65，结果确认/commit Pending；原850执行位差异保持、内容仅两源变化，根不force-add库。证据/清理/限制见本组报告，未来仅TASK_QUEUE。
