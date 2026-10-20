@@ -699,3 +699,5 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 F0070已确认提交6264781；[F0032 AM VME分配必要分析](code_correctness_review/crp-f0032/README.md)完成：当前源host普通UBSan/NDEBUG各六种观察，脏根污染外表/NULL分配及assert失效精确见证；33分析检查/五正式资产保持及3文件95577B清理。建议A根清零+分配失败诊断终止（无回滚），待用户失败契约裁决，生产未改/未修计数保持98与21；唯一TASK_QUEUE，无push/M2。
 
 2026-10-20 用户明确批准A后，[F0032 AM VME根页/分配失败保护](code_correctness_review/crp-f0032/README.md) Completed：单源6增3删，host24场景与实际RV64旧BAD/最终16GOOD、am-tests p初始化/标准三前台八帧hello38→173；194preclean/9348身份/完整diff正反及9401文件361741235B清理，正式五资产保持。99已修20未修完，本组结果确认/commit Pending；前分析待决为历史，唯一TASK_QUEUE，无push/M2。
+
+2026-10-20 F0032已确认提交30bbde8；用户批准uptime补计后，[F0047 RT tick/中断返回切换](code_correctness_review/crp-f0047/README.md) Completed：BSP单源33增4删，host边界/嵌套与真实RT 100tick/秒、5tick超时、soft回调/抢占，生产NEMU及新NPC/REF到msh；53preclean/3232身份/50RT核心源、完整diff正反与3243文件321639506B清理，8正式资产保持。100已修19未修完，本组结果确认/commit Pending，唯一TASK_QUEUE，不扩NPC定时硬件/M2，无push。

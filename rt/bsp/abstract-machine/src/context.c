@@ -1,6 +1,12 @@
 #include <am.h>
 #include <klib.h>
+#include <klib-macros.h>
 #include <rtthread.h>
+#include <rthw.h>
+
+static uint64_t tick_time_us;
+static uint64_t tick_fraction;
+static rt_ubase_t irq_from, irq_to;
 
 typedef struct {
   void (*tentry)(void*);
@@ -27,7 +33,24 @@ static Context* ev_handler(Event e, Context *c) {
       c = *((Context**) cp_addr->to);
       break;
     }
-    case EVENT_IRQ_TIMER: break;
+    case EVENT_IRQ_TIMER: {
+      rt_interrupt_enter();
+      uint64_t now = io_read(AM_TIMER_UPTIME).us;
+      uint64_t elapsed = now - tick_time_us;
+      tick_time_us = now;
+      // Preserve fractional ticks; an IRQ is a delivery opportunity, not a tick.
+      uint64_t fraction = (elapsed % 1000000) * RT_TICK_PER_SECOND + tick_fraction;
+      uint64_t ticks = (elapsed / 1000000) * RT_TICK_PER_SECOND + fraction / 1000000;
+      tick_fraction = fraction % 1000000;
+      while (ticks-- != 0) rt_tick_increase();
+      rt_interrupt_leave();
+      if (rt_interrupt_get_nest() == 0 && irq_from != 0) {
+        *((Context **)irq_from) = c;
+        c = *((Context **)irq_to);
+        irq_from = irq_to = 0;
+      }
+      break;
+    }
     default: printf("Unhandled event ID = %d\n", e.event); assert(0);
   }
   return c;
@@ -40,6 +63,9 @@ void wrapper_function(void *arg) {
 }
 
 void __am_cte_init() {
+  tick_time_us = io_read(AM_TIMER_UPTIME).us;
+  tick_fraction = 0;
+  irq_from = irq_to = 0;
   cte_init(ev_handler);
 }
 
@@ -65,8 +91,11 @@ void rt_hw_context_switch(rt_ubase_t from, rt_ubase_t to) {
   yield();
 }
 
-void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t to, struct rt_thread *to_thread) {
-  assert(0);
+void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to,
+                                  rt_thread_t from_thread, rt_thread_t to_thread) {
+  // Several catch-up ticks may schedule: save the interrupted thread only once.
+  if (irq_from == 0) irq_from = from;
+  irq_to = to;
 }
 
 rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {

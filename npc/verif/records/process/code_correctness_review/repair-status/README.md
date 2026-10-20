@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复99（前98已确认提交6264781；F0032已确认、本批授权提交）；未修完20，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复100（前99已确认提交30bbde8；F0047已确认、本批授权提交）；未修完19，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -73,7 +73,7 @@
 | CCR-F0029 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0029) |
 | CCR-F0030 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0030) |
 | CCR-F0031 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0031) |
-| CCR-F0032 | Robustness / Low | 已修 / 已确认、本批授权提交 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
+| CCR-F0032 | Robustness / Low | 已修 / 已确认提交30bbde8 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
 | CCR-F0033 | Confirmed / Medium | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
 | CCR-F0034 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
 | CCR-F0035 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
@@ -88,7 +88,7 @@
 | CCR-F0044 | Robustness / Low | 已修 / 已提交 | 1603f88；[容量分片及原测试真实验收](../crp-compatibility-20261018/README.md) |
 | CCR-F0045 | Robustness / Low | 已修 / 已提交 | f4e3c0c；[本组报告](../crp-f0045/README.md) |
 | CCR-F0046 | Confirmed / High | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
-| CCR-F0047 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0047) |
+| CCR-F0047 | Confirmed / Medium | 已修 / 已确认、本批授权提交 | [uptime补齐/中断返回切换/真实RT验收](../crp-f0047/README.md) |
 | CCR-F0048 | Confirmed / Low | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
 | CCR-F0049 | Confirmed / Medium | 已修 / 已提交 | d9a3d42；[报告](../crp-f0049/README.md) |
 | CCR-F0050 | Confirmed / Medium | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
@@ -471,3 +471,7 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 ## F0032方案A批准并完成（2026-10-20）
 
 用户明确选择“采用最小诊断终止方案（推荐）”；AM NEMU vme.c6增3删，根NULL检查/自清零、protect复制后发布、中间页失败诊断NDEBUG保持。host24场景/真实RV64旧脏根BAD及最终普通/NDEBUG各8 GOOD、现有am-tests p初始化与标准nanos三前台八帧/hello38→173通过；194preclean/9348身份/完整diff正反及9401文件361741235B清理，五正式资产保持，详见[本组报告](../crp-f0032/README.md)。99已修20未修完，本组结果确认/commit Pending，前98已确认6264781。失败无回滚/回收，M2不变，未来唯一TASK_QUEUE入口。前文分析待决为批准前历史。
+
+## F0047 uptime方案批准并完成（2026-10-20）
+
+前F0032已确认实际30bbde8；用户“提交后继续”授权本单元，并明确选择按uptime补齐tick（含长暂停）。BSP context.c33增4删，100Hz小数累计/RT IRQ nest及首from末to延后返回切换，非SMP签名修正。host普通/san/NDEBUG、真实RT旧0tick BAD/最终与模块NDEBUG各100tick/秒、5tick超时/soft回调/16次ISR抢占GOOD；生产NEMU到msh+2s、全新NPC/REF到msh/difftest ON。53preclean/3232身份/50共享RT源/完整diff正反与3243文件321639506B清理，正式8资产保持，详见[报告](../crp-f0047/README.md)。100已修19未修完，本组结果确认/commit Pending，NPC周期timer/全RT NDEBUG/其他配置未扩，唯一TASK_QUEUE，无push/M2。

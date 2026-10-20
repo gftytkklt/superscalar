@@ -151,3 +151,5 @@ F0032 Completed，结果确认/commit Pending；Working tree contains uncommitte
 ## 用户确认与提交收尾（2026-10-20）
 
 用户“提交后继续”确认本组已报告范围与限制，授权精确提交后执行TASK_QUEUE唯一入口F0047一个单元。提交前102份实施/28份原分析证据身份、完整patch/正式资产与59项终检复核一致；复用动态验收，不重复Completion。实际commit/路径/blob核验见local/implementation/submit-receipt及.agent；无push。可在当前对话继续：入口完整，下一单元范围与停点清楚。
+
+实际提交回执补充（2026-10-20）：根`30bbde81dea31297365b3e5fa8cccba0c1e9004f`，六路径/blob与完整patch精确，102实施/28分析身份及59终检复用；提交后root/index干净。用户“提交后继续”确认此前报告范围并授权F0047一个单元，原Pending为历史。local/implementation/submit-staged与submit-receipt保留；ignored资产未备份，无push。
