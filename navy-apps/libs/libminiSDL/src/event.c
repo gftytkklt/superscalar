@@ -18,11 +18,14 @@ static uint8_t keystate[NR_KEYS];
 
 static int push_event(SDL_Event *ev) {
   if (ev_count == MAX_EVENTS) return 0;
+  if (ev->type > SDL_USEREVENT) return 0;
+  if ((ev->type == SDL_KEYDOWN || ev->type == SDL_KEYUP) &&
+      ev->key.keysym.sym >= NR_KEYS) return 0;
   ev_queue[ev_tail] = *ev;
   ev_tail = (ev_tail + 1) % MAX_EVENTS;
   ev_count ++;
-  if (ev->type == SDL_KEYDOWN) keystate[ev->key.keysym.sym & 0xff] = 1;
-  else if (ev->type == SDL_KEYUP) keystate[ev->key.keysym.sym & 0xff] = 0;
+  if (ev->type == SDL_KEYDOWN) keystate[ev->key.keysym.sym] = 1;
+  else if (ev->type == SDL_KEYUP) keystate[ev->key.keysym.sym] = 0;
   return 1;
 }
 

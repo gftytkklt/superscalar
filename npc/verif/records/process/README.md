@@ -619,3 +619,11 @@ F0074已确认提交b260359，[回执](code_correctness_review/crp-f0074/README.
 
 
 2026-10-20 用户“提交”确认F0090已报告范围并授权精确根提交；[确认/实际回执](code_correctness_review/crp-f0090/README.md#submit-20261020)。103保留身份/既有验收/两源patch及正式输入复核，不重跑功能验证或重复Completion；实际提交后保存本地真实hash及工作树状态并停止，F0092未Start，无push/M2推进。
+
+
+### 2026-10-20 CRP F0092 miniSDL事件入队边界
+
+F0090已确认提交9251511；用户“继续”授权现行入口一个单元，完成[F0092](code_correctness_review/crp-f0092/README.md)：仅event.c 5增2删，入队前验证type/sym，非法项返回0且不改队列/keystate，合法事件及批量逐项成功计数保持。原sym255/type32两项UBSan明确反例、host普通/ASan+UBSan各1108断言、真实RV64同套1108/main0/GOOD、标准update→run三前台/hello33→155、166preclean/8目视/完整diff正反通过。清理9390项507075380B、零tracked删除，正式F0074输入不变。71已修/48未修完，本组确认/commit Pending，未来只沿TASK_QUEUE#crp-next，无push/M2推进。
+
+
+2026-10-20 用户“提交，继续”确认F0092并授权精确根提交后唯一下一单元；[提交回执入口](code_correctness_review/crp-f0092/README.md#submit-20261020)。复用52身份/原验收/归档和清理，仅补确认及真实提交核对，不重跑功能验证或重复Completion；无push/M2推进。
