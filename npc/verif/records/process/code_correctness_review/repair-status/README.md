@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复91（均已确认；F0112 PAL a744cee/根文档提交见回执）；未修完28，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复92（均已确认；F0116实际提交见本组回执）；未修完27，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -157,7 +157,7 @@
 | CCR-F0113 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0113) |
 | CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0116 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0116) |
+| CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) |
 | CCR-F0117 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0117) |
 | CCR-F0118 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0118) |
 | CCR-F0119 | Confirmed / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0119) |
@@ -416,3 +416,11 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 
 
 2026-10-20 用户“提交后继续”确认F0112，PAL实际a744cee；763终检/79身份/23原diff空白及两源patch一致，原nested差异保留。根文档随本次提交，[确认/回执](../crp-f0112/README.md#submit-20261020)。91已修均确认，28未修完；提交后授权F0116一个单元，未push/M2。
+
+
+## F0116完成（2026-10-20）
+
+用户“提交后继续”确认F0112并授权分仓提交后本单元；F0112实际root12be663/PALa744cee。F0116只ref.c一行写回trap PC，host普通/ASan+UBSan各36、真实RV64 REF 37/首条handler及CSR/原33字ABI通过，旧库负例拒绝；19preclean、97输入及完整diff正反、4产物235576字节清理。[报告](../crp-f0116/README.md)为证据；92已修/27未修完，前91已确认提交，本项确认/commit Pending。默认产物未替换，NPC无注入调用、CPU/RT/nanos无依赖不重跑，无push/M2；未来只TASK_QUEUE唯一入口。
+
+
+2026-10-20 用户再次“提交后继续”确认F0116并授权提交后F0119一个单元；79保留身份及生产patch一致，122终检复用。[提交回执](../crp-f0116/README.md#submit-20261020)，92已修均确认，27未修完；不push/M2。

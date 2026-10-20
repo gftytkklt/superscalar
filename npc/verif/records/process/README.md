@@ -660,3 +660,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-20 用户“提交后继续”确认F0112并授权分仓提交；PAL实际a744cee，根报告随本次提交，[回执](code_correctness_review/crp-f0112/README.md#submit-20261020)。763终检复用，原nested差异保持；91已修均确认，28未修完。随后执行F0116一个单元，未push/M2。
+
+
+2026-10-20 [F0116 REF显式注入PC](code_correctness_review/crp-f0116/README.md) Completed：前F0112实际root12be663/PALa744cee；本项ref.c1增1删、host各36/真实共享REF 37与首条handler/CSR/ABI通过，19preclean/97输入及完整diff正反、4产物清理。92已修/27未修完，本项确认/commit Pending；NPC未调用的限制及消费者选测见报告，未来只TASK_QUEUE唯一入口，无push/M2。
+
+
+2026-10-20 用户再次“提交后继续”确认F0116，79保留身份/patch无漂移并复用122终检；[确认/提交回执](code_correctness_review/crp-f0116/README.md#submit-20261020)。92已修均确认，27未修完；提交后执行F0119一个单元，无push/M2。

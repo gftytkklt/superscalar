@@ -99,7 +99,7 @@ __EXPORT void difftest_exec(uint64_t n) {
 
 __EXPORT void difftest_raise_intr(word_t NO) {
   //assert(0);
-  isa_raise_intr(NO, cpu.pc);
+  cpu.pc = isa_raise_intr(NO, cpu.pc);
 }
 
 __EXPORT void difftest_ref_display() {
