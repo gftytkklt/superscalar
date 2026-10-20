@@ -654,3 +654,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-20 用户确认F0111并授权分仓提交，bird源码实际80f9918、根报告随本次提交；[确认/实际回执入口](code_correctness_review/crp-f0111/README.md#submit-20261020)。120保留身份/8正式资产/两源与patch相符，既有验收及清理复用，不新增动态测试；90已修均确认，29未修完，F0112未Start，无push/M2。
+
+
+2026-10-20 [F0112 PAL RIX/MKF修复](code_correctness_review/crp-f0112/README.md) Completed：两源90增44删，16384容量/offset/完整读取及FILE独占；原越界/反序/doubleclose见证，host普通/ASan+UBSan与实际RV64各562/136FILE配平、86真实音乐槽旧新OPL轨迹一致；标准update→run三前台hello39→168/8目视，1644身份/12diff正反/736preclean与9441路径清理。91已修/28未修完，前90确认提交；本项确认/根与PAL源码分仓commit Pending，原nested差异保持。未来只沿TASK_QUEUE唯一入口，不自动commit/push/M2。
+
+
+2026-10-20 用户“提交后继续”确认F0112并授权分仓提交；PAL实际a744cee，根报告随本次提交，[回执](code_correctness_review/crp-f0112/README.md#submit-20261020)。763终检复用，原nested差异保持；91已修均确认，28未修完。随后执行F0116一个单元，未push/M2。

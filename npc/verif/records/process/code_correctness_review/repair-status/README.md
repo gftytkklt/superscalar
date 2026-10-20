@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复90（均已确认；F0111 bird实际80f9918，根文档提交及回执见本项报告）；未修完29，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+全部已有功能修复91（均已确认；F0112 PAL a744cee/根文档提交见回执）；未修完28，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -153,7 +153,7 @@
 | CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
 | CCR-F0110 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0110) |
 | CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
-| CCR-F0112 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0112) |
+| CCR-F0112 | Robustness / Medium | 已修 / 已确认，PAL a744cee/根文档提交见回执 | [RIX/MKF边界/所有权/实际RV64与标准消费者](../crp-f0112/README.md) |
 | CCR-F0113 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0113) |
 | CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
@@ -408,3 +408,11 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 
 
 2026-10-20 用户“提交，给我一条能自己运行bird进行测试的终端语句”确认F0111并授权精确分仓提交；bird实际80f9918，两源111增61删、Git mode100644及已验收patch/blob相符，21原mode/Video.h保留。根报告随本次提交，完整[确认/回执](../crp-f0111/README.md#submit-20261020)与local/submit-*为准；90已修均已确认，29未修完，F0112未Start，不push/M2。复用484终检及原验收，不重跑产品。
+
+
+## F0112完成（2026-10-20）
+
+用户“继续”及后续游戏应用修复说明授权同一单元；[报告](../crp-f0112/README.md)保存两源90增44删、562定向/实际RV64/136FILE配平与86真实音乐槽旧新寄存器轨迹、三前台hello39→168/8目视、完整diff正反及9441路径清理。91已修/28未修完，前90确认提交；本项结果确认/根与PAL源码分仓提交Pending，原nested差异保留，M2不变。下一入口只沿TASK_QUEUE，不自动commit/push。
+
+
+2026-10-20 用户“提交后继续”确认F0112，PAL实际a744cee；763终检/79身份/23原diff空白及两源patch一致，原nested差异保留。根文档随本次提交，[确认/回执](../crp-f0112/README.md#submit-20261020)。91已修均确认，28未修完；提交后授权F0116一个单元，未push/M2。
