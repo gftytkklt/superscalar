@@ -3,11 +3,12 @@
 #include <assert.h>
 
 SDL_Surface* BDF_CreateSurface(BDF_Font *font, char ch, uint32_t fg, uint32_t bg) {
-  uint32_t *bm = font->font[ch];
+  if (!font || font->w <= 0 || font->w > 32 || font->h <= 0 || font->h > 32) return NULL;
+  uint32_t *bm = font->font[(unsigned char)ch];
   if (!bm) return NULL;
   int w = font->w, h = font->h;
   uint32_t *pixels = (uint32_t *)malloc(w * h * sizeof(uint32_t));
-  assert(pixels);
+  if (!pixels) return NULL;
   for (int j = 0; j < h; j ++) {
     for (int i = 0; i < w; i ++) {
       pixels[j * w + i] = ((bm[j] >> i) & 1) ? fg : bg;

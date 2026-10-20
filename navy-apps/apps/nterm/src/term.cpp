@@ -1,4 +1,5 @@
 #include <nterm.h>
+#include <limits.h>
 
 #define EMPTY ' '
 
@@ -58,19 +59,19 @@ void Terminal::esc_movefirst(int *args) {
 }
 
 void Terminal::esc_moveup(int *args) {
-  cursor.y -= args[0];
+  cursor.y -= min(args[0], cursor.y);
 }
 
 void Terminal::esc_movedown(int *args) {
-  cursor.y += args[0];
+  cursor.y += min(args[0], h - 1 - cursor.y);
 }
 
 void Terminal::esc_moveleft(int *args) {
-  cursor.x -= args[0];
+  cursor.x -= min(args[0], cursor.x);
 }
 
 void Terminal::esc_moveright(int *args) {
-  cursor.x += args[0];
+  cursor.x += min(args[0], w - 1 - cursor.x);
 }
 
 void Terminal::esc_save(int *args) {
@@ -145,6 +146,7 @@ Terminal::Terminal(int width, int height) {
   buf = new char[w * h];
   color = new uint8_t[w * h];
   dirty = new bool[w * h];
+  escape_len = 0;
   inp_len = 0;
   col_f = Color::BLACK;
   col_b = Color::WHITE;
@@ -200,43 +202,52 @@ void Terminal::scroll_up() {
   }
 }
 
-size_t Terminal::write_escape(const char *str, size_t count) {
+// 0: incomplete prefix; 1: handled; -1: unsupported or overflowing sequence.
+int Terminal::write_escape() {
+  bool prefix = false;
   for (auto &p: esc_seqs) {
-    bool match = false;
-    int len = 0, args[4], narg = 0;
-
-    for (const char *cur = p.pattern, *s = str; ; cur ++) {
-      if (*cur == '\0') { // found a match.
-        match = true; break;
-      }
-      if (*cur != '#') {
-        if (*s != *cur) break;
-        s ++;
-        len ++;
-      } else {
+    size_t pos = 0;
+    int args[4] = {}, narg = 0;
+    bool match = true;
+    for (const char *cur = p.pattern; *cur; cur ++) {
+      if (pos == escape_len) { prefix = true; match = false; break; }
+      if (*cur == '#') {
         int data = 0;
-        for (; *s >= '0' && *s <= '9' && s - str < count; s ++, len ++) {
-          data = data * 10 + *s - '0';
+        while (pos < escape_len && escape[pos] >= '0' && escape[pos] <= '9') {
+          int digit = escape[pos ++] - '0';
+          if (data > (INT_MAX - digit) / 10) return -1;
+          data = data * 10 + digit;
         }
         args[narg ++] = data;
-      }
+        if (pos == escape_len) { prefix = true; match = false; break; }
+      } else if (escape[pos ++] != *cur) { match = false; break; }
     }
-
-    if (match) {
+    if (match && pos == escape_len) {
       (this->*p.handle)(args);
       cursor.x = max(min(cursor.x, w - 1), 0);
       cursor.y = max(min(cursor.y, h - 1), 0);
-      return len;
+      return 1;
     }
   }
-  return 1;
+  return prefix ? 0 : -1;
 }
 
 void Terminal::write(const char *str, size_t count) {
   for (size_t i = 0; i != count && str[i]; ) {
     char ch = str[i];
-    if (ch == '\033') {
-        i += write_escape(&str[i], count - i);
+    if (escape_len || ch == '\033') {
+      escape[escape_len ++] = ch;
+      i ++;
+      int result = write_escape();
+      if (result == 0 && escape_len < sizeof(escape)) continue;
+      size_t len = escape_len;
+      escape_len = 0;
+      if (result != 1) {
+        // Keep the old fallback: discard ESC, then process the remaining text.
+        char tail[sizeof(escape)];
+        memcpy(tail, escape + 1, len - 1);
+        write(tail, len - 1);
+      }
     } else {
       switch (ch) {
         case '\x07':

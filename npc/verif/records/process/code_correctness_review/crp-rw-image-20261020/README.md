@@ -278,3 +278,9 @@ index e413e25a0e630cdac11878d87d09736513e0041b..cb18ba4e1221898a8491d70935252fb5
 F0099/F0104/F0106三项Completed；4生产源74增31删，新结果确认与根commit Pending，未push。累计87已修/32未修完（含5CQ、F0040 Partial等），前84均确认提交。唯一后续入口 `.agent/TASK_QUEUE.md#crp-next`，未来BDF/终端组F0105/F0109 Next/Planned、未Start；本组确认/提交及执行授权满足后再开始，不自动进入下一组/M2。未实施性能策略，F0043/F0118/PAL RIX及字体缓存只读/完整OpenFontRW仍独立。通用surface构造器OOM及IMG大尺寸编码触发既有assert、伪造指针/对象后方allocation大小、readonly/线程/实体AV/其他ISA/长期均未作完整保证，不将最小子集修复泛化为完整SDL。
 
 建议开启新对话：本轮已完成前组提交及三项新修复、host/真实guest/标准消费者证据，下一组转BDF/终端解析，当前唯一入口与恢复材料完备；此建议不增加批准或启动Prompt门槛。本组完成后停止，等待用户结果确认/提交。
+
+
+<a id="submit-20261020"></a>
+## 实际提交回执（2026-10-20）
+
+用户“提交后继续”确认已报告范围；实际根`70983d4b2ac7c22e90fda116ec71b6b6119ded96`，9文件372增39删。146份保留manifest/8正式资产/4源及完整patch无漂移；9暂存路径与blob及实际提交一致，15条空白告警全部为原始diff证据，复用既有验收/清理，不重跑产品测试或重复Completion。提交后根working tree/index干净，无push；local/.agent仍本地资料，不由commit备份。87已修均确认提交，32未修完。可在当前对话继续：恢复完整、下一组已有明确范围；本次同句授权沿TASK_QUEUE#crp-next执行BDF/终端F0105/F0109一个单元，新组commit未授权，M2保持。

@@ -25,7 +25,9 @@ private:
 
   void move_one();
   void backspace();
-  size_t write_escape(const char *str, size_t count);
+  char escape[40];
+  size_t escape_len;
+  int write_escape();
   void scroll_up();
 
 

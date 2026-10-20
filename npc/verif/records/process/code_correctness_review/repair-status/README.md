@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复87（前84已确认提交，图形根a27a262；本组RWops/图像三项Completed，结果确认/commit Pending）；未修完32，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent与正式忽略资产仍需本地保管。
+全部已有功能修复89（前87已确认提交，RWops图像70983d4；本组BDF/终端F0105/F0109 Completed待结果确认/根commit）；未修完30，含5CQ及F0040 Partial。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -140,17 +140,17 @@
 | CCR-F0096 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0097 | Confirmed / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0098 | Confirmed / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
-| CCR-F0099 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
+| CCR-F0099 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
 | CCR-F0100 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0101 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0102 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0103 | Confirmed / Low | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0104 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
-| CCR-F0105 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0105) |
-| CCR-F0106 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
+| CCR-F0104 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
+| CCR-F0105 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
+| CCR-F0106 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
 | CCR-F0107 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0107) |
 | CCR-F0108 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0108) |
-| CCR-F0109 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0109) |
+| CCR-F0109 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
 | CCR-F0110 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0110) |
 | CCR-F0111 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0111) |
 | CCR-F0112 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0112) |
@@ -399,3 +399,6 @@ loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA�
 2026-10-20 音频已确认提交根d4b6c9c/ONS6326adf后，按用户继续及应用卡顿分析授权完成图形F0091/F0097/F0098/F0114；84已修/35未修完。本组未提交，正常绘图约4.4–4.6PCM包/s、同版仅跳过绘图约10.85包/s且两轮无欠填充，结论/局限见[本组报告](../crp-video-20261020/README.md)。无性能策略修改；唯一下步及门槛在TASK_QUEUE#crp-next，不自动commit/下一组/M2。
 
 2026-10-20 用户“提交后继续”确认图形/性能分析，根a27a262已精确提交；本组F0099/F0104/F0106 Completed待结果确认/根commit。host RW60/BMP47+83/IMG46均两构建、最终实际RV64 RW60/BMP83/IMG46/root130/main0/GOOD，标准三前台hello34→152/8目视/slide逐像素通过，338身份/24归档/141preclean及9447路径512652139B清理完成。87已修/32未修完，已确认前84；IMG保留MEM pos0子集，FILE/非0位置安全拒绝，通用decoder尺寸/构造器OOM仍有限制，详见[报告](../crp-rw-image-20261020/README.md)。唯一未来TASK_QUEUE#crp-next，未push/M2。
+
+
+2026-10-20 用户“提交后继续”确认RWops图像三项，实际根70983d4；随后F0105/F0109 Completed，host两构建及实际RV64各248599/7×191glyph、6判据负例/main0/GOOD，标准三前台hello32→148/8目视及NTerm像素匹配通过；完整diff/235身份/29归档/93preclean与9398路径清理完成。89已修/30未修完，本组待结果确认/commit；详见[报告](../crp-bdf-term-20261020/README.md)。唯一Next仅TASK_QUEUE#crp-next，未push/M2，不恢复旧连续提交授权。
