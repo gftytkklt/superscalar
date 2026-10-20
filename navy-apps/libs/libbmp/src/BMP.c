@@ -2,6 +2,7 @@
 #include <stdint.h> 
 #include <stdlib.h>
 #include <assert.h>
+#include <limits.h>
 
 struct BitmapHeader {
   uint16_t type;
@@ -20,33 +21,57 @@ struct BitmapHeader {
 } __attribute__((packed));
 
 void* BMP_Load(const char *filename, int *width, int *height) {
-  FILE *fp = fopen(filename, "r");
+  if (!filename) return NULL;
+  FILE *fp = fopen(filename, "rb");
   if (!fp) return NULL;
 
   struct BitmapHeader hdr;
+  uint32_t *pixels = NULL;
   assert(sizeof(hdr) == 54);
-  assert(1 == fread(&hdr, sizeof(struct BitmapHeader), 1, fp));
+  if (fread(&hdr, sizeof(hdr), 1, fp) != 1) goto fail;
 
-  if (hdr.bitcount != 24) return NULL;
-  if (hdr.compression != 0) return NULL;
+  if (hdr.type != 0x4d42 || hdr.planes != 1 || hdr.ih_size < 40 ||
+      hdr.ih_size > UINT32_MAX - 14 || hdr.offset < 14 + hdr.ih_size ||
+      hdr.bitcount != 24 || hdr.compression != 0 ||
+      hdr.width == 0 || hdr.width > INT_MAX ||
+      hdr.height == 0 || hdr.height > INT_MAX) goto fail;
   int w = hdr.width;
   int h = hdr.height;
-  uint32_t *pixels = malloc(w * h * sizeof(uint32_t));
+  if ((size_t)w > SIZE_MAX / sizeof(uint32_t) / (size_t)h ||
+      (size_t)w > (SIZE_MAX - 3) / 3) goto fail;
+  size_t line_off = ((size_t)w * 3 + 3) & ~(size_t)3;
+  uint64_t offset = hdr.offset;
+  if (offset > LONG_MAX ||
+      (uint64_t)h > ((uint64_t)LONG_MAX - offset) / line_off) goto fail;
+  long data_end = offset + (uint64_t)h * line_off;
+  if (fseek(fp, 0, SEEK_END) != 0) goto fail;
+  long file_size = ftell(fp);
+  if (file_size < data_end) goto fail;
+  pixels = malloc((size_t)w * h * sizeof(uint32_t));
+  if (!pixels) goto fail;
 
-  int line_off = (w * 3 + 3) & ~0x3;
   for (int i = 0; i < h; i ++) {
-    fseek(fp, hdr.offset + (h - 1 - i) * line_off, SEEK_SET);
-    int nread = fread(&pixels[w * i], 3, w, fp);
+    long row_off = offset + (uint64_t)(h - 1 - i) * line_off;
+    uint32_t *row = pixels + (size_t)w * i;
+    if (fseek(fp, row_off, SEEK_SET) != 0 ||
+        fread(row, 3, w, fp) != (size_t)w) goto fail;
     for (int j = w - 1; j >= 0; j --) {
-      uint8_t b = *(((uint8_t*)&pixels[w * i]) + 3 * j);
-      uint8_t g = *(((uint8_t*)&pixels[w * i]) + 3 * j + 1);
-      uint8_t r = *(((uint8_t*)&pixels[w * i]) + 3 * j + 2);
-      pixels[w * i + j] = (r << 16) | (g << 8) | b;
+      uint8_t *src = (uint8_t *)row + (size_t)3 * j;
+      uint8_t b = src[0], g = src[1], r = src[2];
+      row[j] = (r << 16) | (g << 8) | b;
     }
   }
 
-  fclose(fp);
+  if (fclose(fp) != 0) {
+    free(pixels);
+    return NULL;
+  }
   if (width) *width = w;
   if (height) *height = h;
   return pixels;
+
+fail:
+  free(pixels);
+  fclose(fp);
+  return NULL;
 }

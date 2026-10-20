@@ -643,3 +643,5 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 SDL音频八项已获用户确认并授权根/ONS提交，实际回执见[本组收尾](code_correctness_review/crp-audio-20261020/README.md#submit-20261020)；后续图形与应用性能分析只沿TASK_QUEUE#crp-next，前文Pending保留历史事实。
 
 2026-10-20 [SDL图形四项与nanos-lite运行时性能](code_correctness_review/crp-video-20261020/README.md)：F0091/F0097/F0098/F0114 Completed，结果确认/commit Pending；host180×两+42×两、实际RV64像素/42API/6设备/GOOD、标准update→run三前台hello36→158/8目视及bird3目视，同版normal/skip两对定位长绘图延后补音。84已修/35未修完；完整diff正反/身份/归档/清理完成，唯一后续入口TASK_QUEUE#crp-next。
+
+2026-10-20 SDL图形与性能分析已确认实际提交[a27a262回执](code_correctness_review/crp-video-20261020/README.md#submit-20261020)，随后[RWops/图像组](code_correctness_review/crp-rw-image-20261020/README.md)F0099/F0104/F0106 Completed待确认/commit：4源74增31删；host RW60/BMP47+83/IMG46两构建、实际RV64 RW60/BMP83/IMG46/root130/main0/GOOD，标准update→run三前台hello34→152、8目视/三帧全RGB相等，338身份/完整diff正反/141preclean通过。87已修/32未修完；9447路径512652139B清理及子集限制见报告，唯一未来TASK_QUEUE#crp-next，无push/M2。

@@ -265,3 +265,8 @@ index 6bd6fb1d93d342e7aa4c179754a8c05fb95ec960..471125a4fe49d12ffd85f7167d7939e5
 冷恢复：从local/entry.json所记根HEAD恢复旧源，应用正文完整patch；最小host验证按ndl-run.py及video-validation.json的build/run命令，真实消费者prepare-runtime.py后standard-path/run-standard.local；真实guest先prepare-guest.py再refresh-guest.py→run-guest.py，bird使用prepare-bird.py→run-bird.py。性能prepare-perf.py须绑定该轮标准guest的ELF符号/盘，四个同版对照及host-only参考的准确命令/环境见perf/recovery.json，按analyze-perf.py重新汇总；不复用旧PC或未保留的ELF。先恢复F0074正式资源/现有工具链，不安装/下载，副本路径不写正式目录；完整再生顺序及判据均在保留脚本/JSON。
 
 建议开启新对话：本轮已有跨仓提交、四项图形修复和多组运行时证据，下一组转RWops/图像加载，唯一入口与恢复资料完整；此建议不增加审批或启动Prompt。当前单元完成后停止，等待确认/提交，不自动下一组或M2。
+
+<a id="submit-20261020"></a>
+## 实际提交回执（2026-10-20）
+
+用户“提交后继续”确认已报告图形及性能分析范围，并授权提交后唯一下一单元。实际根提交`a27a262b94255e36d4f26afe10f5d7893b75590f`，6文件363增29删；暂存路径/mode/blob及生产patch精确匹配验收。64项只读终检、159保留证据SHA、9749项清理回执复用，无功能重测或重复Completion。提交后根working tree/index干净，正式资产和既有嵌套差异保持，未push；本地资产不因commit备份。84已修均已确认提交，35未修完。可在当前对话继续：新Session恢复完整，尚无长调试累积；本轮随后仅执行RWops/图像加载一个工作单元，不恢复旧连续提交授权。

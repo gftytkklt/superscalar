@@ -6,14 +6,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #define SDL_STBIMAGE_IMPLEMENTATION
 #include "SDL_stbimage.h"
 
 SDL_Surface* IMG_Load_RW(SDL_RWops *src, int freesrc) {
-  assert(src->type == RW_TYPE_MEM);
-  assert(freesrc == 0);
-  return STBIMG_LoadFromMemory(src->mem.base, src->mem.size);
+  SDL_Surface *surface = NULL;
+  /* The memory decoder supports a complete buffer at position zero only. */
+  if (src != NULL && src->type == RW_TYPE_MEM && src->seek != NULL &&
+      src->mem.base != NULL && src->mem.size > 0 && src->mem.size <= INT_MAX &&
+      SDL_RWtell(src) == 0) {
+    surface = STBIMG_LoadFromMemory(src->mem.base, (int)src->mem.size);
+  }
+  /* Closing a memory RWops releases its wrapper, not the borrowed buffer. */
+  if (src != NULL && freesrc && src->close != NULL) SDL_RWclose(src);
+  return surface;
 }
 
 SDL_Surface* IMG_Load(const char *filename) {

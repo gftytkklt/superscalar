@@ -45,33 +45,38 @@ static int64_t mem_size(SDL_RWops *f) {
 }
 
 static int64_t mem_seek(SDL_RWops *f, int64_t offset, int whence) {
-  ssize_t pos = ((MemRW *)f)->pos;
+  int64_t base;
   switch (whence) {
-    case RW_SEEK_SET: pos = offset; break;
-    case RW_SEEK_CUR: pos += offset; break;
-    case RW_SEEK_END: pos = f->mem.size + offset; break;
+    case RW_SEEK_SET: base = 0; break;
+    case RW_SEEK_CUR: base = ((MemRW *)f)->pos; break;
+    case RW_SEEK_END: base = f->mem.size; break;
+    default: return -1;
   }
-  if (pos < 0) pos = 0;
-  if (pos > f->mem.size) pos = f->mem.size;
+  int64_t pos;
+  if (offset < -base) pos = 0;
+  else if (offset > f->mem.size - base) pos = f->mem.size;
+  else pos = base + offset;
   ((MemRW *)f)->pos = pos;
   return pos;
 }
 
 static size_t mem_read(SDL_RWops *f, void *buf, size_t size, size_t nmemb) {
+  if (size == 0 || nmemb == 0 || size > SIZE_MAX / nmemb) return 0;
   ssize_t pos = ((MemRW *)f)->pos;
-  ssize_t avail = (pos < f->mem.size) ? (f->mem.size - pos) : 0;
-  ssize_t need = size * nmemb;
-  ssize_t n = (need < avail) ? need : avail;
+  size_t avail = f->mem.size - pos;
+  size_t need = size * nmemb;
+  size_t n = (need < avail) ? need : avail;
   if (n > 0) memcpy(buf, (char *)f->mem.base + pos, n);
   ((MemRW *)f)->pos = pos + n;
   return (size > 0) ? (n / size) : 0;
 }
 
 static size_t mem_write(SDL_RWops *f, const void *buf, size_t size, size_t nmemb) {
+  if (size == 0 || nmemb == 0 || size > SIZE_MAX / nmemb) return 0;
   ssize_t pos = ((MemRW *)f)->pos;
-  ssize_t avail = (pos < f->mem.size) ? (f->mem.size - pos) : 0;
-  ssize_t need = size * nmemb;
-  ssize_t n = (need < avail) ? need : avail;
+  size_t avail = f->mem.size - pos;
+  size_t need = size * nmemb;
+  size_t n = (need < avail) ? need : avail;
   if (n > 0) memcpy((char *)f->mem.base + pos, buf, n);
   ((MemRW *)f)->pos = pos + n;
   return (size > 0) ? (n / size) : 0;
@@ -98,6 +103,7 @@ SDL_RWops* SDL_RWFromFile(const char *filename, const char *mode) {
 }
 
 SDL_RWops* SDL_RWFromMem(void *mem, int size) {
+  if (mem == NULL || size < 0) return NULL;
   MemRW *m = malloc(sizeof(MemRW));
   if (m == NULL) return NULL;
   m->pos = 0;
