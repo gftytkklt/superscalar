@@ -584,3 +584,12 @@ exec与标准update→run三前台/hello34→152、165项preclean通过。Comple
 63已修/56未修完；旧F0063完成记录引用已更正。无push/安装/M2推进，未来唯一TASK_QUEUE#crp-next。
 
 2026-10-20 用户“提交”确认F0062/F0063/F0089本组并授权精确提交；[确认/提交附记](code_correctness_review/crp-f0089/README.md#submit-20261020)及local实际回执承接。原100项manifest/源码身份不变，复用既有验收与清理，不重复完成快照；本轮提交后停止，无push/下一单元/M2推进。
+
+### 2026-10-20 CRP F0061 exec参数容量/去VLA
+
+[本组计划、完整diff、验收和恢复](code_correctness_review/crp-f0061/README.md)：loader33增33删，
+32KiB预算先于副作用、超限-E2BIG、直接构造用户栈表；host两模式各112及固定帧检查、真实RV64
+七失败保持/三成功exec（24KiB CRT、空argv、恰容量）、标准update→run三前台/hello34→149及167
+preclean通过。已清理9475文件656204844逻辑字节、零tracked删除。Completed，结果确认/commit
+Pending；64已修/55未修完。同轮将每次提交落档会话建议固化到AGENTS及WORKFLOW_POLICY/CRP引用，
+依据上下文长度与相关性提醒，不增审批门槛。唯一未来TASK_QUEUE#crp-next，无自动提交/push/M2。

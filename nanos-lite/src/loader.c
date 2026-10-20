@@ -103,7 +103,28 @@ void naive_uload(PCB *pcb, const char *filename) {
   ((void(*)())entry) ();
 }
 
+// Charge every pointer and terminating string byte before changing the process.
+static int count_args(char *const vec[], size_t *count, size_t *used) {
+  *count = 0;
+  while (vec != NULL && vec[*count] != NULL) {
+    if (*used > STACK_SIZE - sizeof(uintptr_t)) return -E2BIG;
+    size_t available = STACK_SIZE - *used - sizeof(uintptr_t);
+    size_t len = 0;
+    while (len < available && vec[*count][len] != '\0') len++;
+    if (len == available) return -E2BIG;
+    *used += sizeof(uintptr_t) + len + 1;
+    (*count)++;
+  }
+  return 0;
+}
+
 int context_uload(PCB *pcb, const char *filename, char *const argv[], char *const envp[]) {
+  size_t argc, envc;
+  size_t used = 3 * sizeof(uintptr_t);  // argc and the two NULL pointers
+  if (count_args(argv, &argc, &used) < 0 ||
+      count_args(envp, &envc, &used) < 0) return -E2BIG;
+  // The page-aligned stack top and STACK_SIZE are multiples of 16.
+  // Rounding a validated used <= STACK_SIZE up to 16 still fits the stack.
   // Reject a missing executable before replacing the caller's address space
   // or context. fs_open() uses a fixed file table; the loader opens it again.
   int fd = fs_open(filename, 0, 0);
@@ -143,53 +164,32 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
 # define USTACK_TO_PA(v) ((void *)(v))
 #endif
 
-  // count argc/envc (read argv/envp BEFORE loader)
-  int argc = 0;
-  while (argv[argc] != NULL) argc ++;
-  int envc = 0;
-  while (envp[envc] != NULL) envc ++;
-
   // layout on user stack (grows downward from ustack), low -> high:
   //   argc, argv[], envp[], string area
+  uintptr_t initial_sp = ROUNDDOWN(ustack - used, 16);
+  uintptr_t *table = USTACK_TO_PA(initial_sp);
+  uintptr_t *argv_addr = table + 1;
+  uintptr_t *envp_addr = argv_addr + argc + 1;
+  table[0] = argc;
   uintptr_t sp = ustack;
 
-  // 1. string area: push argv strings then envp strings, RECORDING each
-  //    string's address as it is placed (stack grows down, so later pushes
-  //    land at lower addresses).
-  uintptr_t argv_addr[argc + 1];
-  for (int i = 0; i < argc; i ++) {
-    int len = strlen(argv[i]) + 1;
+  // Copy into the new user stack and fill its pointer tables directly.
+  // All source strings were bounded above and remain live until loader().
+  for (size_t i = 0; i < argc; i ++) {
+    size_t len = strlen(argv[i]) + 1;
     sp -= len;
     memcpy(USTACK_TO_PA(sp), argv[i], len);
     argv_addr[i] = sp;
   }
   argv_addr[argc] = 0;
 
-  uintptr_t envp_addr[envc + 1];
-  for (int e = 0; e < envc; e ++) {
-    int len = strlen(envp[e]) + 1;
+  for (size_t e = 0; e < envc; e ++) {
+    size_t len = strlen(envp[e]) + 1;
     sp -= len;
     memcpy(USTACK_TO_PA(sp), envp[e], len);
     envp_addr[e] = sp;
   }
   envp_addr[envc] = 0;
-
-  // Leave padding above the pointer tables so argc (and the initial sp)
-  // is 16-byte aligned without moving any of the strings.
-  size_t args_size = ((size_t)argc + (size_t)envc + 3) * sizeof(uintptr_t);
-  sp = ROUNDDOWN(sp - args_size, 16) + args_size;
-
-  // 2. envp[] pointer array (with NULL)
-  sp -= (envc + 1) * sizeof(uintptr_t);
-  memcpy(USTACK_TO_PA(sp), envp_addr, (envc + 1) * sizeof(uintptr_t));
-
-  // 3. argv[] pointer array (with NULL)
-  sp -= (argc + 1) * sizeof(uintptr_t);
-  memcpy(USTACK_TO_PA(sp), argv_addr, (argc + 1) * sizeof(uintptr_t));
-
-  // 4. argc
-  sp -= sizeof(uintptr_t);
-  *(uintptr_t *)USTACK_TO_PA(sp) = (uintptr_t)argc;
 
   // load the new program (may overwrite the calling process's static data)
   uintptr_t entry = loader(pcb, filename);
@@ -200,7 +200,7 @@ int context_uload(PCB *pcb, const char *filename, char *const argv[], char *cons
   pcb->cp = cp;
 
   // GPRx points to argc; Navy _start sets sp from GPRx and passes it to call_main
-  cp->GPRx = sp;
+  cp->GPRx = initial_sp;
 
 #undef USTACK_TO_PA
   return 0;

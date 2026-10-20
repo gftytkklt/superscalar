@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复63（前60项已确认提交，F0083 nested8101fad/root4b7570f；本组F0062/F0063/F0089 Completed，用户已确认，实际提交见本组回执）；未修完56，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
+全部已有功能修复64（前63项均已确认提交，F0062/F0063/F0089根27b5bd8；本组F0061 Completed，结果确认及commit Pending）；未修完55，其中契约待定5、F0040部分修复1。总计119；技术事实以源码/对应交付及真实提交回执为准。完成产物按用户要求清理，历史manifest结合cleanup解释缺失；local/.agent仍需本地保管。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -102,7 +102,7 @@
 | CCR-F0058 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0058) |
 | CCR-F0059 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0059) |
 | CCR-F0060 | Confirmed / Medium | 已修 / 已确认提交7b83685 | [本组报告](../crp-f0060/README.md) |
-| CCR-F0061 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0061) |
+| CCR-F0061 | Robustness / Medium | 已修 / Completed，结果确认及commit Pending | [参数预算/无VLA/实际exec](../crp-f0061/README.md) |
 | CCR-F0062 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0063 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
 | CCR-F0064 | Robustness / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
@@ -347,3 +347,12 @@ Sv39只读表页预算+数据/表预留事务及_sbrk无符号预检。原五见
 原审阅未修截面保留，不伪造旧验收。未来只沿TASK_QUEUE唯一入口；无push/安装/M2推进。
 
 2026-10-20 用户“提交”确认F0062/F0063/F0089已报告范围并授权本组精确根提交；100项manifest及生产patch无漂移，复用原验证/清理，不重复Completion。63已修均已确认，实际路径/blob/提交回执见[本组附记](../crp-f0089/README.md#submit-20261020)及local/submit-receipt.json；本轮提交后停止，无push/下一组/M2推进。
+
+### 2026-10-20 F0061参数容量及会话建议规则
+
+用户“继续CRP修复”授权本单元，并要求每次提交落档按上下文长度/任务相关性提醒
+新对话；AGENTS稳定规则与WORKFLOW_POLICY/CRP引用已补齐。[本组报告](../crp-f0061/README.md)：
+loader33增33删，参数预算先于fs/protect/分配、超限-E2BIG及去VLA。原四host精确失败、
+两模式各112、实际RV64七拒绝/24KiB CRT参数/空argv/恰容量汇编exec、标准三前台/hello34→149、
+167preclean与清理完成；64已修/55未修完，本组结果确认/commit Pending。未来只沿TASK_QUEUE，
+不自动commit/push/下一组/M2。建议本组确认提交后新对话接续，建议本身不新增门槛。
