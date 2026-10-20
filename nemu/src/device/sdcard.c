@@ -43,21 +43,37 @@ enum {
 static FILE *fp = NULL;
 static uint32_t *base = NULL;
 static uint32_t blkcnt = 0;
-static long blk_addr = 0;
+static uint64_t disk_pos = 0;
+static uint64_t image_size = 0;
 static uint32_t addr = 0;
 static bool write_cmd = 0;
 static bool read_ext_csd = false;
+static bool transfer_active = false;
+
+static void flush_write() {
+  if (transfer_active && write_cmd && !read_ext_csd) {
+    Assert(fflush(fp) == 0, "sdcard flush failed");
+  }
+}
 
 static void prepare_rw(int is_write) {
-  blk_addr = base[SDARG];
-  addr = 0;
-  if (fp) fseek(fp, blk_addr << 9, SEEK_SET);
+  flush_write();
+  disk_pos = (uint64_t)base[SDARG] * 512;
+  Assert(disk_pos < MEMORY_SIZE && (off_t)disk_pos >= 0 &&
+      (uint64_t)(off_t)disk_pos == disk_pos, "sdcard block out of range: %u", base[SDARG]);
+  Assert(fp != NULL && fseeko(fp, (off_t)disk_pos, SEEK_SET) == 0,
+      "sdcard seek failed: offset=%" PRIu64, disk_pos);
   write_cmd = is_write;
+  read_ext_csd = false;
+  transfer_active = true;
 }
 
 static void sdcard_handle_cmd(int cmd) {
   switch (cmd) {
-    case MMC_GO_IDLE_STATE: break;
+    case MMC_GO_IDLE_STATE:
+      flush_write();
+      transfer_active = read_ext_csd = false;
+      break;
     case MMC_SEND_OP_COND: base[SDRSP0] = 0x80ff8000; break;
     case MMC_ALL_SEND_CID:
       base[SDRSP0] = 0x00000001;
@@ -73,7 +89,12 @@ static void sdcard_handle_cmd(int cmd) {
       base[SDRSP2] = 0x0f508000 | (C_SIZE >> 2) | (READ_BL_LEN << 16);
       base[SDRSP3] = 0x9026012a;
       break;
-    case MMC_SEND_EXT_CSD: read_ext_csd = true; addr = 0; break;
+    case MMC_SEND_EXT_CSD:
+      flush_write();
+      read_ext_csd = transfer_active = true;
+      write_cmd = false;
+      addr = 0;
+      break;
     case MMC_SLEEP_AWAKE: break;
     case MMC_APP_CMD: break;
     case MMC_SET_RELATIVE_ADDR: break;
@@ -82,16 +103,22 @@ static void sdcard_handle_cmd(int cmd) {
     case MMC_READ_MULTIPLE_BLOCK: prepare_rw(false); break;
     case MMC_WRITE_MULTIPLE_BLOCK: prepare_rw(true); break;
     case MMC_SEND_STATUS: base[SDRSP0] = 0x900; base[SDRSP1] = base[SDRSP2] = base[SDRSP3] = 0; break;
-    case MMC_STOP_TRANSMISSION: break;
+    case MMC_STOP_TRANSMISSION:
+      flush_write();
+      transfer_active = read_ext_csd = false;
+      break;
     default:
       panic("unhandled command = %d", cmd);
   }
 }
 
 static void sdcard_io_handler(uint32_t offset, int len, bool is_write) {
+  Assert(len == 4 && offset % 4 == 0, "invalid sdcard register access: offset=%u len=%d", offset, len);
   int idx = offset / 4;
   switch (idx) {
-    case SDCMD: sdcard_handle_cmd(base[SDCMD] & 0x3f); break;
+    case SDCMD:
+      if (is_write) sdcard_handle_cmd(base[SDCMD] & 0x3f);
+      break;
     case SDARG:
     case SDRSP0:
     case SDRSP1:
@@ -99,6 +126,7 @@ static void sdcard_io_handler(uint32_t offset, int len, bool is_write) {
     case SDRSP3:
       break;
     case SDDATA:
+       if (!transfer_active || is_write != write_cmd) break;
        if (read_ext_csd) {
          // See section 8.1 JEDEC Standard JED84-A441
          uint32_t data;
@@ -108,13 +136,26 @@ static void sdcard_io_handler(uint32_t offset, int len, bool is_write) {
            default: data = 0;
          }
          base[SDDATA] = data;
-         if (addr == 512 - 4) read_ext_csd = false;
-       } else if (fp) {
-         __attribute__((unused)) int ret;
-         if (!write_cmd) { ret = fread(&base[SDDATA], 4, 1, fp); }
-         else { ret = fwrite(&base[SDDATA], 4, 1, fp); }
+         addr += 4;
+         if (addr == 512) read_ext_csd = transfer_active = false;
+       } else {
+         Assert(disk_pos <= MEMORY_SIZE - 4, "sdcard transfer out of range: offset=%" PRIu64, disk_pos);
+         if (!write_cmd) {
+           // Unwritten capacity reads as zero; an unexpected short read is an error.
+           size_t expected = disk_pos < image_size ?
+             (image_size - disk_pos < 4 ? (size_t)(image_size - disk_pos) : 4) : 0;
+           base[SDDATA] = 0;
+           size_t done = fread(&base[SDDATA], 1, expected, fp);
+           Assert(done == expected && !ferror(fp), "sdcard short read: %zu/%zu", done, expected);
+         } else {
+           size_t done = fwrite(&base[SDDATA], 1, 4, fp);
+           Assert(done == 4 && !ferror(fp), "sdcard short write: %zu/4", done);
+           if (disk_pos + 4 > image_size) image_size = disk_pos + 4;
+         }
+         disk_pos += 4;
+         // Complete each PIO block before the driver can report it as transferred.
+         if (write_cmd && disk_pos % 512 == 0) flush_write();
        }
-       addr += 4;
        break;
     default:
       Log("offset = 0x%x(idx = %d), is_write = %d, data = 0x%x", offset, idx, is_write, base[idx]);
@@ -130,5 +171,12 @@ void init_sdcard() {
 
   const char *img = CONFIG_SDCARD_IMG_PATH;
   fp = fopen(img, "r+");
-  if (fp == NULL) Log("Can not find sdcard image: %s", img);
+  Assert(fp != NULL, "can not open sdcard image: %s", img);
+  Assert(fseeko(fp, 0, SEEK_END) == 0, "sdcard image seek failed: %s", img);
+  off_t size = ftello(fp);
+  Assert(size >= 0, "sdcard image size failed: %s", img);
+  image_size = (uint64_t)size;
+  Assert(fseeko(fp, 0, SEEK_SET) == 0, "sdcard image rewind failed: %s", img);
+  // Keep the 16 GiB capacity virtual: no allocation, prefill, or file extension.
+  Log("sdcard image: %s (%" PRIu64 " bytes, capacity=%" PRIu64 ")", img, image_size, (uint64_t)MEMORY_SIZE);
 }

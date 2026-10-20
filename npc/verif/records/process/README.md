@@ -679,3 +679,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 [F0118失败静音子范围](code_correctness_review/crp-f0118/README.md#mute-final-20261020) Completed/整项Partial：按用户最小可见错误及写入前停止PCM策略，NEMU INIT0/清旧队列对齐游标、AM写ring前返回，两源16增3删；host各52/真实RV64三失败无ring变更与COUNT0、正常65537B/显式恢复fresh512/标准三前台hello40→179、193归档身份/5978身份/9370路径360267188B清理通过。两默认产物用户自建保留，Guard解除；94完全已修/25未修完不变，本轮新增确认/commit Pending，唯一TASK_QUEUE#crp-next。
 
 2026-10-20 F0118最小静音子范围用户“提交后继续”确认并授权提交；复用92份证据/两源完整patch及既有19终检，F0118整项仍Partial。实际提交回执见本批local/implementation与.agent；唯一后续入口TASK_QUEUE#crp-next。
+
+2026-10-20 [F0020 SD卡方向与按需空间](code_correctness_review/crp-f0020/README.md#f0020-final-20261020) Completed：用户批准缺盘/越界/真实I/O错误终止、未写区零读；初始化不扩盘，host普通/san各529正常+132空盘/10失败，真实RV64新NEMU及512MiB上限通过；末端写16GiB逻辑/8KiB实际占用。16保护/正反归档/1996文件清理，95已修24未修完，结果确认/commit Pending；前F0118静音子范围已提交be8a4c0、整项Partial。未来仅TASK_QUEUE。
+
+2026-10-20 F0020用户“提交并继续”确认已披露范围，70保留身份/完整patch无漂移，复用42项终检；授权提交后F0075一个单元，实际回执见本组local/.agent，不push。
