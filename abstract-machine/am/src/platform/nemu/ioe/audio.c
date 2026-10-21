@@ -13,7 +13,8 @@ static uint32_t wr_index = 0;
 
 void __am_audio_init() {
   bufsize = inl(AUDIO_SBUF_SIZE_ADDR);
-  outl(AUDIO_INIT_ADDR,1);
+  // CTRL commits a complete configuration; do not open while it is being set.
+  outl(AUDIO_INIT_ADDR, 0);
 }
 
 void __am_audio_config(AM_AUDIO_CONFIG_T *cfg) {
@@ -25,6 +26,9 @@ void __am_audio_ctrl(AM_AUDIO_CTRL_T *ctrl) {
   outl(AUDIO_FREQ_ADDR, ctrl->freq);
   outl(AUDIO_CHANNELS_ADDR, ctrl->channels);
   outl(AUDIO_SAMPLES_ADDR, ctrl->samples);
+  wr_index = 0;
+  // INIT=2 reopens with an empty stream; legacy INIT=1 preserves its cursor.
+  outl(AUDIO_INIT_ADDR, 2);
 }
 
 void __am_audio_status(AM_AUDIO_STATUS_T *stat) {

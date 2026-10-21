@@ -231,3 +231,9 @@ python3 "$H/standard-path/run-standard.py" nanos
 ## 用户确认与提交收尾（2026-10-20）
 
 用户“提交后继续”，先询问SD与disk区别，再明确“继续实现”及16 GiB不预占空间，确认本批已报告的最小静音子范围并授权精确提交、随后进入F0020。F0118整项仍Partial，94完全已修/25未修完不变。提交前92份保留证据身份及两源完整full-index patch无漂移，复用既有19项终检及动态验收，不重复运行。仅纳入两生产源、本报告/.gitignore及两records索引；实际commit回执保存在本地implementation/submit-receipt.json及.agent，不push。可在当前对话继续：本对话已恢复且SD下一范围明确；ignored证据不由commit备份。
+
+
+<a id="reopen-followup-20261021"></a>
+## 普通重开补充完成（2026-10-21）
+
+前述最小静音子范围已确认提交be8a4c0；以上Partial均为当时事实。用户本轮选择F0043延期、F0118“清空旧PCM后重开”，普通CTRL重开及游标清流现已在[补充报告](../crp-audio-lifecycle-20261021/README.md#implementation-20261021)完成；完整两源diff、旧版三失败、最终16 host/五真实RV64/标准update→run/八帧目视/清理在该报告。按已批准可见静音及普通清流契约，F0118当前Completed，补充结果确认/commit Pending；不宣称完整应用错误API、F0043并发或实体听音。旧分析/manifest保持历史，本次fs_close准确语义的补正也见补充报告。

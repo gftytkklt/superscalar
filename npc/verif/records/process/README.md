@@ -759,3 +759,5 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 F0110实际提交`111059c012272b6a6b0706833ceb5a9f448502ba`完成，五路径/blob一致且提交后根树/index干净；按“提交，继续”授权执行[F0073用户指针必要分析](code_correctness_review/crp-f0073/README.md)。五组真实RV64 SYS_gettimeofday对照：正常/内核地址/READ映射均可写并返回，NULL/未映射触发EVENT_ERROR/BAD；证明原边界而非修复PASS。用户明确“延期并保留风险（推荐）”，F0073/F0029保持未修/已批准延期，不计Closed/Fixed/ApprovedGap或Linux移交。13源/8资产保持、259文件1672889B清理，生产未改；107+8+2+2不变，分析文档未提交，唯一TASK_QUEUE#crp-next，下一单元未Start。
 
 2026-10-21 用户“提交后继续”确认F0073分析及与F0029联合延期，四路径文档提交与证据核对见[提交附记](code_correctness_review/crp-f0073/README.md#submit-20261021)；生产未改，后续仅音频必要分析一个单元，无push。
+
+2026-10-21 [F0043延期/F0118清流重开补充](code_correctness_review/crp-audio-lifecycle-20261021/README.md)：F0073分析已确认提交00c3b04，用户批准F0043延期及F0118清旧PCM后普通重开；两源20增8删，INIT2配对提交/停旧回调后清COUNT与读写游标/失败写入前静音保持，应用Close语义保持。旧三失败/最终16 host/五真实RV64/标准nanos三前台八帧/hello40→169通过，F0043仍精确复现13而非9。9389文件360306085B清理/8正式资产保持；108+7+2+2，本批结果确认/新commit Pending，唯一TASK_QUEUE#crp-next，M2不变。

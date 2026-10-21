@@ -33,6 +33,7 @@ static uint32_t *audio_base = NULL;
 static bool audio_initialized = false;
 static bool audio_opened = false;
 static bool init_pending = false;
+static bool reset_pending = false;
 SDL_AudioSpec s = {};
 
 static uint32_t audio_freq() {
@@ -75,7 +76,7 @@ static void audio_disable() {
   audio_base[reg_count] = 0;
 }
 
-static void SDL_audio_init(){
+static void SDL_audio_init(bool reset_stream){
   SDL_AudioSpec s = {};
   s.freq = audio_freq();
   s.format = AUDIO_S16SYS;
@@ -84,7 +85,15 @@ static void SDL_audio_init(){
   s.callback = audio_play;
   s.userdata = NULL;
   //printf("%d %d %d\n",s.freq,s.channels,s.samples);
-  //count = 0;
+  if (audio_opened) {
+    SDL_CloseAudio();
+    audio_opened = false;
+  }
+  // CloseAudio has stopped the old callback before resetting the queue.
+  if (reset_stream) {
+    rd_index = 0;
+    audio_base[reg_count] = 0;
+  }
   if (!audio_initialized) {
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) {
       fprintf(stderr, "audio: SDL_InitSubSystem failed: %s; audio disabled\n", SDL_GetError());
@@ -92,10 +101,6 @@ static void SDL_audio_init(){
       return;
     }
     audio_initialized = true;
-  }
-  if (audio_opened) {
-    SDL_CloseAudio();
-    audio_opened = false;
   }
   if (SDL_OpenAudio(&s, NULL) != 0) {
     fprintf(stderr, "audio: SDL_OpenAudio failed: %s; audio disabled\n", SDL_GetError());
@@ -110,6 +115,7 @@ static void audio_io_handler(uint32_t offset, int len, bool is_write) {
   if (!is_write || len != sizeof(uint32_t)) return;
   if (offset == reg_init * sizeof(uint32_t)) {
     init_pending = audio_base[reg_init] != 0;
+    reset_pending = audio_base[reg_init] == 2;
   } else if (offset != reg_freq * sizeof(uint32_t) &&
              offset != reg_channels * sizeof(uint32_t) &&
              offset != reg_samples * sizeof(uint32_t)) {
@@ -119,7 +125,9 @@ static void audio_io_handler(uint32_t offset, int len, bool is_write) {
   // request waits for the configuration, then opens exactly once.
   if (init_pending && audio_freq() && audio_channels() && audio_samples()) {
     init_pending = false;
-    SDL_audio_init();
+    bool reset_stream = reset_pending;
+    reset_pending = false;
+    SDL_audio_init(reset_stream);
   }
 }
 
