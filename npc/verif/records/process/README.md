@@ -773,3 +773,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [F0040 C++并发边界分析及延期](code_correctness_review/crp-f0040/README.md#deferral-20261021)：用户“继续，暂不提交”明确豁免本单元前批提交前置，F0055未提交改动保留。实际RV64串行只初始化一次、两个独立内核上下文构造中yield导致初始化两次、析构注册预期BAD1；六现存ELF非新link盘点，ABI/编译器调用与边界已核。用户批准延期并保留Partial/风险，无F0040新生产修改；10输入/原F0055两源及34证据/八资产/ONS差异保持，186文件618221B清理。109+6+2+2，F0055及本分析均未提交，唯一TASK_QUEUE#crp-next，当前停止无push/M2。
 
 2026-10-21 用户“提交，现在已经完成所有待修复问题的决策了吗？”确认F0055修复与F0040分析/延期累计八路径；[提交附记](code_correctness_review/crp-f0040/README.md#submit-20261021)。56份原证据/源码/八资产/ONS原差异保持，复用既有验收。119行当前处置均明确：109已修+6批准延期/Partial+2移交Linux+2当前范围无需实施闭合，0当前处置待决；见[决策状态](code_correctness_review/repair-status/README.md#decision-status-20261021)。未来实现契约/未测限制仍保留，本轮未执行完整收尾核对，无push/M2；实际提交身份在本组local/submit-20261021及.agent补充回执。
+
+### 2026-10-21 CRP最终验收与收尾准备
+
+[收尾摘要及证据](code_correctness_review/repair-status/final-20261021/README.md)：既有批准范围技术Completed；109修复通过、6延期/Partial、2移交、2无需实施闭合。本次结果确认Pending、收尾未提交。根7398c88及嵌套实际状态完成全差集复核与最终版隔离回归；生产未改。唯一下一入口为.agent/TASK_QUEUE#crp-next，等待确认最终验收并授权收尾提交；不推进M2。
+
+2026-10-21 [CRP最终结果确认与关闭](code_correctness_review/repair-status/final-20261021/README.md#closure-20261021)：用户确认既有批准范围验收并授权仅三README收尾提交。109修复验收通过/6延期Partial仍未解决/2移交/2无需实施闭合及全部验证限制保持；881证据、15171受保护文件、44符号链接、10嵌套仓状态核对无漂移，复用已验收回归。实际提交回执保存在收尾目录submit-20261021；ignored本地证据/.agent不随commit备份。本轮执行入口随提交关闭，等待新的任务授权，M2/M2-P1不变，不push或启动下一任务。

@@ -1,5 +1,9 @@
 # CRP 修复状态与人工启动 guard
 
+> **本轮关闭（2026-10-21）**：用户已确认既有批准范围最终验收，并授权仅三README收尾提交、关闭本轮CRP执行；[关闭附记与实际回执](final-20261021/README.md#closure-20261021)。109修复验收通过、6延期/Partial仍未解决、2能力移交、2无需实施闭合保持；未验证能力及原批准承接不变。当前执行入口关闭，等待新任务授权，不推进M2。以下旧Pending/提交前状态保留为历史。
+
+> **最终验收收尾（2026-10-21）**：既有批准范围内技术验收Completed；109修复验收通过、6延期/Partial仍未解决、2能力移交、2无需实施闭合。本次结果用户确认Pending，收尾未提交；历史各批审批/提交保持。[唯一收尾摘要与同版回归](final-20261021/README.md)。下文“当前/最新”均为此前历史检查点；本次不完全关闭CRP，不推进M2。
+
 > **当前提交确认（2026-10-21）**：用户“提交，现在已经完成所有待修复问题的决策了吗？”确认F0055已报告修复及F0040分析/延期范围，累计八路径随本批提交，[实际回执](../crp-f0040/README.md#submit-20261021)。当前119项处置均已明确，详见下方决策状态核对；旧Pending/暂不提交为历史截面。未push或启动完整收尾核对/M2。
 
 > **当前C++分析（2026-10-21）**：用户“继续，暂不提交”允许保留F0055未提交修复执行本单元；[F0040分析/延期](../crp-f0040/README.md#deferral-20261021)Completed，用户批准“延期并保留Partial及风险”，无F0040新生产改动。真实串行一次、双上下文构造两次、析构注册BAD已留档，186文件618221B清理；109+6+2+2保持，本批和F0055均未提交。唯一TASK_QUEUE#crp-next。
@@ -72,133 +76,133 @@
 | 移交Linux能力扩展，未实施 | 2 | F0031/F0071，见[范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021) |
 | 当前范围无需实施闭合，未计已修 | 2 | [F0017不采用QEMU参考源](../crp-f0017/README.md#qemu-scope-closure-20261021)、[F0084当前Linux目标范围](../crp-f0084/README.md) |
 
-这里只核对当前处置是否有决定；未来重启延期项的具体实现、Linux阶段自身未决项及未测能力仍保留。原始审阅分类不改写，CRP完整范围收尾核对仍未执行。逐行机器核对见crp-f0040/local/submit-20261021/decision-audit.json；唯一后续入口仍TASK_QUEUE#crp-next。
+上次提交时这里只核对处置是否有决定，完整范围收尾尚未执行；该历史检查点现由本页首条最终验收增量承接。未来重启延期项的具体实现、Linux阶段自身未决项及未测能力仍保留，原始审阅分类不改写。逐行机器核对见crp-f0040/local/submit-20261021/decision-audit.json；唯一后续入口仍TASK_QUEUE#crp-next。
 
 ## 当前逐项状态
 
-原119项当前对账：109已修（F0055已获用户确认，随本批提交，实际回执见报告；其余已确认提交）+6项CRP未修完（3项原CQ F0029/F0030/F0054及F0040 Partial/F0043/F0073）+2项NPC能力扩展移交Linux（F0031/F0071未实施）+2项当前目标无需实施闭合（F0017/F0084未计已修）。F0029/F0073、F0030/F0054与F0043已批准延期；F0040未支持的并发/异常/析构已批准延期，保持Partial。未来仅TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：109已修且本次验收通过（各批历史确认/提交保持；本次最终结果用户已确认，随本次三README提交收尾；实际回执见关闭附记）+6项CRP未修完（3项原CQ F0029/F0030/F0054及F0040 Partial/F0043/F0073）+2项NPC能力扩展移交Linux（F0031/F0071未实施）+2项当前目标无需实施闭合（F0017/F0084未计已修）。F0029/F0073、F0030/F0054与F0043已批准延期；F0040未支持的并发/异常/析构已批准延期，保持Partial。未来仅TASK_QUEUE#crp-next，M2不变。
 
-| ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
-|---|---|---|---|
-| CCR-F0001 | Confirmed / Medium | 已修 / 已确认提交252eaea | [C UB反例/原NPC数值核验及真实回归](../crp-f0001/README.md) |
-| CCR-F0002 | Confirmed / High | 已修 / 已确认提交784e73b | [全地址身份/精确异常/真实消费者](../crp-f0002/README.md) |
-| CCR-F0003 | Confirmed / Medium | 已修 / 补充优化Completed；已确认，提交回执见报告 | [共享ecall链路/并行MTVEC/STA对照](../crp-f0003/README.md#parallel-mtvec-result-20261019) |
-| CCR-F0004 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [非对齐/别名安全与共享真实回归](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0005 | Confirmed / Medium | 已修 / 已确认，代码bc7a110/补验1ddaf04 | [既有bc7a110修复/本组补验](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0006 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [保留字段/原指令诊断及真实回归](../crp-f0006-f0007/README.md) |
-| CCR-F0007 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [PMEM/Sv39/MMIO边界及真实回归](../crp-f0006-f0007/README.md) |
-| CCR-F0008 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) |
-| CCR-F0009 | Confirmed / High | 已修 / 已确认提交d28c393 | [最终源码验收及清理回执](../crp-f0009/README.md#implementation-result-20261019) |
-| CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
-| CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) |
-| CCR-F0012 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
-| CCR-F0013 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) |
-| CCR-F0014 | Confirmed / Medium | 已修 / 已确认提交194d2c0 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) |
-| CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
-| CCR-F0016 | Confirmed / Medium | 已修 / 已确认提交de7e3be | [三段启动同步/真实golden及性能诊断](../crp-f0016/README.md) |
-| CCR-F0017 | Confirmed / Medium | Closed / 不采用QEMU参考源，用户已确认；未实施/未计已修 | [分析、PC勘误与用户范围闭合/提交](../crp-f0017/README.md#qemu-scope-closure-20261021) |
-| CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
-| CCR-F0019 | Confirmed / Low | 已修 / 已确认提交522bed7 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) |
-| CCR-F0020 | Confirmed / Medium | 已修 / 已确认提交8e5b1ca | [SD方向/I/O/按需容量验收](../crp-f0020/README.md#f0020-final-20261020) |
-| CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) |
-| CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) |
-| CCR-F0023 | Confirmed / High | 已修 / 已确认提交c9be898 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
-| CCR-F0024 | Confirmed / Medium | 已修 / 已确认提交fc7835e | [双页表嵌套切走恢复/真实回归及回执](../crp-f0024/README.md#approval-submit-20261018) |
-| CCR-F0025 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
-| CCR-F0026 | Confirmed / High | 已修 / Completed，已获确认；本次提交见报告回执 | [链接期越界诊断/真实回归](../crp-f0026/README.md#implementation-20261021) |
-| CCR-F0027 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
-| CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
-| CCR-F0029 | ContractQuestion / Medium | 未修 / 已批准与F0073联合延期，保护契约保留 | [原问题](../FINAL_FINDINGS.md#ccr-f0029)、[本次延期裁决](../crp-f0073/README.md) |
-| CCR-F0030 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [共享表/真实RV64/方案](../crp-memory-lifetime-20261021/README.md) |
-| CCR-F0031 | ContractQuestion / Medium | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0031) |
-| CCR-F0032 | Robustness / Low | 已修 / 已确认提交30bbde8 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
-| CCR-F0033 | Confirmed / Medium | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
-| CCR-F0034 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
-| CCR-F0035 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
-| CCR-F0036 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
-| CCR-F0037 | Confirmed / High | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
-| CCR-F0038 | Confirmed / Low | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
-| CCR-F0039 | Confirmed / Low | 已修 / 已提交 | b2229ef；[报告](../crp-f0039-f0040/README.md) |
-| CCR-F0040 | Confirmed / Low | 未修完 / Partial；并发/异常/析构已批准延期 | 串行1603f88；[双上下文见证/用户延期](../crp-f0040/README.md#deferral-20261021) |
-| CCR-F0041 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
-| CCR-F0042 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
-| CCR-F0043 | Confirmed / Medium | 未修 / 用户已批准延期，保留竞争风险 | [现组合交错见证/范围裁决](../crp-audio-lifecycle-20261021/README.md) |
-| CCR-F0044 | Robustness / Low | 已修 / 已提交 | 1603f88；[容量分片及原测试真实验收](../crp-compatibility-20261018/README.md) |
-| CCR-F0045 | Robustness / Low | 已修 / 已提交 | f4e3c0c；[本组报告](../crp-f0045/README.md) |
-| CCR-F0046 | Confirmed / High | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
-| CCR-F0047 | Confirmed / Medium | 已修 / 已确认提交aa13b04 | [uptime补齐/中断返回切换/真实RT验收](../crp-f0047/README.md) |
-| CCR-F0048 | Confirmed / Low | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
-| CCR-F0049 | Confirmed / Medium | 已修 / 已提交 | d9a3d42；[报告](../crp-f0049/README.md) |
-| CCR-F0050 | Confirmed / Medium | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
-| CCR-F0051 | Confirmed / Medium | 已修 / 已提交 | 4ab9f3f；[报告](../crp-f0051/README.md) |
-| CCR-F0052 | Confirmed / Medium | 已修 / 终态补充已确认提交22791cf | am-kernels c1ba0bb；[原报告](../crp-f0052/README.md)、[双平台真实补充](../crp-f0052-ref-terminal/README.md) |
-| CCR-F0053 | Confirmed / Low | 已修 / 已提交 | am-kernels 6dc302a / root e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
-| CCR-F0054 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [arena/页分配所有权与方案](../crp-memory-lifetime-20261021/README.md) |
-| CCR-F0055 | ContractQuestion / Low | 已修 / 已确认；本批提交回执见报告，语义已批准 | [两平台无RTC声明/保留原行为](../crp-f0055/README.md#implementation-20261021) |
-| CCR-F0056 | Robustness / Low | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
-| CCR-F0057 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) |
-| CCR-F0058 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) |
-| CCR-F0059 | Confirmed / Medium | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) |
-| CCR-F0060 | Confirmed / Medium | 已修 / 已确认提交7b83685 | [本组报告](../crp-f0060/README.md) |
-| CCR-F0061 | Robustness / Medium | 已修 / 已确认提交0ddd35c | [参数预算/提交回执](../crp-f0061/README.md#submit-20261020) |
-| CCR-F0062 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
-| CCR-F0063 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
-| CCR-F0064 | Robustness / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
-| CCR-F0065 | Confirmed / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) |
-| CCR-F0066 | Confirmed / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
-| CCR-F0067 | Robustness / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) |
-| CCR-F0068 | Confirmed / Medium | 已修 / 已确认提交9fb8831 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
-| CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
-| CCR-F0070 | Confirmed / High | 已修 / 已确认提交6264781 | [初始化失败停止/真实消费者](../crp-f0070/README.md) |
-| CCR-F0071 | Confirmed / High | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0071) |
-| CCR-F0072 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [七布局复制/实际disk读写/容量边界及提交](../crp-f0072/README.md#submit-20261021) |
-| CCR-F0073 | Robustness / Medium | 未修 / 原版分析完成，用户批准与F0029联合延期 | [真实RV64边界/用户延期决定](../crp-f0073/README.md) |
-| CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) |
-| CCR-F0075 | Robustness / Low | 已修 / 已确认提交015841a | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
-| CCR-F0076 | Confirmed / Medium | 已修 / 已确认提交e7a3e26 | [内核错误码/newlib请求对象验收](../crp-f0076/README.md#f0076-final-20261020) |
-| CCR-F0077 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
-| CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
-| CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
-| CCR-F0080 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) |
-| CCR-F0081 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
-| CCR-F0082 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
-| CCR-F0083 | Confirmed / Medium | 已修 / Completed，用户确认、nested 8101fad；root文档1dbf841 | [setenv失败保持/所有权/实际新库](../crp-f0083/README.md) |
-| CCR-F0084 | Confirmed / Medium | Closed / 当前目标无需实施，用户已确认；未计已修 | [Linux不依赖核实、用户闭合与提交](../crp-f0084/README.md#linux-scope-closure-20261021) |
-| CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) |
-| CCR-F0086 | Confirmed / Medium | 已修 / 已确认（仅源清单）；提交回执见报告 | [11真实对象/两域核实与提交；wrapper整体仍链接失败、运行NotRun](../crp-f0086/README.md#submit-20261021) |
-| CCR-F0087 | Robustness / Low | 已修 / Completed，用户已确认，实际提交见报告回执 | [exec示例确认/提交](../crp-f0087/README.md#submit-20261020) |
-| CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
-| CCR-F0089 | Robustness / Low | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
-| CCR-F0090 | Robustness / Low | 已修 / 已确认，提交见回执 | [NDL失败与生命周期、真实RV64及标准回归](../crp-f0090/README.md) |
-| CCR-F0091 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
-| CCR-F0092 | Robustness / Medium | 已修 / 已确认，提交见回执 | [事件入队边界/真实RV64及标准回归](../crp-f0092/README.md) |
-| CCR-F0093 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [定时器重入/slot生命周期及实际RV64](../crp-f0093/README.md) |
-| CCR-F0094 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0095 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0096 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0097 | Confirmed / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
-| CCR-F0098 | Confirmed / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
-| CCR-F0099 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
-| CCR-F0100 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0101 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0102 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0103 | Confirmed / Low | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0104 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
-| CCR-F0105 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
-| CCR-F0106 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
-| CCR-F0107 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [正确seek/完整读后发布/缓存重载](../crp-f0107-f0108/README.md#implementation-20261021) |
-| CCR-F0108 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [只读RWops/FontRW/关闭与借用生命周期](../crp-f0107-f0108/README.md#implementation-20261021) |
-| CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
-| CCR-F0110 | Robustness / Low | 已修 / 已确认提交111059c | [初始化/映射/EOF与原NDL协议/host实际合成](../crp-f0110/README.md) |
-| CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
-| CCR-F0112 | Robustness / Medium | 已修 / 已确认，PAL a744cee/根文档提交见回执 | [RIX/MKF边界/所有权/实际RV64与标准消费者](../crp-f0112/README.md) |
-| CCR-F0113 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [软件/宿主派发隔离、完整diff与真实RV64验收](../crp-f0113/README.md) |
-| CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
-| CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
-| CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) |
-| CCR-F0117 | Confirmed / Low | 已修 / 已确认提交b3b3b88 | [NDL64批准/最终实现与验收](../crp-f0117/README.md#final-ndl64) |
-| CCR-F0118 | Robustness / Medium | 已修 / 已确认提交91388f4；原静音be8a4c0 | [普通重开/清流及真实验收](../crp-audio-lifecycle-20261021/README.md#implementation-20261021) |
-| CCR-F0119 | Confirmed / Low | 已修 / 已确认提交7912c42 | [NPC init(int)/参数哨兵/真实CPU/ABI与清理](../crp-f0119/README.md) |
+| ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 | 最终验收2026-10-21 |
+|---|---|---|---|---|
+| CCR-F0001 | Confirmed / Medium | 已修 / 已确认提交252eaea | [C UB反例/原NPC数值核验及真实回归](../crp-f0001/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0002 | Confirmed / High | 已修 / 已确认提交784e73b | [全地址身份/精确异常/真实消费者](../crp-f0002/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0003 | Confirmed / Medium | 已修 / 补充优化Completed；已确认，提交回执见报告 | [共享ecall链路/并行MTVEC/STA对照](../crp-f0003/README.md#parallel-mtvec-result-20261019) | 已修复且验收通过；用户已确认 |
+| CCR-F0004 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [非对齐/别名安全与共享真实回归](../crp-f0004-f0005-f0008/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0005 | Confirmed / Medium | 已修 / 已确认，代码bc7a110/补验1ddaf04 | [既有bc7a110修复/本组补验](../crp-f0004-f0005-f0008/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0006 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [保留字段/原指令诊断及真实回归](../crp-f0006-f0007/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0007 | Confirmed / Low | 已修 / 已确认提交7e68ca7 | [PMEM/Sv39/MMIO边界及真实回归](../crp-f0006-f0007/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0008 | Confirmed / Medium | 已修 / 已确认提交1ddaf04 | [整数偏移先于指针及边界验证](../crp-f0004-f0005-f0008/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0009 | Confirmed / High | 已修 / 已确认提交d28c393 | [最终源码验收及清理回执](../crp-f0009/README.md#implementation-result-20261019) | 已修复且验收通过；用户已确认 |
+| CCR-F0010 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0011 | Confirmed / Medium | 已修 / 已确认提交12afa58 | [初始化/欠载原函数验收](../crp-f0010-f0011/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0012 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0013 | Confirmed / Medium | 已修 / 已确认提交77a9471 | [边界及真实CLI验收](../crp-f0012-f0013/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0014 | Confirmed / Medium | 已修 / 已确认提交194d2c0 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0016 | Confirmed / Medium | 已修 / 已确认提交de7e3be | [三段启动同步/真实golden及性能诊断](../crp-f0016/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0017 | Confirmed / Medium | Closed / 不采用QEMU参考源，用户已确认；未实施/未计已修 | [分析、PC勘误与用户范围闭合/提交](../crp-f0017/README.md#qemu-scope-closure-20261021) | 无需实施闭合/未计已修；用户已确认 |
+| CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0019 | Confirmed / Low | 已修 / 已确认提交522bed7 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0020 | Confirmed / Medium | 已修 / 已确认提交8e5b1ca | [SD方向/I/O/按需容量验收](../crp-f0020/README.md#f0020-final-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0021 | Confirmed / Medium | 已修 / 已提交 | 2a96eb3；[ELF边界/真实FTRACE验收](../crp-f0021/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0022 | Confirmed / Medium | 已修 / 已提交 | bc7a110；[嵌入镜像/真实AM验收](../crp-f0022/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0023 | Confirmed / High | 已修 / 已确认提交c9be898 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0024 | Confirmed / Medium | 已修 / 已确认提交fc7835e | [双页表嵌套切走恢复/真实回归及回执](../crp-f0024/README.md#approval-submit-20261018) | 已修复且验收通过；用户已确认 |
+| CCR-F0025 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0026 | Confirmed / High | 已修 / Completed，已获确认；本次提交见报告回执 | [链接期越界诊断/真实回归](../crp-f0026/README.md#implementation-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0027 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0029 | ContractQuestion / Medium | 未修 / 已批准与F0073联合延期，保护契约保留 | [原问题](../FINAL_FINDINGS.md#ccr-f0029)、[本次延期裁决](../crp-f0073/README.md) | 批准延期/Partial；用户已确认 |
+| CCR-F0030 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [共享表/真实RV64/方案](../crp-memory-lifetime-20261021/README.md) | 批准延期/Partial；用户已确认 |
+| CCR-F0031 | ContractQuestion / Medium | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0031) | 能力移交/未实施；用户已确认 |
+| CCR-F0032 | Robustness / Low | 已修 / 已确认提交30bbde8 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0033 | Confirmed / Medium | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0034 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0035 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0036 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0037 | Confirmed / High | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0038 | Confirmed / Low | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0039 | Confirmed / Low | 已修 / 已提交 | b2229ef；[报告](../crp-f0039-f0040/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0040 | Confirmed / Low | 未修完 / Partial；并发/异常/析构已批准延期 | 串行1603f88；[双上下文见证/用户延期](../crp-f0040/README.md#deferral-20261021) | 批准延期/Partial；用户已确认 |
+| CCR-F0041 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0042 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0043 | Confirmed / Medium | 未修 / 用户已批准延期，保留竞争风险 | [现组合交错见证/范围裁决](../crp-audio-lifecycle-20261021/README.md) | 批准延期/Partial；用户已确认 |
+| CCR-F0044 | Robustness / Low | 已修 / 已提交 | 1603f88；[容量分片及原测试真实验收](../crp-compatibility-20261018/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0045 | Robustness / Low | 已修 / 已提交 | f4e3c0c；[本组报告](../crp-f0045/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0046 | Confirmed / High | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0047 | Confirmed / Medium | 已修 / 已确认提交aa13b04 | [uptime补齐/中断返回切换/真实RT验收](../crp-f0047/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0048 | Confirmed / Low | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0049 | Confirmed / Medium | 已修 / 已提交 | d9a3d42；[报告](../crp-f0049/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0050 | Confirmed / Medium | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0051 | Confirmed / Medium | 已修 / 已提交 | 4ab9f3f；[报告](../crp-f0051/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0052 | Confirmed / Medium | 已修 / 终态补充已确认提交22791cf | am-kernels c1ba0bb；[原报告](../crp-f0052/README.md)、[双平台真实补充](../crp-f0052-ref-terminal/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0053 | Confirmed / Low | 已修 / 已提交 | am-kernels 6dc302a / root e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0054 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [arena/页分配所有权与方案](../crp-memory-lifetime-20261021/README.md) | 批准延期/Partial；用户已确认 |
+| CCR-F0055 | ContractQuestion / Low | 已修 / 已确认；本批提交回执见报告，语义已批准 | [两平台无RTC声明/保留原行为](../crp-f0055/README.md#implementation-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0056 | Robustness / Low | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0057 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0058 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0059 | Confirmed / Medium | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0060 | Confirmed / Medium | 已修 / 已确认提交7b83685 | [本组报告](../crp-f0060/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0061 | Robustness / Medium | 已修 / 已确认提交0ddd35c | [参数预算/提交回执](../crp-f0061/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0062 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0063 | Confirmed / High | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0064 | Robustness / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0065 | Confirmed / Medium | 已修 / 已确认提交5941586 | [本组报告](../crp-f0064-f0065/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0066 | Confirmed / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0067 | Robustness / Medium | 已修 / Completed，已确认；本次提交见报告回执 | [本组报告](../crp-f0066-f0067/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0068 | Confirmed / Medium | 已修 / 已确认提交9fb8831 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0070 | Confirmed / High | 已修 / 已确认提交6264781 | [初始化失败停止/真实消费者](../crp-f0070/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0071 | Confirmed / High | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0071) | 能力移交/未实施；用户已确认 |
+| CCR-F0072 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [七布局复制/实际disk读写/容量边界及提交](../crp-f0072/README.md#submit-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0073 | Robustness / Medium | 未修 / 原版分析完成，用户批准与F0029联合延期 | [真实RV64边界/用户延期决定](../crp-f0073/README.md) | 批准延期/Partial；用户已确认 |
+| CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0075 | Robustness / Low | 已修 / 已确认提交015841a | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0076 | Confirmed / Medium | 已修 / 已确认提交e7a3e26 | [内核错误码/newlib请求对象验收](../crp-f0076/README.md#f0076-final-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0077 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0078 | Robustness / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0079 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0080 | Confirmed / Medium | 已修 / 已确认提交nested5d9ffdb，根记录见报告 | [newlib边界/实际新库用户与三前台](../crp-f0079-f0080/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0081 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0082 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0083 | Confirmed / Medium | 已修 / Completed，用户确认、nested 8101fad；root文档1dbf841 | [setenv失败保持/所有权/实际新库](../crp-f0083/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0084 | Confirmed / Medium | Closed / 当前目标无需实施，用户已确认；未计已修 | [Linux不依赖核实、用户闭合与提交](../crp-f0084/README.md#linux-scope-closure-20261021) | 无需实施闭合/未计已修；用户已确认 |
+| CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0086 | Confirmed / Medium | 已修 / 已确认（仅源清单）；提交回执见报告 | [11真实对象/两域核实与提交；wrapper整体仍链接失败、运行NotRun](../crp-f0086/README.md#submit-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0087 | Robustness / Low | 已修 / Completed，用户已确认，实际提交见报告回执 | [exec示例确认/提交](../crp-f0087/README.md#submit-20261020) | 已修复且验收通过；用户已确认 |
+| CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0089 | Robustness / Low | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0090 | Robustness / Low | 已修 / 已确认，提交见回执 | [NDL失败与生命周期、真实RV64及标准回归](../crp-f0090/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0091 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0092 | Robustness / Medium | 已修 / 已确认，提交见回执 | [事件入队边界/真实RV64及标准回归](../crp-f0092/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0093 | Confirmed / Medium | 已修 / 已确认，提交见回执 | [定时器重入/slot生命周期及实际RV64](../crp-f0093/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0094 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0095 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0096 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0097 | Confirmed / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0098 | Confirmed / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0099 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0100 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0101 | Robustness / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0102 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0103 | Confirmed / Low | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0104 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0105 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0106 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0107 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [正确seek/完整读后发布/缓存重载](../crp-f0107-f0108/README.md#implementation-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0108 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [只读RWops/FontRW/关闭与借用生命周期](../crp-f0107-f0108/README.md#implementation-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0110 | Robustness / Low | 已修 / 已确认提交111059c | [初始化/映射/EOF与原NDL协议/host实际合成](../crp-f0110/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0112 | Robustness / Medium | 已修 / 已确认，PAL a744cee/根文档提交见回执 | [RIX/MKF边界/所有权/实际RV64与标准消费者](../crp-f0112/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0113 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [软件/宿主派发隔离、完整diff与真实RV64验收](../crp-f0113/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) | 已修复且验收通过；用户已确认 |
+| CCR-F0117 | Confirmed / Low | 已修 / 已确认提交b3b3b88 | [NDL64批准/最终实现与验收](../crp-f0117/README.md#final-ndl64) | 已修复且验收通过；用户已确认 |
+| CCR-F0118 | Robustness / Medium | 已修 / 已确认提交91388f4；原静音be8a4c0 | [普通重开/清流及真实验收](../crp-audio-lifecycle-20261021/README.md#implementation-20261021) | 已修复且验收通过；用户已确认 |
+| CCR-F0119 | Confirmed / Low | 已修 / 已确认提交7912c42 | [NPC init(int)/参数哨兵/真实CPU/ABI与清理](../crp-f0119/README.md) | 已修复且验收通过；用户已确认 |
 
 ## 2026-10-18 条件兼容修复补充
 
