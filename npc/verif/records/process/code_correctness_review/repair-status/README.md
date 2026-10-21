@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-原119项当前对账：101已修（均已确认；F0072本次提交身份见报告#submit-20261021）+16项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施、不计已修或CRP待修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：102已修（均已确认；F0086仅源清单缺陷，本次提交身份见报告#submit-20261021）+15项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施、不计已修或CRP待修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -127,7 +127,7 @@
 | CCR-F0083 | Confirmed / Medium | 已修 / Completed，用户确认、nested 8101fad；root文档1dbf841 | [setenv失败保持/所有权/实际新库](../crp-f0083/README.md) |
 | CCR-F0084 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0084) |
 | CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) |
-| CCR-F0086 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0086) |
+| CCR-F0086 | Confirmed / Medium | 已修 / 已确认（仅源清单）；提交回执见报告 | [11真实对象/两域核实与提交；wrapper整体仍链接失败、运行NotRun](../crp-f0086/README.md#submit-20261021) |
 | CCR-F0087 | Robustness / Low | 已修 / Completed，用户已确认，实际提交见报告回执 | [exec示例确认/提交](../crp-f0087/README.md#submit-20261020) |
 | CCR-F0088 | Confirmed / Low | 已修 / 已确认，nested71fac82；root回执见报告 | [Navy syscall ABI/真实优化及三前台](../crp-f0077-f0078-f0088/README.md) |
 | CCR-F0089 | Robustness / Low | 已修 / Completed，已确认，实际提交见报告回执 | [堆/页表容量事务合组](../crp-f0089/README.md) |
@@ -485,3 +485,9 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 用户明确将两项定义为NPC能力扩展，交由Linux启动主线根据需求与ysyxSoC框架修改，此CRP不处理同类能力扩展。已同步两行当前处置/CRP workflow/修复计划/最终问题清单补充与Linux接收入口；原119审阅分类及历史计数不改写，现按101已修+16 CRP待修+2移交对账。两项未实施、不记已修；本维护不确认/提交F0072、不启动F0086或Linux Phase。
 
 2026-10-21 用户“提交”确认F0072已报告范围和F0031/F0071移交规则，授权六路径精确根提交。复用87/969及scope32既有检查，提交前11项/377本地证据/8正式资产保持；实际身份见[F0072收尾](../crp-f0072/README.md#submit-20261021)与local/submit-receipt.json。101已修均获确认，另16 CRP待修+2 Linux扩展移交；本轮提交后停止，不push/启动F0086或M阶段。
+
+## F0086源清单修复与符号质询核实（2026-10-21）
+
+用户“继续”授权单元、前F0072实际4c2019c；wrapper Make ramdisk.c→disk.c及EOF换行，原缺源make2，最终11源/4实际库编译成功但wrapper ld缺5 VME符号，完整wrapper仍失败/运行NotRun。用户质询后确认普通NEMU image exit0、最终ELF五符号有定义，旧/新SRCS下mm/loader对象完全相同；仅当前LIBS=libam不提供对应定义，与disk迁移无因果。两个__am_*为此前a92ccf9 NEMU私有loader依赖，不混作公开API或NEMU缺实现。57检查/完整diff正反及两次清理共4758项20740556B、8正式资产保持，见[报告](../crp-f0086/README.md)。102已修+15 CRP待修+2 Linux扩展移交；本组结果确认/commit Pending，唯一TASK_QUEUE，无自动commit/下一组/M2。
+
+2026-10-21 用户“提交以后确认……”确认F0086并授权五路径根提交后核实libam职责/宿主。37证据/33终检及生产patch保持；三正式产物变化已由用户确认本人生成需保留，已记录当前身份、其余五资产保持。实际身份见[F0086提交收尾](../crp-f0086/README.md#submit-20261021)及local实际回执；102已修均确认+15 CRP待修+2移交，wrapper整体运行NotRun保持，不自动push/开始F0113或M阶段。

@@ -6,7 +6,7 @@ NANOS_LITE_HOME = $(abspath ../../../nanos-lite)
 
 # 复用 nanos-lite/src 下的源文件（VPATH 定位），
 # 以便其中的 "files.h"/"syscall.h" 等引号头文件按原路径解析。
-SRCS = main.c mm.c device.c fs.c syscall.c loader.c proc.c irq.c ramdisk.c ramdisk_stubs.S stubs.c
+SRCS = main.c mm.c device.c fs.c syscall.c loader.c proc.c irq.c disk.c ramdisk_stubs.S stubs.c
 VPATH = $(NANOS_LITE_HOME)/src
 INC_PATH += $(NANOS_LITE_HOME)/include
 

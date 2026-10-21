@@ -707,3 +707,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [NPC能力扩展范围裁决](code_correctness_review/REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)：用户明确F0031/F0071移交Linux启动主线，按需求与ysyxSoC框架处理，退出CRP正确性修复。当前119行=101已修+16 CRP待修+2能力扩展移交；未实施、不计已修。流程/逐项表/原问题补充/Linux接收入口及状态同步；文档维护不推进Phase，F0072确认/commit仍Pending。
 
 2026-10-21 用户“提交”确认[F0072及能力扩展范围维护](code_correctness_review/crp-f0072/README.md#submit-20261021)，授权本批六路径根提交；验收/清理复用，11项提交前复核/377本地证据与8正式资产保持。实际commit/暂存范围见报告定位及local提交回执；忽略资料不由commit备份。101已修均获确认，16 CRP待修+2移交，提交后停止，F0086未Start，无push。
+
+2026-10-21 [F0086 wrapper源清单](code_correctness_review/crp-f0086/README.md) Completed（仅缺源，结果确认/commit Pending）：ramdisk.c→disk.c，11源/4真实库编译、完整wrapper仍ld失败/运行NotRun。用户质询后核实正常NEMU image成功/五符号已定义、旧新mm/loader对象相同；仅wrapper libam与VME配置/私有helper依赖不匹配，非disk迁移导致NEMU缺实现。57检查/完整diff正反、两域符号确认及两轮4758项20740556B清理、8正式资产保持。102已修+15 CRP待修+2 Linux扩展移交，唯一TASK_QUEUE，不自动commit/push/M2。
+
+2026-10-21 用户确认[F0086源清单修复](code_correctness_review/crp-f0086/README.md#submit-20261021)，授权先提交五路径再核实libam接口/宿主；验收/清理复用，37证据/33终检及生产patch保持，三新正式产物经用户确认自建需保留、其余五保持。实际commit由报告所在提交及local回执定位；102已修均确认+15 CRP待修+2移交，wrapper整体仍链接失败/运行NotRun，不自动push/F0113/M阶段。
