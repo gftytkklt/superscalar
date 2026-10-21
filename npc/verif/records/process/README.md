@@ -701,3 +701,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-20 用户明确批准A后，[F0032 AM VME根页/分配失败保护](code_correctness_review/crp-f0032/README.md) Completed：单源6增3删，host24场景与实际RV64旧BAD/最终16GOOD、am-tests p初始化/标准三前台八帧hello38→173；194preclean/9348身份/完整diff正反及9401文件361741235B清理，正式五资产保持。99已修20未修完，本组结果确认/commit Pending；前分析待决为历史，唯一TASK_QUEUE，无push/M2。
 
 2026-10-20 F0032已确认提交30bbde8；用户批准uptime补计后，[F0047 RT tick/中断返回切换](code_correctness_review/crp-f0047/README.md) Completed：BSP单源33增4删，host边界/嵌套与真实RT 100tick/秒、5tick超时、soft回调/抢占，生产NEMU及新NPC/REF到msh；53preclean/3232身份/50RT核心源、完整diff正反与3243文件321639506B清理，8正式资产保持。100已修19未修完，本组结果确认/commit Pending，唯一TASK_QUEUE，不扩NPC定时硬件/M2，无push。
+
+2026-10-21 [F0072 内嵌盘启动复制](code_correctness_review/crp-f0072/README.md) Completed：单源可写.data.ramdisk归入已有数据加载，七布局原14精确失败/7空控制、最终21真实NPC GOOD，实际AM+nanos disk四消费者GOOD、7超flash拒绝及非内嵌对象相同；87preclean/完整diff正反、943清理前身份/572项171104479B清理，8正式资产保持。完整盘149021696B仍超过16MiB flash，F0071/VME不变；101已修18未修完，本组结果确认/commit Pending，唯一TASK_QUEUE，不自动commit/push/M2。
+
+2026-10-21 [NPC能力扩展范围裁决](code_correctness_review/REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)：用户明确F0031/F0071移交Linux启动主线，按需求与ysyxSoC框架处理，退出CRP正确性修复。当前119行=101已修+16 CRP待修+2能力扩展移交；未实施、不计已修。流程/逐项表/原问题补充/Linux接收入口及状态同步；文档维护不推进Phase，F0072确认/commit仍Pending。
+
+2026-10-21 用户“提交”确认[F0072及能力扩展范围维护](code_correctness_review/crp-f0072/README.md#submit-20261021)，授权本批六路径根提交；验收/清理复用，11项提交前复核/377本地证据与8正式资产保持。实际commit/暂存范围见报告定位及local提交回执；忽略资料不由commit备份。101已修均获确认，16 CRP待修+2移交，提交后停止，F0086未Start，无push。

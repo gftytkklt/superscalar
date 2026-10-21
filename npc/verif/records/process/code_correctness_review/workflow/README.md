@@ -12,6 +12,13 @@
 - 当前状态：[CURRENT_STATE](../../../../../../.agent/CURRENT_STATE.md)；唯一未来批次：[TASK_QUEUE / CRP Next](../../../../../../.agent/TASK_QUEUE.md#crp-next)。本文件不保存第二份 Next。
 - 恢复时先执行全局 Guard，再读取本文件和队列列出的问题/证据；本规则本身不授权实施、提交或改变 CQ。
 
+<a id="npc-capability-boundary"></a>
+## NPC能力扩展的归属（2026-10-21）
+
+用户明确F0031、F0071为NPC能力扩展，退出本CRP正确性修复范围，交由Linux启动主线根据实际需求与ysyxSoC框架处理。同类能力扩展不在CRP实施；既有功能的实现错误继续按明确契约修复。权威裁决与ID/计数归属见[修复计划](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)，接收入口见[Linux计划](../../../../docs/LINUX_PLAN.md#npc-capability-followup-20261021)。
+
+保留原编号/审阅证据，不把移交记为修复或能力可用；实际依赖该能力的运行仍如实记NotRun。本范围裁决不启动任何Linux阶段，不改变F0072结果确认/commit及下一CRP单元门槛。
+
 <a id="reference-materials"></a>
 ## 实现背景与讲义参考
 

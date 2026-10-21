@@ -25,7 +25,7 @@
 |---|---|---|
 | F0040 C++ guard/DSO | 用户最新条件授权内已修签名/完成字节/DSO与串行初始化，已提交1603f88；并发初始化仍未实现，整项Partial | 后续明确并发/异常/析构需求再闭合完整项，不能把串行成功当作线程安全 |
 | F0029/F0030 VME权限/撤映射/页表回收 | 原五CQ中两项，权限与生命周期教学子集未定；原问题不删除 | 继续留到正式内存管理阶段，或明确权限/撤映射及页表所有权/回收契约 |
-| F0031 NPC VME/MPE能力 | dummy能力仍未闭合，不能从当前RT/IOE通过推定多核/虚存可用 | 延续延期；如纳入新能力，转正式计划，当前CRP不自行推进M阶段 |
+| F0031 NPC VME/MPE能力（现已移交） | 2026-10-21用户明确归为NPC能力扩展，退出CRP；dummy能力仍未实现 | Linux启动主线按需求与ysyxSoC框架处理，不是CRP启动待裁决项；见[范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021) |
 | F0054 free契约 | free空实现是否允许arena教学子集未决定，仍未修 | 延续延期，或明确可回收分配器/单次arena的需求与验收 |
 | F0055 RTC声明 | has_rtc=true与固定日期的能力契约未定；与uptime时基分开 | 延续延期，或明确真实墙钟/不支持声明/占位允许范围 |
 | 上轮F0045的NEMU-on-AM音频边界：已澄清 | Kconfig在!TARGET_AM内才可选HAS_AUDIO，audio.c按HAS_AUDIO参与编译；不是受支持配置的可达兼容性回归。删除MUXDEF候选已撤回 | 不再作为人工启动阻塞；若未来开发AM目标音频再正式规划，不要求本轮额外豁免 |
@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-全部已有功能修复100（前99已确认提交30bbde8；F0047已确认、本批授权提交）；未修完19，含5CQ及F0040/F0118 Partial。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：101已修（均已确认；F0072本次提交身份见报告#submit-20261021）+16项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施、不计已修或CRP待修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -72,7 +72,7 @@
 | CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0029 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0029) |
 | CCR-F0030 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0030) |
-| CCR-F0031 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0031) |
+| CCR-F0031 | ContractQuestion / Medium | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0031) |
 | CCR-F0032 | Robustness / Low | 已修 / 已确认提交30bbde8 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
 | CCR-F0033 | Confirmed / Medium | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
 | CCR-F0034 | Confirmed / Medium | 已修 / 已提交 | 71c6cf8；[报告](../crp-f0034-f0035-f0036/README.md) |
@@ -88,7 +88,7 @@
 | CCR-F0044 | Robustness / Low | 已修 / 已提交 | 1603f88；[容量分片及原测试真实验收](../crp-compatibility-20261018/README.md) |
 | CCR-F0045 | Robustness / Low | 已修 / 已提交 | f4e3c0c；[本组报告](../crp-f0045/README.md) |
 | CCR-F0046 | Confirmed / High | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
-| CCR-F0047 | Confirmed / Medium | 已修 / 已确认、本批授权提交 | [uptime补齐/中断返回切换/真实RT验收](../crp-f0047/README.md) |
+| CCR-F0047 | Confirmed / Medium | 已修 / 已确认提交aa13b04 | [uptime补齐/中断返回切换/真实RT验收](../crp-f0047/README.md) |
 | CCR-F0048 | Confirmed / Low | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
 | CCR-F0049 | Confirmed / Medium | 已修 / 已提交 | d9a3d42；[报告](../crp-f0049/README.md) |
 | CCR-F0050 | Confirmed / Medium | 已修 / 已提交 | e9a71f3；[报告](../crp-f0046-f0048-f0050/README.md) |
@@ -112,8 +112,8 @@
 | CCR-F0068 | Confirmed / Medium | 已修 / 已确认提交9fb8831 | [FB边界/真实ecall与三前台/清理](../crp-f0068/README.md) |
 | CCR-F0069 | Confirmed / Medium | 已修 / 已确认提交e58bbd0 | [本组计划及勘误](../crp-f0069/README.md) |
 | CCR-F0070 | Confirmed / High | 已修 / 已确认提交6264781 | [初始化失败停止/真实消费者](../crp-f0070/README.md) |
-| CCR-F0071 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0071) |
-| CCR-F0072 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0072) |
+| CCR-F0071 | Confirmed / High | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0071) |
+| CCR-F0072 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [七布局复制/实际disk读写/容量边界及提交](../crp-f0072/README.md#submit-20261021) |
 | CCR-F0073 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0073) |
 | CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) |
 | CCR-F0075 | Robustness / Low | 已修 / 已确认提交015841a | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
@@ -475,3 +475,13 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 ## F0047 uptime方案批准并完成（2026-10-20）
 
 前F0032已确认实际30bbde8；用户“提交后继续”授权本单元，并明确选择按uptime补齐tick（含长暂停）。BSP context.c33增4删，100Hz小数累计/RT IRQ nest及首from末to延后返回切换，非SMP签名修正。host普通/san/NDEBUG、真实RT旧0tick BAD/最终与模块NDEBUG各100tick/秒、5tick超时/soft回调/16次ISR抢占GOOD；生产NEMU到msh+2s、全新NPC/REF到msh/difftest ON。53preclean/3232身份/50共享RT源/完整diff正反与3243文件321639506B清理，正式8资产保持，详见[报告](../crp-f0047/README.md)。100已修19未修完，本组结果确认/commit Pending，NPC周期timer/全RT NDEBUG/其他配置未扩，唯一TASK_QUEUE，无push/M2。
+
+## F0072完成（2026-10-21）
+
+用户“继续CRP修复”授权本组，前F0047已确认实际aa13b04；单源resources.S改为可写.data.ramdisk，7布局原14个非空BAD72/7空控制，最终21GOOD/真实AM+nanos disk四消费者GOOD、7超flash容量拒绝、非嵌入对象相同，87preclean及完整diff正反通过。用户强调完整ramdisk无物理存储/flash不够：正式149021696B、flash16MiB，F0071未修、未扩VME。清理572项171104479B零tracked/正式删除、8正式资产保持，详见[报告](../crp-f0072/README.md)。101已修18未修完，本组结果确认/commit Pending；唯一TASK_QUEUE入口，不自动commit/下一组/M2。
+
+## F0031/F0071范围裁决落档（2026-10-21）
+
+用户明确将两项定义为NPC能力扩展，交由Linux启动主线根据需求与ysyxSoC框架修改，此CRP不处理同类能力扩展。已同步两行当前处置/CRP workflow/修复计划/最终问题清单补充与Linux接收入口；原119审阅分类及历史计数不改写，现按101已修+16 CRP待修+2移交对账。两项未实施、不记已修；本维护不确认/提交F0072、不启动F0086或Linux Phase。
+
+2026-10-21 用户“提交”确认F0072已报告范围和F0031/F0071移交规则，授权六路径精确根提交。复用87/969及scope32既有检查，提交前11项/377本地证据/8正式资产保持；实际身份见[F0072收尾](../crp-f0072/README.md#submit-20261021)与local/submit-receipt.json。101已修均获确认，另16 CRP待修+2 Linux扩展移交；本轮提交后停止，不push/启动F0086或M阶段。
