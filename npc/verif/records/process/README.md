@@ -765,3 +765,11 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 F0118补充已确认实际91388f4（七路径237增11删），证据/源码/八资产保持、根树/index提交后干净。按“提交后继续”执行[F0030/F0054回收必要分析](code_correctness_review/crp-memory-lifetime-20261021/README.md)：共享heap与用户newlib区别/页表所有权/exec当前无回收已核，三真实RV64分别观察free不复用及有限arena耗尽、四轮12私有表页零回收/共享内核分支、真实free_page panic；无生产改动，188文件638743B清理。分析技术Completed/回收范围裁决Pending、两项仍CQ未修，108+7+2+2不变，分析文档未提交，唯一TASK_QUEUE#crp-next，M2不变。
 
 2026-10-21 用户明确选择F0030/F0054联合延期并保留耗尽风险，两项CQ仍未修；[分析/延期最终停点](code_correctness_review/crp-memory-lifetime-20261021/README.md#deferral-20261021)及恢复条件已落档，分析文档commit Pending，生产未改、108+7+2+2不变。
+
+2026-10-21 F0030/F0054文档已确认实际3450275（四路径96增4删），按“提交后继续”完成[F0055 RTC必要分析](code_correctness_review/crp-f0055/README.md)：NEMU/两平台软件能力与六字段、跨1.1秒不变及原rtc_test三行已实测，消费者影响/讲义简化与日历/uptime区别已核。NPC仅软件函数在RV64 NEMU执行非RTL，生产未改，196文件685042B清理。技术Completed/能力策略Pending，用户追问影响不构成实施批准；108+7+2+2保持，分析未提交，唯一TASK_QUEUE#crp-next，M2不变。
+
+2026-10-21 [F0055两平台无日历RTC能力声明修正](code_correctness_review/crp-f0055/README.md#implementation-20261021)：用户批准最小has_rtc=false，两源2增2删，present/占位/UPTIME/J4/rtc_test保持。新源真实RV64 present1/has_rtc0/跨1100025us日历不变及原rtc_test三行逐行一致，四命令exit0/三拒假PASS，NPC仅软件模块执行非完整RTL；14输入其余源+aclock/8资产/原diff保持，完整diff正反逐字节、196文件687445B清理。Completed/结果确认及commit Pending，109+6+2+2，唯一TASK_QUEUE#crp-next，下一组/M2未Start。
+
+2026-10-21 [F0040 C++并发边界分析及延期](code_correctness_review/crp-f0040/README.md#deferral-20261021)：用户“继续，暂不提交”明确豁免本单元前批提交前置，F0055未提交改动保留。实际RV64串行只初始化一次、两个独立内核上下文构造中yield导致初始化两次、析构注册预期BAD1；六现存ELF非新link盘点，ABI/编译器调用与边界已核。用户批准延期并保留Partial/风险，无F0040新生产修改；10输入/原F0055两源及34证据/八资产/ONS差异保持，186文件618221B清理。109+6+2+2，F0055及本分析均未提交，唯一TASK_QUEUE#crp-next，当前停止无push/M2。
+
+2026-10-21 用户“提交，现在已经完成所有待修复问题的决策了吗？”确认F0055修复与F0040分析/延期累计八路径；[提交附记](code_correctness_review/crp-f0040/README.md#submit-20261021)。56份原证据/源码/八资产/ONS原差异保持，复用既有验收。119行当前处置均明确：109已修+6批准延期/Partial+2移交Linux+2当前范围无需实施闭合，0当前处置待决；见[决策状态](code_correctness_review/repair-status/README.md#decision-status-20261021)。未来实现契约/未测限制仍保留，本轮未执行完整收尾核对，无push/M2；实际提交身份在本组local/submit-20261021及.agent补充回执。

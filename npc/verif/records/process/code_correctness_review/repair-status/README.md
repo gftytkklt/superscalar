@@ -1,5 +1,13 @@
 # CRP 修复状态与人工启动 guard
 
+> **当前提交确认（2026-10-21）**：用户“提交，现在已经完成所有待修复问题的决策了吗？”确认F0055已报告修复及F0040分析/延期范围，累计八路径随本批提交，[实际回执](../crp-f0040/README.md#submit-20261021)。当前119项处置均已明确，详见下方决策状态核对；旧Pending/暂不提交为历史截面。未push或启动完整收尾核对/M2。
+
+> **当前C++分析（2026-10-21）**：用户“继续，暂不提交”允许保留F0055未提交修复执行本单元；[F0040分析/延期](../crp-f0040/README.md#deferral-20261021)Completed，用户批准“延期并保留Partial及风险”，无F0040新生产改动。真实串行一次、双上下文构造两次、析构注册BAD已留档，186文件618221B清理；109+6+2+2保持，本批和F0055均未提交。唯一TASK_QUEUE#crp-next。
+
+> **当前RTC修正（2026-10-21）**：用户批准两平台has_rtc=false最小范围，[F0055实现/验证](../crp-f0055/README.md#implementation-20261021)Completed，结果确认/本轮commit Pending；109已修+6未修完+2移交+2无需实施闭合。两源2增2删、实际RV64查询false/原日历与rtc_test输出保持，未运行完整NPC RTL；全部正式资产/原差异保持，196文件687445B清理。唯一TASK_QUEUE#crp-next。下方Pending是批准前历史。
+
+> **当前RTC分析（2026-10-21）**：F0030/F0054分析已确认提交3450275；[F0055技术分析](../crp-f0055/README.md)Completed，has_rtc声明策略Pending，生产未改/F0055仍CQ未修。真实NEMU与NPC软件字段对照、原rtc_test三行观察/消费者核对完成，196文件685042B清理；108+7+2+2不变。用户追问影响已答复，未据此推定批准，唯一TASK_QUEUE#crp-next。
+
 > **当前回收分析（2026-10-21）**：F0118补充已确认提交91388f4；[F0030/F0054必要分析](../crp-memory-lifetime-20261021/README.md)及延期留档Completed，用户已选择“联合延期并保留风险”，两项仍CQ未修。真实RV64见证free不复用/四轮12私有表页零回收/free_page panic，15源/8资产保持及188文件638743B清理；108+7+2+2不变，生产未改，分析文档未提交。唯一下一入口TASK_QUEUE#crp-next。
 
 > **当前音频结果（2026-10-21）**：F0073分析已确认提交00c3b04；用户批准F0043延期、F0118清旧PCM后重开。[补充修复](../crp-audio-lifecycle-20261021/README.md)Completed，结果确认/本轮commit Pending；108已修+7CRP未修完+2移交+2无需实施闭合。16 host/五真实RV64/标准nanos三前台及hello通过，F0043竞争仍可复现。唯一下一入口TASK_QUEUE#crp-next。下方旧计数为历史截面。
@@ -52,9 +60,23 @@
 
 验收限制继续保留：历史RT到msh后SIGTERM；本兼容性单元RT只重新image，未重跑到msh。本轮nanos到观察点后SIGTERM，音频小guest正常GOOD TRAP；未跑四AM应用、实际声音/窗口、全配置及长时调度，CPU按链接闭包未受影响不重跑。两缺源fceux/oslab0仍按原批准暂缓。ignored测试证据/.agent本地保管，commit不代表备份；无新安装或环境阻塞，不要求为未涉及的能力逐一新增豁免。
 
+<a id="decision-status-20261021"></a>
+## 当前处置决策核对（2026-10-21）
+
+按本表119个唯一ID逐行分类，无遗漏、无当前处置待决项。用户已明确决定六项延期/Partial、两项移交和两项范围闭合；批准延期保留风险，不代表问题已经修复。
+
+| 当前处置 | 数量 | 范围 / 决策证据 |
+|---|---|---|
+| 已修 | 109 | 各行修复报告；本批F0055结果已随“提交”获确认 |
+| 批准延期或Partial | 6 | F0029/F0073见[F0073](../crp-f0073/README.md)；F0030/F0054见[回收分析](../crp-memory-lifetime-20261021/README.md)；F0043见[音频](../crp-audio-lifecycle-20261021/README.md)；F0040见[C++延期](../crp-f0040/README.md#deferral-20261021) |
+| 移交Linux能力扩展，未实施 | 2 | F0031/F0071，见[范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021) |
+| 当前范围无需实施闭合，未计已修 | 2 | [F0017不采用QEMU参考源](../crp-f0017/README.md#qemu-scope-closure-20261021)、[F0084当前Linux目标范围](../crp-f0084/README.md) |
+
+这里只核对当前处置是否有决定；未来重启延期项的具体实现、Linux阶段自身未决项及未测能力仍保留。原始审阅分类不改写，CRP完整范围收尾核对仍未执行。逐行机器核对见crp-f0040/local/submit-20261021/decision-audit.json；唯一后续入口仍TASK_QUEUE#crp-next。
+
 ## 当前逐项状态
 
-原119项当前对账：108已修（均已确认提交，F0118补充91388f4）+7项CRP未修完（4项原CQ及F0040 Partial/F0043/F0073）+2项NPC能力扩展移交Linux（F0031/F0071未实施）+2项当前目标无需实施闭合（F0017/F0084未计已修）。F0043、F0029/F0073与F0030/F0054已批准延期，其余未决契约保留；未来仅TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：109已修（F0055已获用户确认，随本批提交，实际回执见报告；其余已确认提交）+6项CRP未修完（3项原CQ F0029/F0030/F0054及F0040 Partial/F0043/F0073）+2项NPC能力扩展移交Linux（F0031/F0071未实施）+2项当前目标无需实施闭合（F0017/F0084未计已修）。F0029/F0073、F0030/F0054与F0043已批准延期；F0040未支持的并发/异常/析构已批准延期，保持Partial。未来仅TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -97,7 +119,7 @@
 | CCR-F0037 | Confirmed / High | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
 | CCR-F0038 | Confirmed / Low | 已修 / 已提交 | 0aa1dca；[报告](../crp-f0037-f0038/README.md) |
 | CCR-F0039 | Confirmed / Low | 已修 / 已提交 | b2229ef；[报告](../crp-f0039-f0040/README.md) |
-| CCR-F0040 | Confirmed / Low | 未修完 / 部分修复 | 1603f88；[本轮ABI/串行修正，线程同步未闭合](../crp-compatibility-20261018/README.md) |
+| CCR-F0040 | Confirmed / Low | 未修完 / Partial；并发/异常/析构已批准延期 | 串行1603f88；[双上下文见证/用户延期](../crp-f0040/README.md#deferral-20261021) |
 | CCR-F0041 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0042 | Confirmed / Medium | 已修 / 已提交 | e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0043 | Confirmed / Medium | 未修 / 用户已批准延期，保留竞争风险 | [现组合交错见证/范围裁决](../crp-audio-lifecycle-20261021/README.md) |
@@ -112,7 +134,7 @@
 | CCR-F0052 | Confirmed / Medium | 已修 / 终态补充已确认提交22791cf | am-kernels c1ba0bb；[原报告](../crp-f0052/README.md)、[双平台真实补充](../crp-f0052-ref-terminal/README.md) |
 | CCR-F0053 | Confirmed / Low | 已修 / 已提交 | am-kernels 6dc302a / root e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
 | CCR-F0054 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [arena/页分配所有权与方案](../crp-memory-lifetime-20261021/README.md) |
-| CCR-F0055 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0055) |
+| CCR-F0055 | ContractQuestion / Low | 已修 / 已确认；本批提交回执见报告，语义已批准 | [两平台无RTC声明/保留原行为](../crp-f0055/README.md#implementation-20261021) |
 | CCR-F0056 | Robustness / Low | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
 | CCR-F0057 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) |
 | CCR-F0058 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) |
@@ -552,3 +574,9 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 2026-10-21 用户“提交后继续”确认F0118补充结果，七路径实际91388f4/237增11删、mode/blob及证据/正式资产核对，提交后root/index干净；随后F0030/F0054必要分析技术部分Completed，回收范围裁决Pending，仍CQ未修。三RV64原版行为及188文件638743B清理见[报告](../crp-memory-lifetime-20261021/README.md)，无生产修改/本分析commit/push/M2，108+7+2+2保持。
 
 2026-10-21 用户在实际RV64结果及所有权分析后明确选择F0030/F0054“联合延期并保留风险（推荐）”，两项仍CQ未修，不计Fixed/Closed/ApprovedGap/Linux移交。分析与延期留档Completed、分析commit Pending；生产未改/108+7+2+2不变，后续具体回收需求明确再联合冻结。唯一TASK_QUEUE#crp-next，当前停点及恢复见[裁决附记](../crp-memory-lifetime-20261021/README.md#deferral-20261021)。
+
+2026-10-21 F0030/F0054分析四路径已确认实际3450275，mode/blob/17证据/15源/八资产核对、root/index提交后干净。本轮F0055[技术分析](../crp-f0055/README.md)完成，NEMU真实IOE及NPC软件模块has_rtc1/日历不变，原rtc_test打印三行；讲义允许占位、现消费者无该标志分支，改变查询值仍属公开能力语义取舍。用户追问影响并未批准false或延期，生产未改，分析commit Pending；108+7+2+2，下一仅TASK_QUEUE#crp-next。
+
+2026-10-21 用户影响追问后明确批准最小两处has_rtc=false；F0055两源2增2删，present/占位/UPTIME/J4/原测试保持，新源两guest四命令exit0，false查询/1.1秒uptime/原rtc_test三行一致；NPC仅软件字段在NEMU执行，非RTL。原16证据/其他源/八资产/ONS差异保持，完整diff正反及196文件687445B清理。F0055 Completed、结果确认/commit Pending，109+6+2+2；[实际实现与限制](../crp-f0055/README.md#implementation-20261021)，唯一TASK_QUEUE#crp-next，当前停止无push/M2。
+
+2026-10-21 用户“继续，暂不提交”明确允许F0055未提交时执行F0040必要分析；真实RV64 C++17串行1次、两个kcontext交错构造2次、非平凡析构注册cpp.c:19断言BAD1，现存六ELF符号盘点非新回归，编译枚举/诊断判据问题如实保留。用户选“延期并保留Partial及风险”，F0040仍未修完；10输入/F0055两源原patch和34证据/8资产/ONS差异保持，186文件618221B清理，无新生产修改/commit/push。109+6+2+2，下一仅TASK_QUEUE#crp-next；[本组报告](../crp-f0040/README.md)。
