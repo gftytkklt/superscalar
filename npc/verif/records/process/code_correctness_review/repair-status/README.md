@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-原119项当前对账：103已修（103均已确认；F0113提交身份见报告#submit-20261021；F0086仅源清单缺陷）+14项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施、不计已修或CRP待修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：103已修（均已确认提交；F0086仅源清单缺陷）+13项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施）+1项当前目标无需实施而闭合（F0084，Linux启动不依赖，未计已修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -125,7 +125,7 @@
 | CCR-F0081 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
 | CCR-F0082 | Confirmed / Medium | 已修 / 已确认提交nestedd923fa4，根回执见报告 | [exec输入边界/真实新库/标准update-run](../crp-f0081-f0082/README.md) |
 | CCR-F0083 | Confirmed / Medium | 已修 / Completed，用户确认、nested 8101fad；root文档1dbf841 | [setenv失败保持/所有权/实际新库](../crp-f0083/README.md) |
-| CCR-F0084 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0084) |
+| CCR-F0084 | Confirmed / Medium | Closed / 当前目标无需实施，用户已确认；未计已修 | [Linux不依赖核实、用户闭合与提交](../crp-f0084/README.md#linux-scope-closure-20261021) |
 | CCR-F0085 | Confirmed / Medium | 已修 / 已提交 | b739176；[报告](../crp-f0085/README.md) |
 | CCR-F0086 | Confirmed / Medium | 已修 / 已确认（仅源清单）；提交回执见报告 | [11真实对象/两域核实与提交；wrapper整体仍链接失败、运行NotRun](../crp-f0086/README.md#submit-20261021) |
 | CCR-F0087 | Robustness / Low | 已修 / Completed，用户已确认，实际提交见报告回执 | [exec示例确认/提交](../crp-f0087/README.md#submit-20261020) |
@@ -495,3 +495,9 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 2026-10-21 F0113 Completed：私有hook显式handled/output协议，handler域backend走原宿主陷入、独立软件Context；host普通/san各105、真实RV64 104及无hook7通过，标准update→run三前台/hello39→160、108extent相同，49归档核对/9404项507165304B清理及8资产保持。前F0086已确认提交8482997，本组结果确认/commit Pending；103已修+14 CRP待修+2移交，完整wrapper/VME/heap/switch仍未验收，唯一TASK_QUEUE，不自动commit/push/M2。
 
 2026-10-21 用户“提交后继续”确认F0113已披露范围并授权六路径根提交，再执行F0084必要分析。62证据/8正式资产/生产patch/newlib状态保持，49/102及原动态验收复用；实际身份见[F0113提交收尾](../crp-f0113/README.md#submit-20261021)及local回执，103已修均已确认，不push/代替完整wrapper能力验收。
+
+2026-10-21 F0113实际提交5f38770a521e3f0e44d871cbf7a42d5099ceaa54（六路径），root/index提交后干净；随后按“提交后继续”完成F0084必要分析，host普通/san各15验证空heap、RV64对象BSS16且无init、39核对与10项132198B清理、8正式资产保持。F0084仍未修，建议页对齐静态独占arena，容量1MiB/4MiB待用户裁决；103已修+14待修+2移交保持，唯一TASK_QUEUE，本组文档未commit，无push/M2。
+
+2026-10-21 用户要求进一步明确固定池需求及公开heap消费者后再判定处置；F0084补充需求复核Completed，当前README的TRM承诺仍构成heap接口来源，三个可见应用无直接依赖不足以自动取消承诺。课程/本地导入/115标识符与15公共命中/8组闭包证据见报告#requirements-recheck-20261021；microbench另有main ABI差异，缺源仍Unknown。F0084继续保留未实现契约缺口，103+14+2保持；撤回静态1MiB/4MiB推荐与容量二选一，不实施/不自行收窄生产README，等结论/后续支持契约确认及本组commit。
+
+2026-10-21 用户明确“暂不修复，若Linux启动不需则闭合并提交分析”。实际Linux/OpenSBI/静态musl BusyBox/initramfs及native NEMU/计划NPC链不依赖Navy libam heap，44项核对通过，F0084按条件授权Closed/未实施，不计已修、不新增Linux待办。现行119=103已修+13待修+2能力移交+1无需实施闭合；旧事实/分析与候选保留，当前报告#linux-scope-closure-20261021及local提交回执为准。只提交分析四路径，ignored/.agent非commit备份；提交后停止，无push/下一组/M阶段。

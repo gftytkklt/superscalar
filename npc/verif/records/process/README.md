@@ -715,3 +715,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [F0113 软件syscall与宿主派发隔离](code_correctness_review/crp-f0113/README.md) Completed（结果确认/commit Pending）：libos/libam私有hook区分处理与bypass，handler域保护/独立Context；host普通/san105、真实RV64旧BAD/新104GOOD及无hook7GOOD，标准update→run三前台及hello39→160、108extent匹配；两源完整diff正反/49核验、9404项507165304B清理及8正式资产保持。103已修+14 CRP待修+2Linux扩展移交，完整wrapper能力未扩展；唯一TASK_QUEUE，不自动commit/push/M2。
 
 2026-10-21 用户“提交后继续”确认[F0113修复](code_correctness_review/crp-f0113/README.md#submit-20261021)并授权本批六路径根提交，随后F0084必要分析；62证据/8资产/patch/newlib状态保持，复用既有动态验收和清理，实际提交身份见报告及local回执。103已修均确认；不push，不扩大wrapper能力。
+
+2026-10-21 [F0084 libam heap必要分析](code_correctness_review/crp-f0084/README.md) Completed，生产修复未开始：实际trm host普通/san各15验证空heap及libc分配不能初始化它，RV64 BSS16/无init；静态核CRT/newlib/allocator所有权与整机预算边界。建议4KiB对齐静态独占arena，容量1MiB/4MiB待用户裁决；39核对/10项132198B清理及8正式资产保持。前F0113已确认提交5f38770，仍103已修+14待修+2移交，唯一TASK_QUEUE，不commit本分析/push/M2。
+
+2026-10-21 [F0084需求来源/消费者补充复核](code_correctness_review/crp-f0084/README.md#requirements-recheck-20261021) Completed：区分TRM接口承诺与固定静态池设计，三个可见Navy AM应用不直接读heap，公共消费者实际来自microbench/AM tests/klib/内核mm及未闭合wrapper；缺源Unknown。按现有TRM承诺保留F0084契约缺口，不由无当前消费者自行豁免；固定1MiB/4MiB无既定需求、旧容量提问撤回。源码只读/官方资料与历史核对、115标识符15公共命中8组闭包留档；无新动态测试或生产修改，103+14+2保持，唯一TASK_QUEUE，不commit/push/M阶段。
+
+2026-10-21 [F0084 Linux范围闭合与分析归档](code_correctness_review/crp-f0084/README.md#linux-scope-closure-20261021)：用户授权条件已核实，Linux启动走OpenSBI/Linux/静态musl BusyBox initramfs/native NEMU及计划NPC独立启动链，不依赖Navy libam公开heap。44项只读核对通过，F0084 Closed/不实施、不计已修；119=103已修+13待修+2Linux能力移交+1无需实施闭合。原需求/空heap分析及撤回候选保留，授权四路径分析文档提交；ignored/.agent继续本地持久化，不push/下一组/M阶段。
