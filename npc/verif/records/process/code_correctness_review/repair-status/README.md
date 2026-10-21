@@ -1,5 +1,7 @@
 # CRP 修复状态与人工启动 guard
 
+> **当前最新（2026-10-21）**：F0110[最小范围修复完成](../crp-f0110/README.md)，107已修+8CRP未修完+2移交+2无需实施闭合，用户已确认，根随本次提交交付；此前F0107/F0108已确认提交状态保持。标准native构建受既有getenv/strtol声明阻塞，host直接构建与真实合成链路验证单列，不冒充标准native/RV64通过。
+
 > **最新提交确认（2026-10-21）**：用户“提交”确认F0107/F0108已报告结果；ONS实际`5e72dbb9739ae39a3a2dc520ed89f20219e92f84`，根修复/文档随本次提交交付。既有差异归属已更正为DEFAULT_ENV_FONT编码行，音频已在旧HEAD；精确排除该编码行并保留工作区，见[提交回执](../crp-f0107-f0108/README.md#submit-20261021)。未push或执行下一单元。
 
 > **最新输入推进（2026-10-21）**：F0107/F0108[原样修复版已进入制作信息及标题菜单](../crp-f0107-f0108/README.md#input-result-20261021)。NTerm --fontcache/真实键盘Ctrl序列已重现用户手动见画面的情况，覆盖此前黑屏未见画面的当前限制；无新生产修改/事件接口修复，完整通关/动态中文对白/音频未验收，结果确认及两仓commit Pending。
@@ -159,7 +161,7 @@
 | CCR-F0107 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [正确seek/完整读后发布/缓存重载](../crp-f0107-f0108/README.md#implementation-20261021) |
 | CCR-F0108 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [只读RWops/FontRW/关闭与借用生命周期](../crp-f0107-f0108/README.md#implementation-20261021) |
 | CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
-| CCR-F0110 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0110) |
+| CCR-F0110 | Robustness / Low | 已修 / 已确认；本次根提交见回执 | [初始化/映射/EOF与原NDL协议/host实际合成](../crp-f0110/README.md) |
 | CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
 | CCR-F0112 | Robustness / Medium | 已修 / 已确认，PAL a744cee/根文档提交见回执 | [RIX/MKF边界/所有权/实际RV64与标准消费者](../crp-f0112/README.md) |
 | CCR-F0113 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [软件/宿主派发隔离、完整diff与真实RV64验收](../crp-f0113/README.md) |
@@ -528,3 +530,9 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 
 
 2026-10-21 用户“同意，继续”批准补齐缓存与必要释放接口后，F0107/F0108 Completed。十源（根4+ONS6）正确读入/只读借用/FontRW私有副本与freesrc到CloseFont、失败不入表/退休缓冲到析构释放；普通/ASan各86断言和缓存10场景31断言、真实RV64最终86与共享库字形、最终ONS完整链接、标准update→run三前台/hello36→156通过。56核对/10文件完整diff正反/9544路径515887671B清理，8资产保持；LSan受ptrace限制未跑、完整游戏缺资源NotRun。106已修+9待修+2移交+2无需实施闭合；修复结果确认/root及nested commit Pending，旧ONS音频差异保留且未混入修复patch。详见[本组最终报告](../crp-f0107-f0108/README.md#implementation-20261021)，唯一TASK_QUEUE，不自动commit/push/下一组/M2。
+
+
+2026-10-21 [F0110完成](../crp-f0110/README.md)：用户“继续”后确认“按最小范围修复（推荐）”，F0110 Completed：window.cpp仅9增8删，初始化fw/fh/dx/dy、空映射不释放、EOF结束当前读取循环、canvas/fb有效才复制，保持现有窗口生命周期。原版首次update SIGSEGV/真EOF 0.6秒不返，普通及ASan/UBSan五场景各通过，真NDL握手后close(4)/1000次EOF继续绘制；完整NWM临时host构建经真实SDL输入/fork/exec/memfd/合成输出768/768像素，2假PASS拒绝。原标准native构建先已因getenv/strtol声明失败，未修Make/不记标准通过；无RV64 NWM/GUI听音/全生命周期验收。完整diff正反、39文件659554B清理及8正式资产/其他源保持；119=107已修+8CRP未修完+2移交+2无需实施闭合。本组结果确认/commit Pending，根HEAD9747db8，生产一文件未提交；无push/下一组/M2。仅沿TASK_QUEUE#crp-next恢复。
+
+
+2026-10-21 用户“提交，继续”确认F0110已报告最小范围及限制，授权五路径精确提交并继续唯一F0073必要分析；实际[提交回执](../crp-f0110/README.md#submit-20261021)。既有验收/清理复用，50证据/源码/八资产/ONS原diff保持，无重跑，不扩标准native或RV64验收；未push。

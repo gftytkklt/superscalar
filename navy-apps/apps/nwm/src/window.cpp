@@ -52,7 +52,7 @@ void Window::draw() {
 
 Window::Window(WindowManager *wm, const char *cmd, const char * const *argv, const char **envp) {
   this->wm = wm;
-  x = y = w = h = 0;
+  x = y = w = h = fw = fh = dx = dy = 0;
   canvas = nullptr;
   fb = nullptr;
 
@@ -124,7 +124,7 @@ void Window::resize(int width, int height) {
     canvas = nullptr;
   }
 
-  if (fbdev_fd != -1) munmap(fb, fw * fh * sizeof(uint32_t));
+  if (fbdev_fd != -1 && fb) munmap(fb, fw * fh * sizeof(uint32_t));
 
   if (has_titlebar) {
     this->w = width + border_px * 2;
@@ -184,7 +184,7 @@ Window::~Window() {
     canvas = nullptr;
   }
   if (fbdev_fd != -1) {
-    munmap(fb, fw * fh * sizeof(uint32_t));
+    if (fb) munmap(fb, fw * fh * sizeof(uint32_t));
     fb = nullptr;
     close(fbdev_fd);
     fbdev_fd = -1;
@@ -203,16 +203,17 @@ void Window::update() {
     do {
       char buf[64];
       int nread = read(read_fd, buf, sizeof(buf) - 1); // this a non-blocking read
-      if (nread == -1) break;
+      if (nread <= 0) break;
       buf[nread] = '\0';
       int w, h;
       int ret = sscanf(buf, "%d %d", &w, &h);
       if (ret == 2) resize(w, h);
     } while (1);
-    int y;
-    for (y = 0; y < fh; y ++) {
-      memcpy(&canvas[(dy + y) * w + dx], &fb[y * fw], fw * sizeof(uint32_t));
+    if (canvas && fb) {
+      for (int y = 0; y < fh; y ++) {
+        memcpy(&canvas[(dy + y) * w + dx], &fb[y * fw], fw * sizeof(uint32_t));
+      }
+      draw();
     }
-    draw();
   }
 }

@@ -748,3 +748,9 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [F0107/F0108真实输入推进成功](code_correctness_review/crp-f0107-f0108/README.md#input-result-20261021)：用户要求空格/其他输入并说明手动见过画面后，同组Reopen；原样十源修复版经标准update→run、NTerm --fontcache、Space/Return/方向键及Ctrl序列，已从黑屏到制作信息及《planetarian／星之梦》标题菜单。19图目视，两NSA图片按同一254/256淡入拟合后分别479952/479936像素匹配，3假PASS拒绝；9411路径378899203B清理、10源8资产和原36/148/4/54manifest保持。本次推进PASS，覆盖先前未见画面截面，不代表通关/动态中文对白/音频验收；无新生产修改/commit，结果确认及两仓提交Pending，唯一TASK_QUEUE。
 
 2026-10-21 [F0107/F0108用户确认与提交](code_correctness_review/crp-f0107-f0108/README.md#submit-20261021)：用户“提交”确认本批源码/真实输入结果；ONS六源实际`5e72dbb9739ae39a3a2dc520ed89f20219e92f84`，根四共享源及本组报告/两索引随本次根提交交付，原266证据/10源/8资产复核、无重跑。既有未提交差异实际为DEFAULT_ENV_FONT编码行（此前误称音频；音频已在旧HEAD），精确排除并保留工作区。结果/提交回执见本组local/submit-20261021及.agent；无push/下一组。建议开启新对话：下一单元转NWM，本组恢复证据完整。
+
+
+2026-10-21 [F0110 NWM初始状态与EOF最小修复](code_correctness_review/crp-f0110/README.md)：用户“继续”后确认“按最小范围修复（推荐）”，F0110 Completed：window.cpp仅9增8删，初始化fw/fh/dx/dy、空映射不释放、EOF结束当前读取循环、canvas/fb有效才复制，保持现有窗口生命周期。原版首次update SIGSEGV/真EOF 0.6秒不返，普通及ASan/UBSan五场景各通过，真NDL握手后close(4)/1000次EOF继续绘制；完整NWM临时host构建经真实SDL输入/fork/exec/memfd/合成输出768/768像素，2假PASS拒绝。原标准native构建先已因getenv/strtol声明失败，未修Make/不记标准通过；无RV64 NWM/GUI听音/全生命周期验收。完整diff正反、39文件659554B清理及8正式资产/其他源保持；119=107已修+8CRP未修完+2移交+2无需实施闭合。本组结果确认/commit Pending，根HEAD9747db8，生产一文件未提交；无push/下一组/M2。唯一未来入口TASK_QUEUE#crp-next。
+
+
+2026-10-21 [F0110用户确认与提交](code_correctness_review/crp-f0110/README.md#submit-20261021)：用户“提交，继续”确认最小范围及未测限制，五路径精确提交后仅继续F0073必要分析；源码/50证据/八资产/ONS原差异保持，既有验收/清理复用，无重跑/push。实际身份见本组local/submit-20261021。
