@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-原119项当前对账：102已修（均已确认；F0086仅源清单缺陷，本次提交身份见报告#submit-20261021）+15项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施、不计已修或CRP待修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：103已修（103均已确认；F0113提交身份见报告#submit-20261021；F0086仅源清单缺陷）+14项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施、不计已修或CRP待修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -154,7 +154,7 @@
 | CCR-F0110 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0110) |
 | CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
 | CCR-F0112 | Robustness / Medium | 已修 / 已确认，PAL a744cee/根文档提交见回执 | [RIX/MKF边界/所有权/实际RV64与标准消费者](../crp-f0112/README.md) |
-| CCR-F0113 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0113) |
+| CCR-F0113 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [软件/宿主派发隔离、完整diff与真实RV64验收](../crp-f0113/README.md) |
 | CCR-F0114 | Robustness / Medium | 已修 / 已确认提交a27a262 | [SDL图形合组/实际RV64/消费者/运行时性能](../crp-video-20261020/README.md) |
 | CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) |
@@ -491,3 +491,7 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 用户“继续”授权单元、前F0072实际4c2019c；wrapper Make ramdisk.c→disk.c及EOF换行，原缺源make2，最终11源/4实际库编译成功但wrapper ld缺5 VME符号，完整wrapper仍失败/运行NotRun。用户质询后确认普通NEMU image exit0、最终ELF五符号有定义，旧/新SRCS下mm/loader对象完全相同；仅当前LIBS=libam不提供对应定义，与disk迁移无因果。两个__am_*为此前a92ccf9 NEMU私有loader依赖，不混作公开API或NEMU缺实现。57检查/完整diff正反及两次清理共4758项20740556B、8正式资产保持，见[报告](../crp-f0086/README.md)。102已修+15 CRP待修+2 Linux扩展移交；本组结果确认/commit Pending，唯一TASK_QUEUE，无自动commit/下一组/M2。
 
 2026-10-21 用户“提交以后确认……”确认F0086并授权五路径根提交后核实libam职责/宿主。37证据/33终检及生产patch保持；三正式产物变化已由用户确认本人生成需保留，已记录当前身份、其余五资产保持。实际身份见[F0086提交收尾](../crp-f0086/README.md#submit-20261021)及local实际回执；102已修均确认+15 CRP待修+2移交，wrapper整体运行NotRun保持，不自动push/开始F0113或M阶段。
+
+2026-10-21 F0113 Completed：私有hook显式handled/output协议，handler域backend走原宿主陷入、独立软件Context；host普通/san各105、真实RV64 104及无hook7通过，标准update→run三前台/hello39→160、108extent相同，49归档核对/9404项507165304B清理及8资产保持。前F0086已确认提交8482997，本组结果确认/commit Pending；103已修+14 CRP待修+2移交，完整wrapper/VME/heap/switch仍未验收，唯一TASK_QUEUE，不自动commit/push/M2。
+
+2026-10-21 用户“提交后继续”确认F0113已披露范围并授权六路径根提交，再执行F0084必要分析。62证据/8正式资产/生产patch/newlib状态保持，49/102及原动态验收复用；实际身份见[F0113提交收尾](../crp-f0113/README.md#submit-20261021)及local回执，103已修均已确认，不push/代替完整wrapper能力验收。

@@ -23,6 +23,7 @@
 
 static Context *(*cte_handler)(Event ev, Context *ctx) = NULL;
 static bool irq_enabled = true;
+static bool in_handler = false;
 
 // 软件自陷下的"当前上下文"（不做真实寄存器保存）
 static Context current_ctx;
@@ -31,7 +32,12 @@ static void __am_switch_to(Context *next);
 
 static Context *__am_irq_handle(Event ev, Context *ctx) {
   Context *next = ctx;
-  if (cte_handler != NULL) next = cte_handler(ev, ctx);
+  if (cte_handler != NULL) {
+    bool saved = in_handler;
+    in_handler = true;
+    next = cte_handler(ev, ctx);
+    in_handler = saved;
+  }
   return next;
 }
 
@@ -39,14 +45,18 @@ static Context *__am_irq_handle(Event ev, Context *ctx) {
 // guest 的 libos _syscall_ 通过弱符号钩子(__am_cte_syscall)转到这里，
 // 以"函数调用"模拟陷入：把系统调用投递给 guest 注册的 CTE handler。
 // 系统调用号/参数通过 GPR1..GPR4 传递，返回值经 GPRx 取回。
-intptr_t __am_cte_syscall(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2) {
-  current_ctx.GPR1 = type;
-  current_ctx.GPR2 = a0;
-  current_ctx.GPR3 = a1;
-  current_ctx.GPR4 = a2;
-  Event ev = { .event = EVENT_SYSCALL, .cause = type, .ref = (uintptr_t)&current_ctx };
-  Context *next = cte_handler != NULL ? cte_handler(ev, &current_ctx) : &current_ctx;
-  return next != NULL ? next->GPRx : 0;
+bool __am_cte_syscall(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2, intptr_t *ret) {
+  if (cte_handler == NULL || in_handler) return false;
+  // 每次软件自陷独占现场，后端请求不改写外层或 yield 的 current_ctx。
+  Context ctx = current_ctx;
+  ctx.GPR1 = type;
+  ctx.GPR2 = a0;
+  ctx.GPR3 = a1;
+  ctx.GPR4 = a2;
+  Event ev = { .event = EVENT_SYSCALL, .cause = type, .ref = (uintptr_t)&ctx };
+  Context *next = __am_irq_handle(ev, &ctx);
+  *ret = next != NULL ? next->GPRx : 0;
+  return true;
 }
 
 void yield(void) {
@@ -140,7 +150,7 @@ static void trap_signal_handler(int sig, siginfo_t *info, void *uc_void) {
 
   Context *next = &ctx;
   if (ev.event != EVENT_NULL && cte_handler != NULL) {
-    next = cte_handler(ev, &ctx);
+    next = __am_irq_handle(ev, &ctx);
     if (next == NULL) next = &ctx;
   }
   ctx_to_uc(next, uc);

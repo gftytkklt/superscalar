@@ -711,3 +711,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [F0086 wrapper源清单](code_correctness_review/crp-f0086/README.md) Completed（仅缺源，结果确认/commit Pending）：ramdisk.c→disk.c，11源/4真实库编译、完整wrapper仍ld失败/运行NotRun。用户质询后核实正常NEMU image成功/五符号已定义、旧新mm/loader对象相同；仅wrapper libam与VME配置/私有helper依赖不匹配，非disk迁移导致NEMU缺实现。57检查/完整diff正反、两域符号确认及两轮4758项20740556B清理、8正式资产保持。102已修+15 CRP待修+2 Linux扩展移交，唯一TASK_QUEUE，不自动commit/push/M2。
 
 2026-10-21 用户确认[F0086源清单修复](code_correctness_review/crp-f0086/README.md#submit-20261021)，授权先提交五路径再核实libam接口/宿主；验收/清理复用，37证据/33终检及生产patch保持，三新正式产物经用户确认自建需保留、其余五保持。实际commit由报告所在提交及local回执定位；102已修均确认+15 CRP待修+2移交，wrapper整体仍链接失败/运行NotRun，不自动push/F0113/M阶段。
+
+2026-10-21 [F0113 软件syscall与宿主派发隔离](code_correctness_review/crp-f0113/README.md) Completed（结果确认/commit Pending）：libos/libam私有hook区分处理与bypass，handler域保护/独立Context；host普通/san105、真实RV64旧BAD/新104GOOD及无hook7GOOD，标准update→run三前台及hello39→160、108extent匹配；两源完整diff正反/49核验、9404项507165304B清理及8正式资产保持。103已修+14 CRP待修+2Linux扩展移交，完整wrapper能力未扩展；唯一TASK_QUEUE，不自动commit/push/M2。
+
+2026-10-21 用户“提交后继续”确认[F0113修复](code_correctness_review/crp-f0113/README.md#submit-20261021)并授权本批六路径根提交，随后F0084必要分析；62证据/8资产/patch/newlib状态保持，复用既有动态验收和清理，实际提交身份见报告及local回执。103已修均确认；不push，不扩大wrapper能力。

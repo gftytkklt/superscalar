@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <time.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "syscall.h"
 
 // newlib's _xxx_r wrappers copy this low-layer slot into the requested _reent.
@@ -62,13 +63,14 @@ static intptr_t syscall_result(intptr_t ret) {
 extern char end;
 void* program_break = &end;
 
-// 若链接了 libam（Navy 上的 AM），系统调用改走软件自陷；
-// 否则该弱符号为 NULL，_syscall_() 保持原有的自陷指令。
-__attribute__((weak)) intptr_t __am_cte_syscall(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2);
+// libam 仅在 guest handler 可接收请求时处理软件自陷；未注册或正在执行
+// handler 时返回 false，使后端 IO 走宿主自陷，避免再次进入同一 handler。
+__attribute__((weak)) bool __am_cte_syscall(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2, intptr_t *ret);
 
 intptr_t _syscall_(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2) {
-  if (__am_cte_syscall) {
-    return __am_cte_syscall(type, a0, a1, a2);
+  intptr_t result;
+  if (__am_cte_syscall && __am_cte_syscall(type, a0, a1, a2, &result)) {
+    return result;
   }
   register intptr_t _gpr1 asm (GPR1) = type;
   register intptr_t _gpr2 asm (GPR2) = a0;
