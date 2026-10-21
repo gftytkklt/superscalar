@@ -1,5 +1,7 @@
 # CRP 修复状态与人工启动 guard
 
+> **当前延期裁决（2026-10-21）**：F0110已确认提交111059c；[F0073必要分析](../crp-f0073/README.md)完成后，用户选择F0073与F0029“延期并保留风险”，两项仍未修，不计修复/关闭或范围移交。107+8+2+2保持，用户“提交后继续”已确认本批分析，文档随本次提交交付；实际回执见报告#submit-20261021，下一入口仅TASK_QUEUE#crp-next。
+
 > **当前最新（2026-10-21）**：F0110[最小范围修复完成](../crp-f0110/README.md)，107已修+8CRP未修完+2移交+2无需实施闭合，用户已确认，根随本次提交交付；此前F0107/F0108已确认提交状态保持。标准native构建受既有getenv/strtol声明阻塞，host直接构建与真实合成链路验证单列，不冒充标准native/RV64通过。
 
 > **最新提交确认（2026-10-21）**：用户“提交”确认F0107/F0108已报告结果；ONS实际`5e72dbb9739ae39a3a2dc520ed89f20219e92f84`，根修复/文档随本次提交交付。既有差异归属已更正为DEFAULT_ENV_FONT编码行，音频已在旧HEAD；精确排除该编码行并保留工作区，见[提交回执](../crp-f0107-f0108/README.md#submit-20261021)。未push或执行下一单元。
@@ -80,7 +82,7 @@
 | CCR-F0026 | Confirmed / High | 已修 / Completed，已获确认；本次提交见报告回执 | [链接期越界诊断/真实回归](../crp-f0026/README.md#implementation-20261021) |
 | CCR-F0027 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
-| CCR-F0029 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0029) |
+| CCR-F0029 | ContractQuestion / Medium | 未修 / 已批准与F0073联合延期，保护契约保留 | [原问题](../FINAL_FINDINGS.md#ccr-f0029)、[本次延期裁决](../crp-f0073/README.md) |
 | CCR-F0030 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0030) |
 | CCR-F0031 | ContractQuestion / Medium | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0031) |
 | CCR-F0032 | Robustness / Low | 已修 / 已确认提交30bbde8 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
@@ -124,7 +126,7 @@
 | CCR-F0070 | Confirmed / High | 已修 / 已确认提交6264781 | [初始化失败停止/真实消费者](../crp-f0070/README.md) |
 | CCR-F0071 | Confirmed / High | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0071) |
 | CCR-F0072 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [七布局复制/实际disk读写/容量边界及提交](../crp-f0072/README.md#submit-20261021) |
-| CCR-F0073 | Robustness / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0073) |
+| CCR-F0073 | Robustness / Medium | 未修 / 原版分析完成，用户批准与F0029联合延期 | [真实RV64边界/用户延期决定](../crp-f0073/README.md) |
 | CCR-F0074 | Confirmed / High | 已修 / 已确认提交b260359，正式产物已更新 | [提交/资产回执](../crp-f0074/README.md#submit-20261020) |
 | CCR-F0075 | Robustness / Low | 已修 / 已确认提交015841a | [容量截短/真实消费者验收](../crp-f0075/README.md#f0075-final-20261020) |
 | CCR-F0076 | Confirmed / Medium | 已修 / 已确认提交e7a3e26 | [内核错误码/newlib请求对象验收](../crp-f0076/README.md#f0076-final-20261020) |
@@ -161,7 +163,7 @@
 | CCR-F0107 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [正确seek/完整读后发布/缓存重载](../crp-f0107-f0108/README.md#implementation-20261021) |
 | CCR-F0108 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [只读RWops/FontRW/关闭与借用生命周期](../crp-f0107-f0108/README.md#implementation-20261021) |
 | CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
-| CCR-F0110 | Robustness / Low | 已修 / 已确认；本次根提交见回执 | [初始化/映射/EOF与原NDL协议/host实际合成](../crp-f0110/README.md) |
+| CCR-F0110 | Robustness / Low | 已修 / 已确认提交111059c | [初始化/映射/EOF与原NDL协议/host实际合成](../crp-f0110/README.md) |
 | CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
 | CCR-F0112 | Robustness / Medium | 已修 / 已确认，PAL a744cee/根文档提交见回执 | [RIX/MKF边界/所有权/实际RV64与标准消费者](../crp-f0112/README.md) |
 | CCR-F0113 | Confirmed / Medium | 已修 / 已确认；提交回执见报告 | [软件/宿主派发隔离、完整diff与真实RV64验收](../crp-f0113/README.md) |
@@ -536,3 +538,6 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 
 
 2026-10-21 用户“提交，继续”确认F0110已报告最小范围及限制，授权五路径精确提交并继续唯一F0073必要分析；实际[提交回执](../crp-f0110/README.md#submit-20261021)。既有验收/清理复用，50证据/源码/八资产/ONS原diff保持，无重跑，不扩标准native或RV64验收；未push。
+
+
+2026-10-21 用户在原版真实RV64正常/NULL/未映射/内核地址/READ页结果与三方案展示后选择“延期并保留风险（推荐）”。F0073保持Robustness未修，F0029保持CQ未修，联合延期至实际需求明确后恢复，不自动引入EFAULT/copyin/out或内核页保护。五个原版行为验证不是修复通过；13输入/8正式资产保持、259文件1672889B清理，生产无改动。本组分析文档未提交，不push/下一组/M2；详情[本报告](../crp-f0073/README.md)。

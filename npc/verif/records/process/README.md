@@ -754,3 +754,8 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-21 [F0110用户确认与提交](code_correctness_review/crp-f0110/README.md#submit-20261021)：用户“提交，继续”确认最小范围及未测限制，五路径精确提交后仅继续F0073必要分析；源码/50证据/八资产/ONS原差异保持，既有验收/清理复用，无重跑/push。实际身份见本组local/submit-20261021。
+
+
+2026-10-21 F0110实际提交`111059c012272b6a6b0706833ceb5a9f448502ba`完成，五路径/blob一致且提交后根树/index干净；按“提交，继续”授权执行[F0073用户指针必要分析](code_correctness_review/crp-f0073/README.md)。五组真实RV64 SYS_gettimeofday对照：正常/内核地址/READ映射均可写并返回，NULL/未映射触发EVENT_ERROR/BAD；证明原边界而非修复PASS。用户明确“延期并保留风险（推荐）”，F0073/F0029保持未修/已批准延期，不计Closed/Fixed/ApprovedGap或Linux移交。13源/8资产保持、259文件1672889B清理，生产未改；107+8+2+2不变，分析文档未提交，唯一TASK_QUEUE#crp-next，下一单元未Start。
+
+2026-10-21 用户“提交后继续”确认F0073分析及与F0029联合延期，四路径文档提交与证据核对见[提交附记](code_correctness_review/crp-f0073/README.md#submit-20261021)；生产未改，后续仅音频必要分析一个单元，无push。
