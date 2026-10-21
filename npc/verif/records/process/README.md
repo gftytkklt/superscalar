@@ -725,3 +725,12 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [F0017 QEMU RV64 adapter必要分析](code_correctness_review/crp-f0017/README.md) Completed、生产未改/未修：标准构建Unsupport ISA、原函数包长/错误接受/G失败传播、高地址/分块/长度缩窄反例；11次运行含2次预期ASan失败、NEMU当前/高配置paddr宽度观察。上游源码与正常前33字PC对照纠正旧FPR0推断，真实QEMU/XML/guest NotRun，等待环境或明确范围裁决；103+13+2+1保持，结果确认/commit Pending，唯一TASK_QUEUE，不安装/commit/push/下一组/M2。
 
 2026-10-21 用户明确不采用QEMU作为difftest来源，确认[F0017分析并范围闭合](code_correctness_review/crp-f0017/README.md#qemu-scope-closure-20261021)、授权本批四路径根提交。F0017 Closed/未实施非Fixed，原反例/PC勘误/真实QEMU NotRun保留；不再要求安装或修复adapter，不新增Linux待办。119=103已修+12待修+2移交+2无需实施闭合；68/19检查及15项462153B清理复用，无新产品测试。实际提交由报告及local回执定位；提交后停止，不push/下一组/M2。
+
+
+2026-10-21 [F0026 NPC静态区/SSBL与固定栈必要分析](code_correctness_review/crp-f0026/README.md) Completed，生产未改/未修：当前四路径7KiB越SP均link0，末端ASSERT漏三个SRAM orphan，静态region限额候选有效；64次最终链接/231命令、栈帧/留存RT布局只读观察、源/8正式资产及清理身份留档。建议保留SP并预留2KiB栈（static/SSBL低端4KiB）待用户裁决，不把候选当修复或通用安全证明；真实guest/水位NotRun，分析确认/commit Pending，103+12+2+2不变；唯一TASK_QUEUE#crp-next，不安装/commit/push/自动实施/M2。
+
+
+2026-10-21 [F0026链接期静态布局检查完成](code_correctness_review/crp-f0026/README.md#implementation-20261021)：用户确认修正分析后取消固定栈预算待裁决，以现有SP约束四脚本静态放置，含orphan跨界诊断。72链接、四正常及真实RT bin字节不变、七真实NPC/CPU36PASS+1XFAIL/RT update-image-msh通过，完整diff正反核对/132检查及1184路径142577122B清理、8正式资产保持。104已修+11待修+2移交+2无需实施闭合，动态栈安全不作承诺；本轮结果确认/commit Pending，无自动下一组/push/M2，唯一TASK_QUEUE#crp-next。
+
+
+2026-10-21 用户确认并授权[F0026精确提交](code_correctness_review/crp-f0026/README.md#submit-20261021)，技术验收/清理复用，源/8正式资产及原实施481/分析546证据保持；104+11+2+2不变。实际身份见报告本地回执；用户同时允许条件满足时继续唯一下一入口必要分析，不自动裁决新策略/push/M2。

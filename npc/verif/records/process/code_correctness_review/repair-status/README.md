@@ -67,7 +67,7 @@
 | CCR-F0023 | Confirmed / High | 已修 / 已确认提交c9be898 | [MPP/栈约定与真实NEMU验收](../crp-f0023/README.md) |
 | CCR-F0024 | Confirmed / Medium | 已修 / 已确认提交fc7835e | [双页表嵌套切走恢复/真实回归及回执](../crp-f0024/README.md#approval-submit-20261018) |
 | CCR-F0025 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
-| CCR-F0026 | Confirmed / High | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0026) |
+| CCR-F0026 | Confirmed / High | 已修 / Completed，已获确认；本次提交见报告回执 | [链接期越界诊断/真实回归](../crp-f0026/README.md#implementation-20261021) |
 | CCR-F0027 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0029 | ContractQuestion / Medium | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0029) |
@@ -505,3 +505,12 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 2026-10-21 用户“继续CRP修复”承接前F0084已确认实际7eb4c6c后F0017必要分析一个单元。标准RV64 adapter Make先报Unsupport ISA；显式宏隔离原源码完成11运行（9正常观察/2预期ASan失败）、高地址/跨边界/长度截断、错误包接受及G失败不传播。正常前33字PC对照与QEMU上游源码纠正旧“FPR0当PC”推断，未凭union猜真实协议。实际QEMU/目标XML缺失，最小方案及验收缺口见[报告](../crp-f0017/README.md)；生产未改/F0017未修/分析确认与commit Pending，103+13+2+1保持。唯一TASK_QUEUE#crp-next等待环境或用户范围裁决，不自动安装/闭合/下一组/M2。
 
 2026-10-21 用户明确“不使用QEMU作为difftest来源，可关闭当前问题，执行提交”。F0017 Closed/未实施不计已修，撤销QEMU安装/真实验收/生产实施待办，不向Linux转交；现存缺陷和PC勘误及真实QEMU NotRun保留。119=103已修+12待修+2移交+2无需实施闭合；分析已确认并授权本批四路径提交，实际身份见[范围闭合](../crp-f0017/README.md#qemu-scope-closure-20261021)与local回执。复用68/19/清理，不重跑产品测试，不push/启动下一单元；唯一TASK_QUEUE#crp-next。
+
+
+2026-10-21 用户“继续”授权F0026必要分析，前F0017已确认实际3296304。四路径64次最终链接/231命令，当前原脚本均接受7KiB越SP布局；末端ASSERT漏三个SRAM orphan，region限额候选可拒绝。仅分析、生产未改/未修，栈预算未批准，建议保留SP并预留2KiB（static/SSBL低端4KiB），不把候选当修复或通用安全证明。真实guest/栈水位NotRun，源/8资产保持，清理/身份见[报告](../crp-f0026/README.md)；分析确认/commit Pending，119=103+12+2+2保持，唯一TASK_QUEUE#crp-next等预算，不安装/自动实施/commit/push/M2。
+
+
+2026-10-21 F0026修正分析获用户“同意你此次分析”确认，已按链接期越界方向完成实现：四脚本以现有SP约束MEMORY静态放置，无固定预算/新栈段；72链接、四正常bin/真实RTbin不变、七真实NPC/CPU36PASS+1XFAIL、RT标准update/image/真实msh通过。132核对及1184路径142577122B清理、8正式资产保持，完整diff/身份/限制见[实现报告](../crp-f0026/README.md#implementation-20261021)。104已修+11待修+2移交+2无需实施闭合；本轮结果确认/commit Pending，旧预算待裁决入口已由用户修正意见覆盖，唯一TASK_QUEUE；不自动commit/push/下一组/M2。
+
+
+2026-10-21 用户“提交，可以直接继续就继续，否则停下”确认F0026已报告结果并授权八路径根提交，允许提交后执行唯一下一入口的必要分析。技术验收复用，四生产新SHA/8正式资产/481实施及546原分析证据无漂移；实际身份见[F0026提交回执](../crp-f0026/README.md#submit-20261021)及local，不将后续分析策略视为已获裁决，不push/M2。

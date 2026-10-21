@@ -2,7 +2,7 @@ ENTRY(_start)
 
 MEMORY {
   mrom (rx) : ORIGIN = 0x20000000, LENGTH = 4K
-  sram (rw) : ORIGIN = 0x0f000000, LENGTH = 8K
+  sram (rw) : ORIGIN = 0x0f000000, LENGTH = MIN(8K, _stack_offt)
   sdram (rwx) : ORIGIN = 0xa0000000, LENGTH = 128M
   flash (rx) : ORIGIN = 0x30000000, LENGTH = 16M
 }
@@ -48,3 +48,8 @@ SECTIONS {
   end = .;
   _end = .;
 }
+/* SRAM is physically 8 KiB. Bound static placement by the existing initial SP;
+ * this reserves no fixed stack budget and does not detect runtime stack growth. */
+ASSERT(_sram_start == ORIGIN(sram), "stack SRAM base does not match SRAM origin")
+ASSERT(_stack_offt > 0 && _stack_offt <= 8K, "initial stack pointer is outside SRAM")
+ASSERT((_stack_pointer & 0xf) == 0, "initial stack pointer must be 16-byte aligned")
