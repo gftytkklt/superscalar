@@ -761,3 +761,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 用户“提交后继续”确认F0073分析及与F0029联合延期，四路径文档提交与证据核对见[提交附记](code_correctness_review/crp-f0073/README.md#submit-20261021)；生产未改，后续仅音频必要分析一个单元，无push。
 
 2026-10-21 [F0043延期/F0118清流重开补充](code_correctness_review/crp-audio-lifecycle-20261021/README.md)：F0073分析已确认提交00c3b04，用户批准F0043延期及F0118清旧PCM后普通重开；两源20增8删，INIT2配对提交/停旧回调后清COUNT与读写游标/失败写入前静音保持，应用Close语义保持。旧三失败/最终16 host/五真实RV64/标准nanos三前台八帧/hello40→169通过，F0043仍精确复现13而非9。9389文件360306085B清理/8正式资产保持；108+7+2+2，本批结果确认/新commit Pending，唯一TASK_QUEUE#crp-next，M2不变。
+
+2026-10-21 F0118补充已确认实际91388f4（七路径237增11删），证据/源码/八资产保持、根树/index提交后干净。按“提交后继续”执行[F0030/F0054回收必要分析](code_correctness_review/crp-memory-lifetime-20261021/README.md)：共享heap与用户newlib区别/页表所有权/exec当前无回收已核，三真实RV64分别观察free不复用及有限arena耗尽、四轮12私有表页零回收/共享内核分支、真实free_page panic；无生产改动，188文件638743B清理。分析技术Completed/回收范围裁决Pending、两项仍CQ未修，108+7+2+2不变，分析文档未提交，唯一TASK_QUEUE#crp-next，M2不变。
+
+2026-10-21 用户明确选择F0030/F0054联合延期并保留耗尽风险，两项CQ仍未修；[分析/延期最终停点](code_correctness_review/crp-memory-lifetime-20261021/README.md#deferral-20261021)及恢复条件已落档，分析文档commit Pending，生产未改、108+7+2+2不变。

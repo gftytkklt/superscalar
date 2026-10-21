@@ -1,5 +1,7 @@
 # CRP 修复状态与人工启动 guard
 
+> **当前回收分析（2026-10-21）**：F0118补充已确认提交91388f4；[F0030/F0054必要分析](../crp-memory-lifetime-20261021/README.md)及延期留档Completed，用户已选择“联合延期并保留风险”，两项仍CQ未修。真实RV64见证free不复用/四轮12私有表页零回收/free_page panic，15源/8资产保持及188文件638743B清理；108+7+2+2不变，生产未改，分析文档未提交。唯一下一入口TASK_QUEUE#crp-next。
+
 > **当前音频结果（2026-10-21）**：F0073分析已确认提交00c3b04；用户批准F0043延期、F0118清旧PCM后重开。[补充修复](../crp-audio-lifecycle-20261021/README.md)Completed，结果确认/本轮commit Pending；108已修+7CRP未修完+2移交+2无需实施闭合。16 host/五真实RV64/标准nanos三前台及hello通过，F0043竞争仍可复现。唯一下一入口TASK_QUEUE#crp-next。下方旧计数为历史截面。
 
 > **当前延期裁决（2026-10-21）**：F0110已确认提交111059c；[F0073必要分析](../crp-f0073/README.md)完成后，用户选择F0073与F0029“延期并保留风险”，两项仍未修，不计修复/关闭或范围移交。107+8+2+2保持，用户“提交后继续”已确认本批分析，文档随本次提交交付；实际回执见报告#submit-20261021，下一入口仅TASK_QUEUE#crp-next。
@@ -52,7 +54,7 @@
 
 ## 当前逐项状态
 
-原119项当前对账：108已修（其中本轮F0118补充结果确认/commit Pending，其余已确认提交）+7项CRP未修完（4项原CQ及F0040 Partial/F0043/F0073）+2项NPC能力扩展移交Linux（F0031/F0071未实施）+2项当前目标无需实施闭合（F0017/F0084未计已修）。F0043及F0029/F0073已批准延期，未决契约保留；未来仅TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：108已修（均已确认提交，F0118补充91388f4）+7项CRP未修完（4项原CQ及F0040 Partial/F0043/F0073）+2项NPC能力扩展移交Linux（F0031/F0071未实施）+2项当前目标无需实施闭合（F0017/F0084未计已修）。F0043、F0029/F0073与F0030/F0054已批准延期，其余未决契约保留；未来仅TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -85,7 +87,7 @@
 | CCR-F0027 | Confirmed / Medium | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0028 | Robustness / Low | 已修 / 已确认提交f3a5d0c | [NPC启动布局真实验收](../crp-f0025-f0027-f0028/README.md) |
 | CCR-F0029 | ContractQuestion / Medium | 未修 / 已批准与F0073联合延期，保护契约保留 | [原问题](../FINAL_FINDINGS.md#ccr-f0029)、[本次延期裁决](../crp-f0073/README.md) |
-| CCR-F0030 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0030) |
+| CCR-F0030 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [共享表/真实RV64/方案](../crp-memory-lifetime-20261021/README.md) |
 | CCR-F0031 | ContractQuestion / Medium | 能力扩展 / 移交Linux；未实施，退出CRP | [当前范围裁决](../REPAIR_AND_REGRESSION.md#npc-capability-scope-20261021)；[原证据](../FINAL_FINDINGS.md#ccr-f0031) |
 | CCR-F0032 | Robustness / Low | 已修 / 已确认提交30bbde8 | [方案A实现/实际RV64/标准消费者](../crp-f0032/README.md) |
 | CCR-F0033 | Confirmed / Medium | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
@@ -109,7 +111,7 @@
 | CCR-F0051 | Confirmed / Medium | 已修 / 已提交 | 4ab9f3f；[报告](../crp-f0051/README.md) |
 | CCR-F0052 | Confirmed / Medium | 已修 / 终态补充已确认提交22791cf | am-kernels c1ba0bb；[原报告](../crp-f0052/README.md)、[双平台真实补充](../crp-f0052-ref-terminal/README.md) |
 | CCR-F0053 | Confirmed / Low | 已修 / 已提交 | am-kernels 6dc302a / root e83df62；[本组报告](../crp-f0041-f0042-f0053/README.md) |
-| CCR-F0054 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0054) |
+| CCR-F0054 | ContractQuestion / Low | 未修 / 已批准F0030/F0054联合延期，保留耗尽风险 | [arena/页分配所有权与方案](../crp-memory-lifetime-20261021/README.md) |
 | CCR-F0055 | ContractQuestion / Low | 未修 / 契约待定 | [原问题](../FINAL_FINDINGS.md#ccr-f0055) |
 | CCR-F0056 | Robustness / Low | 已修 / 已提交 | 5b7a045；[报告](../crp-f0033-f0056/README.md) |
 | CCR-F0057 | Confirmed / High | 已修 / 已确认提交a92ccf9 | [ELF组提交回执](../crp-f0057-f0058-f0059/README.md#submit-20261020) |
@@ -173,7 +175,7 @@
 | CCR-F0115 | Confirmed / Medium | 已修 / 已确认，根/ONS提交回执见报告 | [SDL音频合组/真实RV64/标准回归](../crp-audio-20261020/README.md) |
 | CCR-F0116 | Confirmed / Medium | 已修 / 已确认，实际提交见回执 | [REF显式注入PC/host及真实RV64执行/ABI/清理](../crp-f0116/README.md) |
 | CCR-F0117 | Confirmed / Low | 已修 / 已确认提交b3b3b88 | [NDL64批准/最终实现与验收](../crp-f0117/README.md#final-ndl64) |
-| CCR-F0118 | Robustness / Medium | 已修 / Completed；新补充结果确认/commit Pending，原静音be8a4c0 | [普通重开/清流及真实验收](../crp-audio-lifecycle-20261021/README.md#implementation-20261021) |
+| CCR-F0118 | Robustness / Medium | 已修 / 已确认提交91388f4；原静音be8a4c0 | [普通重开/清流及真实验收](../crp-audio-lifecycle-20261021/README.md#implementation-20261021) |
 | CCR-F0119 | Confirmed / Low | 已修 / 已确认提交7912c42 | [NPC init(int)/参数哨兵/真实CPU/ABI与清理](../crp-f0119/README.md) |
 
 ## 2026-10-18 条件兼容修复补充
@@ -546,3 +548,7 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 
 
 2026-10-21 用户“提交后继续”：F0073分析实际提交00c3b04并核mode/blob/29证据/13源/8资产；随后批准F0043延期与F0118清旧PCM后重开。同单元两生产源20增8删，旧三失败/最终16 host/五RV64/标准nanos八帧与hello40→169，完整diff正反核验及9389路径360306085B清理完成。F0118按批准契约Completed，结果确认/新commit Pending；F0043仍未修，确定性交错13而非9保留。108+7+2+2，index空，无push/下一组/M2；[本组报告](../crp-audio-lifecycle-20261021/README.md)。
+
+2026-10-21 用户“提交后继续”确认F0118补充结果，七路径实际91388f4/237增11删、mode/blob及证据/正式资产核对，提交后root/index干净；随后F0030/F0054必要分析技术部分Completed，回收范围裁决Pending，仍CQ未修。三RV64原版行为及188文件638743B清理见[报告](../crp-memory-lifetime-20261021/README.md)，无生产修改/本分析commit/push/M2，108+7+2+2保持。
+
+2026-10-21 用户在实际RV64结果及所有权分析后明确选择F0030/F0054“联合延期并保留风险（推荐）”，两项仍CQ未修，不计Fixed/Closed/ApprovedGap/Linux移交。分析与延期留档Completed、分析commit Pending；生产未改/108+7+2+2不变，后续具体回收需求明确再联合冻结。唯一TASK_QUEUE#crp-next，当前停点及恢复见[裁决附记](../crp-memory-lifetime-20261021/README.md#deferral-20261021)。
