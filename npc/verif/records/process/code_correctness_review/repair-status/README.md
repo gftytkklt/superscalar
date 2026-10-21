@@ -1,5 +1,13 @@
 # CRP 修复状态与人工启动 guard
 
+> **最新提交确认（2026-10-21）**：用户“提交”确认F0107/F0108已报告结果；ONS实际`5e72dbb9739ae39a3a2dc520ed89f20219e92f84`，根修复/文档随本次提交交付。既有差异归属已更正为DEFAULT_ENV_FONT编码行，音频已在旧HEAD；精确排除该编码行并保留工作区，见[提交回执](../crp-f0107-f0108/README.md#submit-20261021)。未push或执行下一单元。
+
+> **最新输入推进（2026-10-21）**：F0107/F0108[原样修复版已进入制作信息及标题菜单](../crp-f0107-f0108/README.md#input-result-20261021)。NTerm --fontcache/真实键盘Ctrl序列已重现用户手动见画面的情况，覆盖此前黑屏未见画面的当前限制；无新生产修改/事件接口修复，完整通关/动态中文对白/音频未验收，结果确认及两仓commit Pending。
+
+> **最新补充（2026-10-21）**：F0107/F0108[真实ONS尝试完成](../crp-f0107-f0108/README.md#game-run-result-20261021)。已装入修复版，从NTerm执行默认/缓存命令均黑屏；诊断cache3917384B/首次字体打开成功，最终停在start首行全角空格文本。游戏Attempted/未通过，覆盖旧NotRun，根因Unknown；无新生产修改，结果确认/两仓commit Pending。
+
+> 2026-10-21 F0107/F0108[资源勘误](../crp-f0107-f0108/README.md#resource-recheck-20261021)：旧附记“缺资源”理由撤回。程序/脚本/字体/两NSA/envdata已在现有磁盘逐字节确认；盘内ONS仍旧版断言，本轮修复版仅链接、尚未打包启动真实游戏，完整游戏/实际--fontcache仍NotRun。源码修复/模块验证、结果确认及两仓待提交状态保持。
+
 ## 职责与维护方法
 
 本表只镜像每个CCR-F的当前修复状态，技术事实仍以源码、对应批次验收及提交回执为准；原始119项审阅分类以[FINAL_FINDINGS](../FINAL_FINDINGS.md)及历史findings.json为准，不回写旧快照。未来执行顺序只在[TASK_QUEUE唯一入口](../../../../../../.agent/TASK_QUEUE.md#crp-next)，本表不是第二份任务调度队列。
@@ -148,8 +156,8 @@
 | CCR-F0104 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
 | CCR-F0105 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
 | CCR-F0106 | Robustness / Medium | 已修 / 已确认提交70983d4 | [RWops/图像合组/真实RV64/标准消费者](../crp-rw-image-20261020/README.md) |
-| CCR-F0107 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0107) |
-| CCR-F0108 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0108) |
+| CCR-F0107 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [正确seek/完整读后发布/缓存重载](../crp-f0107-f0108/README.md#implementation-20261021) |
+| CCR-F0108 | Confirmed / Medium | 已修 / 已确认；ONS5e72dbb，root随本次提交，见提交回执 | [只读RWops/FontRW/关闭与借用生命周期](../crp-f0107-f0108/README.md#implementation-20261021) |
 | CCR-F0109 | Robustness / Medium | 已修 / 已确认提交13d30a9 | [BDF/终端边界/实际RV64/标准消费者](../crp-bdf-term-20261020/README.md) |
 | CCR-F0110 | Robustness / Low | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0110) |
 | CCR-F0111 | Robustness / Medium | 已修 / 已确认，bird80f9918/根提交见回执 | [Sprite资源边界/所有权/实际RV64与真实消费者](../crp-f0111/README.md) |
@@ -514,3 +522,9 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 
 
 2026-10-21 用户“提交，可以直接继续就继续，否则停下”确认F0026已报告结果并授权八路径根提交，允许提交后执行唯一下一入口的必要分析。技术验收复用，四生产新SHA/8正式资产/481实施及546原分析证据无漂移；实际身份见[F0026提交回执](../crp-f0026/README.md#submit-20261021)及local，不将后续分析策略视为已获裁决，不push/M2。
+
+
+2026-10-21 前F0026已确认根实际5a48a8f，按用户“可以直接继续就继续，否则停下”执行F0107/F0108必要分析一个单元。现有--fontcache实际可达，原seek误读2字节、两个原占位各SIGABRT、可写MemRW原语与四RV64单元编译确认；17条命令/37核对及19文件314010B清理、13源/8资产/既有ONS嵌套差异保持。两项仍未修，FontRW/freesrc与本地无CloseFont的生命周期待冻结，不自动禁用选项或扩完整SDL；报告见[本组分析](../crp-f0107-f0108/README.md)。104已修+11待修+2移交+2闭合不变，分析确认/commit Pending，唯一TASK_QUEUE等待真实契约裁决，无push/M2。
+
+
+2026-10-21 用户“同意，继续”批准补齐缓存与必要释放接口后，F0107/F0108 Completed。十源（根4+ONS6）正确读入/只读借用/FontRW私有副本与freesrc到CloseFont、失败不入表/退休缓冲到析构释放；普通/ASan各86断言和缓存10场景31断言、真实RV64最终86与共享库字形、最终ONS完整链接、标准update→run三前台/hello36→156通过。56核对/10文件完整diff正反/9544路径515887671B清理，8资产保持；LSan受ptrace限制未跑、完整游戏缺资源NotRun。106已修+9待修+2移交+2无需实施闭合；修复结果确认/root及nested commit Pending，旧ONS音频差异保留且未混入修复patch。详见[本组最终报告](../crp-f0107-f0108/README.md#implementation-20261021)，唯一TASK_QUEUE，不自动commit/push/下一组/M2。

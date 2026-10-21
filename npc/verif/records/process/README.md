@@ -734,3 +734,17 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 
 
 2026-10-21 用户确认并授权[F0026精确提交](code_correctness_review/crp-f0026/README.md#submit-20261021)，技术验收/清理复用，源/8正式资产及原实施481/分析546证据保持；104+11+2+2不变。实际身份见报告本地回执；用户同时允许条件满足时继续唯一下一入口必要分析，不自动裁决新策略/push/M2。
+
+
+2026-10-21 [F0107/F0108字体缓存必要分析](code_correctness_review/crp-f0107-f0108/README.md) Completed，生产未改/两项未修：F0026已确认实际5a48a8f后按用户有条件续作授权执行。现有--fontcache可达，64B/空文件均被缓存成2B，缺文件受控-1；ConstMem/OpenFontRW原函数各SIGABRT，可写MemRW控制和四RV64单元编译通过。17命令/37核对、19文件314010B清理、13源/8资产/ONS原嵌套差异保持；FontRW释放契约与缓存支持范围待用户裁决，真实游戏/guest未跑，104+11+2+2不变。分析确认/commit Pending，唯一TASK_QUEUE，不自动生产实施/关闭选项/commit/push/M2。
+
+
+2026-10-21 [F0107/F0108字体缓存及释放接口修复完成](code_correctness_review/crp-f0107-f0108/README.md#implementation-20261021)：用户“同意，继续”批准实施后，正确seek/完整读后发布、只读借用RWops、FontRW私有字体数据/源延至CloseFont释放、失败不入表与退休缓存析构释放落地。十源根4+ONS6完整diff正反核对，普通/ASan86与缓存10场景31、真实RV64最终86/共享库字形、ONS最终完整链接、标准update→run三前台/hello36→156通过。56核对/9544路径515887671B清理及8资产保持；106已修+9待修+2移交+2闭合，修复结果确认/root及nested commit Pending；旧音频差异保留，完整游戏缺资源NotRun，LSan受环境限制不记通过。唯一TASK_QUEUE#crp-next，不自动commit/push/下一组/M2。
+
+2026-10-21 [F0107/F0108资源事实勘误](code_correctness_review/crp-f0107-f0108/README.md#resource-recheck-20261021)：上条及本组旧记录“缺资源”理由撤回。ONS程序/脚本/default.ttf/两NSA/envdata六文件均与现有磁盘对应区间逐字节相等；盘内ONS仍含OpenFontRW旧断言。本轮修复版仅链接、尚未install打包并启动完整游戏，故完整游戏/实际--fontcache仍NotRun。只读复核与记录更正，原验收/完成/待确认及两仓待提交状态保持，无新构建/guest/commit。
+
+2026-10-21 [F0107/F0108从NTerm真实启动补充](code_correctness_review/crp-f0107-f0108/README.md#game-run-result-20261021)：用户要求尝试后Reopen，同批安装修复版ONS并标准update→run；原样/bin/onscripter及--fontcache均成功exec但持续黑底鼠标框，游戏Attempted/未通过。两次隔离诊断确认cache3917384B/首次字体打开，完整跟踪最终停在start首行全角空格文本；根因Unknown，不据此排除共享TTF回归或归因为缺资源。四自有组SIGTERM非guest正常退出，9421路径397677913B/29图已按hash清理，10源/8资产保持。Supplemental Completed，结果确认/两仓commit Pending，不开始下一组/M2。
+
+2026-10-21 [F0107/F0108真实输入推进成功](code_correctness_review/crp-f0107-f0108/README.md#input-result-20261021)：用户要求空格/其他输入并说明手动见过画面后，同组Reopen；原样十源修复版经标准update→run、NTerm --fontcache、Space/Return/方向键及Ctrl序列，已从黑屏到制作信息及《planetarian／星之梦》标题菜单。19图目视，两NSA图片按同一254/256淡入拟合后分别479952/479936像素匹配，3假PASS拒绝；9411路径378899203B清理、10源8资产和原36/148/4/54manifest保持。本次推进PASS，覆盖先前未见画面截面，不代表通关/动态中文对白/音频验收；无新生产修改/commit，结果确认及两仓提交Pending，唯一TASK_QUEUE。
+
+2026-10-21 [F0107/F0108用户确认与提交](code_correctness_review/crp-f0107-f0108/README.md#submit-20261021)：用户“提交”确认本批源码/真实输入结果；ONS六源实际`5e72dbb9739ae39a3a2dc520ed89f20219e92f84`，根四共享源及本组报告/两索引随本次根提交交付，原266证据/10源/8资产复核、无重跑。既有未提交差异实际为DEFAULT_ENV_FONT编码行（此前误称音频；音频已在旧HEAD），精确排除并保留工作区。结果/提交回执见本组local/submit-20261021及.agent；无push/下一组。建议开启新对话：下一单元转NWM，本组恢复证据完整。

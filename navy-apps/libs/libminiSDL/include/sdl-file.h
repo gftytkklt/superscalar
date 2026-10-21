@@ -22,6 +22,8 @@ typedef struct SDL_RWops {
 
 SDL_RWops* SDL_RWFromFile(const char *filename, const char *mode);
 SDL_RWops* SDL_RWFromMem(void *mem, int size);
+/* Both memory constructors borrow the buffer; close frees only the RWops. */
+SDL_RWops* SDL_RWFromConstMem(const void *mem, int size);
 
 #define SDL_RWtell(f)  SDL_RWseek(f, 0, RW_SEEK_CUR)
 #define SDL_RWsize(f)  f->size(f)

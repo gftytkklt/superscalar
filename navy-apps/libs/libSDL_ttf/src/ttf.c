@@ -1,6 +1,7 @@
 #include <SDL_ttf.h>
 #include <fixedptc.h>
 #include <assert.h>
+#include <limits.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -10,25 +11,56 @@ int TTF_Init() {
 }
 
 TTF_Font* TTF_OpenFont(const char *file, int ptsize) {
-  SDL_RWops *f = SDL_RWFromFile(file, "r");
+  SDL_RWops *f = SDL_RWFromFile(file, "rb");
   if (f == NULL) return NULL;
-  size_t size = SDL_RWsize(f);
-  void *buf = malloc(size);
-  assert(buf);
-  size_t nread = SDL_RWread(f, buf, size, 1);
-  assert(nread == 1);
+  TTF_Font *font = TTF_OpenFontRW(f, 0, ptsize);
   SDL_RWclose(f);
+  return font;
+}
 
-  stbtt_fontinfo *finfo = malloc(sizeof(*finfo));
-  assert(finfo);
-  int ret = stbtt_InitFont(finfo, buf, stbtt_GetFontOffsetForIndex(buf,0));
-  assert(ret == 1);
+static uint32_t font_be32(const uint8_t *p) {
+  return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3];
+}
 
-  TTF_Font *font = malloc(sizeof(*font));
-  font->finfo = finfo;
-  font->file.buf = buf;
-  font->file.size = size;
-  font->ptsize = ptsize;
+/* Check the outer directory before calling stb. This is not a validator for
+ * arbitrary untrusted font tables; the bundled stb parser has that limitation. */
+static int font_offset(const uint8_t *buf, size_t size) {
+  if (size < 12) return -1;
+  if (font_be32(buf) == 0x74746366) { // TTC
+    if (size < 16) return -1;
+    uint32_t count = font_be32(buf + 8), off = font_be32(buf + 12);
+    if (count == 0 || count > (size - 12) / 4 || off > size - 12 || off > INT_MAX) return -1;
+  }
+  int off = stbtt_GetFontOffsetForIndex(buf, 0);
+  if (off < 0 || (size_t)off > size - 12) return -1;
+  size_t count = (unsigned)buf[off + 4] << 8 | buf[off + 5];
+  if (count > (size - off - 12) / 16) return -1;
+  for (size_t i = 0; i < count; i++) {
+    const uint8_t *table = buf + off + 12 + i * 16;
+    uint32_t start = font_be32(table + 8), len = font_be32(table + 12);
+    if (start > size || len > size - start) return -1;
+  }
+  return off;
+}
+
+TTF_Font *TTF_OpenFontRW(SDL_RWops *src, int freesrc, int ptsize) {
+  uint8_t *buf = NULL;
+  stbtt_fontinfo *finfo = NULL;
+  TTF_Font *font = NULL;
+  if (src == NULL || ptsize <= 0) goto fail;
+  int64_t pos = SDL_RWtell(src), end = SDL_RWsize(src);
+  if (pos < 0 || end < pos || end - pos < 12 || end - pos > INT_MAX) goto fail;
+  size_t size = (size_t)(end - pos);
+  buf = malloc(size);
+  if (buf == NULL || SDL_RWread(src, buf, 1, size) != size) goto fail;
+  int off = font_offset(buf, size);
+  if (off < 0) goto fail;
+  finfo = malloc(sizeof(*finfo));
+  if (finfo == NULL || !stbtt_InitFont(finfo, buf, off)) goto fail;
+  font = malloc(sizeof(*font));
+  if (font == NULL) goto fail;
+  *font = (TTF_Font){ .finfo = finfo, .file = { buf, size }, .ptsize = ptsize,
+                      .src = freesrc ? src : NULL };
 
   // pre-computed data
   fixedpt pixel = fixedpt_muli(fixedpt_rconst(1.333333), ptsize);
@@ -39,11 +71,21 @@ TTF_Font* TTF_OpenFont(const char *file, int ptsize) {
   font->descent = fixedpt_toint(fixedpt_muli(font->factor, font->descent));
 
   return font;
+
+fail:
+  free(font);
+  free(finfo);
+  free(buf);
+  if (freesrc && src != NULL) SDL_RWclose(src);
+  return NULL;
 }
 
-TTF_Font *TTF_OpenFontRW(SDL_RWops *src, int freesrc, int ptsize) {
-  assert(0);
-  return NULL;
+void TTF_CloseFont(TTF_Font *font) {
+  if (font == NULL) return;
+  free(font->finfo);
+  free(font->file.buf);
+  if (font->src != NULL) SDL_RWclose(font->src);
+  free(font);
 }
 
 int TTF_GlyphMetrics(TTF_Font *font, Uint16 ch, int *minx, int *maxx, int *miny, int *maxy, int *advance) {

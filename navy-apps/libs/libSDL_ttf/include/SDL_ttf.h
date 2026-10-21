@@ -11,6 +11,7 @@ typedef struct TTF_Font {
   long factor;  // this is used as fixedpt type
   int height;
   int ascent, descent;
+  SDL_RWops *src;  // owned only for a successful OpenFontRW with freesrc != 0
 } TTF_Font;
 
 #ifdef __cplusplus
@@ -20,6 +21,7 @@ extern "C" {
 int TTF_Init();
 TTF_Font* TTF_OpenFont(const char *file, int size);
 TTF_Font *TTF_OpenFontRW(SDL_RWops *src, int freesrc, int ptsize);
+void TTF_CloseFont(TTF_Font *font);
 int TTF_GlyphMetrics(TTF_Font *font, Uint16 ch, int *minx, int *maxx, int *miny, int *maxy, int *advance);
 int TTF_FontAscent(TTF_Font *font);
 int TTF_FontHeight(TTF_Font *font);

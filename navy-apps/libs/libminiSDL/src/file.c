@@ -6,14 +6,14 @@
 
 static int64_t file_size(SDL_RWops *f) {
   long cur = ftell(f->fp);
-  fseek(f->fp, 0, RW_SEEK_END);
+  if (cur < 0 || fseek(f->fp, 0, RW_SEEK_END) != 0) return -1;
   long size = ftell(f->fp);
-  fseek(f->fp, cur, RW_SEEK_SET);
+  if (fseek(f->fp, cur, RW_SEEK_SET) != 0) return -1;
   return size;
 }
 
 static int64_t file_seek(SDL_RWops *f, int64_t offset, int whence) {
-  fseek(f->fp, (long)offset, whence);
+  if (fseek(f->fp, (long)offset, whence) != 0) return -1;
   return ftell(f->fp);
 }
 
@@ -26,9 +26,9 @@ static size_t file_write(SDL_RWops *f, const void *buf, size_t size, size_t nmem
 }
 
 static int file_close(SDL_RWops *f) {
-  fclose(f->fp);
+  int ret = fclose(f->fp);
   free(f);
-  return 0;
+  return ret;
 }
 
 /* ---- memory-backed RWops: read/write directly on mem.base ----
@@ -114,4 +114,15 @@ SDL_RWops* SDL_RWFromMem(void *mem, int size) {
     .mem = { .base = mem, .size = size },
   };
   return &m->rw;
+}
+
+static size_t const_mem_write(SDL_RWops *f, const void *buf, size_t size, size_t nmemb) {
+  (void)f; (void)buf; (void)size; (void)nmemb;
+  return 0;
+}
+
+SDL_RWops* SDL_RWFromConstMem(const void *mem, int size) {
+  SDL_RWops *rw = SDL_RWFromMem((void *)mem, size);
+  if (rw != NULL) rw->write = const_mem_write;
+  return rw;
 }
