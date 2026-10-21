@@ -721,3 +721,7 @@ F0093已确认提交e42b6b3，用户确认其update/run三正式产物保留，�
 2026-10-21 [F0084需求来源/消费者补充复核](code_correctness_review/crp-f0084/README.md#requirements-recheck-20261021) Completed：区分TRM接口承诺与固定静态池设计，三个可见Navy AM应用不直接读heap，公共消费者实际来自microbench/AM tests/klib/内核mm及未闭合wrapper；缺源Unknown。按现有TRM承诺保留F0084契约缺口，不由无当前消费者自行豁免；固定1MiB/4MiB无既定需求、旧容量提问撤回。源码只读/官方资料与历史核对、115标识符15公共命中8组闭包留档；无新动态测试或生产修改，103+14+2保持，唯一TASK_QUEUE，不commit/push/M阶段。
 
 2026-10-21 [F0084 Linux范围闭合与分析归档](code_correctness_review/crp-f0084/README.md#linux-scope-closure-20261021)：用户授权条件已核实，Linux启动走OpenSBI/Linux/静态musl BusyBox initramfs/native NEMU及计划NPC独立启动链，不依赖Navy libam公开heap。44项只读核对通过，F0084 Closed/不实施、不计已修；119=103已修+13待修+2Linux能力移交+1无需实施闭合。原需求/空heap分析及撤回候选保留，授权四路径分析文档提交；ignored/.agent继续本地持久化，不push/下一组/M阶段。
+
+2026-10-21 [F0017 QEMU RV64 adapter必要分析](code_correctness_review/crp-f0017/README.md) Completed、生产未改/未修：标准构建Unsupport ISA、原函数包长/错误接受/G失败传播、高地址/分块/长度缩窄反例；11次运行含2次预期ASan失败、NEMU当前/高配置paddr宽度观察。上游源码与正常前33字PC对照纠正旧FPR0推断，真实QEMU/XML/guest NotRun，等待环境或明确范围裁决；103+13+2+1保持，结果确认/commit Pending，唯一TASK_QUEUE，不安装/commit/push/下一组/M2。
+
+2026-10-21 用户明确不采用QEMU作为difftest来源，确认[F0017分析并范围闭合](code_correctness_review/crp-f0017/README.md#qemu-scope-closure-20261021)、授权本批四路径根提交。F0017 Closed/未实施非Fixed，原反例/PC勘误/真实QEMU NotRun保留；不再要求安装或修复adapter，不新增Linux待办。119=103已修+12待修+2移交+2无需实施闭合；68/19检查及15项462153B清理复用，无新产品测试。实际提交由报告及local回执定位；提交后停止，不push/下一组/M2。

@@ -38,7 +38,7 @@
 
 ## 当前逐项状态
 
-原119项当前对账：103已修（均已确认提交；F0086仅源清单缺陷）+13项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施）+1项当前目标无需实施而闭合（F0084，Linux启动不依赖，未计已修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
+原119项当前对账：103已修（均已确认提交；F0086仅源清单缺陷）+12项CRP待修（含4项原CQ及F0040/F0118 Partial）+2项NPC能力扩展移交Linux（F0031/F0071，未实施）+2项当前目标无需实施而闭合（F0017不采用QEMU参考源、F0084 Linux启动不依赖，均未计已修）。F0118静音子范围已确认提交be8a4c0。唯一未来入口TASK_QUEUE#crp-next，M2不变。
 
 | ID | 原审阅分类 / 级别 | 当前修复状态 | 提交 / 证据 |
 |---|---|---|---|
@@ -58,7 +58,7 @@
 | CCR-F0014 | Confirmed / Medium | 已修 / 已确认提交194d2c0 | [整段区间/高位别名及真实REF/NPC验收](../crp-f0014/README.md) |
 | CCR-F0015 | Confirmed / Medium | 已修 / 已提交 | f5825fd；[报告](../crp-f0015/README.md) |
 | CCR-F0016 | Confirmed / Medium | 已修 / 已确认提交de7e3be | [三段启动同步/真实golden及性能诊断](../crp-f0016/README.md) |
-| CCR-F0017 | Confirmed / Medium | 未修 / 准入待核 | [原问题](../FINAL_FINDINGS.md#ccr-f0017) |
+| CCR-F0017 | Confirmed / Medium | Closed / 不采用QEMU参考源，用户已确认；未实施/未计已修 | [分析、PC勘误与用户范围闭合/提交](../crp-f0017/README.md#qemu-scope-closure-20261021) |
 | CCR-F0018 | Confirmed / Medium | 已修 / 已确认提交37b3195 | [load失败原子性/真实CLI验收](../crp-f0018/README.md) |
 | CCR-F0019 | Confirmed / Low | 已修 / 已确认提交522bed7 | [有界生成/oracle失败传播/真实CLI](../crp-f0019/README.md) |
 | CCR-F0020 | Confirmed / Medium | 已修 / 已确认提交8e5b1ca | [SD方向/I/O/按需容量验收](../crp-f0020/README.md#f0020-final-20261020) |
@@ -501,3 +501,7 @@ F0070已确认提交6264781；用户“提交后继续”授权本单元。当�
 2026-10-21 用户要求进一步明确固定池需求及公开heap消费者后再判定处置；F0084补充需求复核Completed，当前README的TRM承诺仍构成heap接口来源，三个可见应用无直接依赖不足以自动取消承诺。课程/本地导入/115标识符与15公共命中/8组闭包证据见报告#requirements-recheck-20261021；microbench另有main ABI差异，缺源仍Unknown。F0084继续保留未实现契约缺口，103+14+2保持；撤回静态1MiB/4MiB推荐与容量二选一，不实施/不自行收窄生产README，等结论/后续支持契约确认及本组commit。
 
 2026-10-21 用户明确“暂不修复，若Linux启动不需则闭合并提交分析”。实际Linux/OpenSBI/静态musl BusyBox/initramfs及native NEMU/计划NPC链不依赖Navy libam heap，44项核对通过，F0084按条件授权Closed/未实施，不计已修、不新增Linux待办。现行119=103已修+13待修+2能力移交+1无需实施闭合；旧事实/分析与候选保留，当前报告#linux-scope-closure-20261021及local提交回执为准。只提交分析四路径，ignored/.agent非commit备份；提交后停止，无push/下一组/M阶段。
+
+2026-10-21 用户“继续CRP修复”承接前F0084已确认实际7eb4c6c后F0017必要分析一个单元。标准RV64 adapter Make先报Unsupport ISA；显式宏隔离原源码完成11运行（9正常观察/2预期ASan失败）、高地址/跨边界/长度截断、错误包接受及G失败不传播。正常前33字PC对照与QEMU上游源码纠正旧“FPR0当PC”推断，未凭union猜真实协议。实际QEMU/目标XML缺失，最小方案及验收缺口见[报告](../crp-f0017/README.md)；生产未改/F0017未修/分析确认与commit Pending，103+13+2+1保持。唯一TASK_QUEUE#crp-next等待环境或用户范围裁决，不自动安装/闭合/下一组/M2。
+
+2026-10-21 用户明确“不使用QEMU作为difftest来源，可关闭当前问题，执行提交”。F0017 Closed/未实施不计已修，撤销QEMU安装/真实验收/生产实施待办，不向Linux转交；现存缺陷和PC勘误及真实QEMU NotRun保留。119=103已修+12待修+2移交+2无需实施闭合；分析已确认并授权本批四路径提交，实际身份见[范围闭合](../crp-f0017/README.md#qemu-scope-closure-20261021)与local回执。复用68/19/清理，不重跑产品测试，不push/启动下一单元；唯一TASK_QUEUE#crp-next。
